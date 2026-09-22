@@ -1,0 +1,72 @@
+---
+import Base from '../layouts/Base.astro'
+import PostRow from '../components/PostRow.astro'
+import { getPosts } from '../lib/posts'
+
+const posts = await getPosts()
+const categories = [...new Set(posts.map(post => post.data.category))]
+---
+
+<Base>
+  <section class="blog-intro shell" aria-labelledby="blog-title">
+    <div class="eyebrow">ENGINEERING NOTES</div>
+    <h1 id="blog-title">만들고, 연결하고,<br /><span>운영하며 배운 것들.</span></h1>
+    <div class="intro-bottom">
+      <p>AI를 실제 제품과 업무에 적용하는 이정재입니다.<br class="desktop-break" /> 코드 뒤의 설계 판단과 문제를 해결한 과정을 기록합니다.</p>
+      <span class="current-focus"><span class="brand-dot" />현재 관심사 · LLM Ops</span>
+    </div>
+  </section>
+
+  <section class="article-list shell" aria-label="기술 글 목록">
+    <div class="list-tools">
+      <div class="category-filters" role="group" aria-label="주제 필터">
+        <button class="filter active" data-filter="all" aria-pressed="true">전체 <span>{posts.length}</span></button>
+        {categories.map(category => <button class="filter" data-filter={category} aria-pressed="false">{category}</button>)}
+      </div>
+      <label class="search"><span aria-hidden="true">⌕</span><span class="sr-only">글 제목과 태그 검색</span><input id="post-search" type="search" placeholder="글 제목·태그 검색" autocomplete="off" /></label>
+    </div>
+    <p class="sr-only" id="search-status" role="status">{posts.length}개의 글</p>
+    <ol class="posts">{posts.map((post, index) => <PostRow post={post} index={index} />)}</ol>
+    <div class="empty-state" id="empty-state" hidden><p>검색 조건에 맞는 글이 없습니다.</p><button id="reset-search">전체 글 보기</button></div>
+    <noscript><p class="noscript-note">모든 글을 표시합니다. 검색과 주제 필터는 JavaScript를 켜면 사용할 수 있습니다.</p></noscript>
+  </section>
+</Base>
+
+<script>
+  const input = document.querySelector<HTMLInputElement>('#post-search')!
+  const rows = [...document.querySelectorAll<HTMLElement>('[data-post]')]
+  const buttons = [...document.querySelectorAll<HTMLButtonElement>('[data-filter]')]
+  const status = document.querySelector<HTMLElement>('#search-status')!
+  const empty = document.querySelector<HTMLElement>('#empty-state')!
+  let category = 'all'
+
+  function filterPosts() {
+    const terms = input.value.trim().toLowerCase().split(/\s+/).filter(Boolean)
+    let count = 0
+    for (const row of rows) {
+      const matches = (category === 'all' || row.dataset.category === category)
+        && terms.every(term => row.dataset.search?.includes(term))
+      row.hidden = !matches
+      if (matches) count++
+    }
+    for (const button of buttons) {
+      const selected = button.dataset.filter === category
+      button.classList.toggle('active', selected)
+      button.setAttribute('aria-pressed', String(selected))
+    }
+    status.textContent = `${count}개의 글`
+    empty.hidden = count > 0
+  }
+
+  input.addEventListener('input', filterPosts)
+  buttons.forEach(button => button.addEventListener('click', () => {
+    category = button.dataset.filter!
+    filterPosts()
+  }))
+  document.querySelector('#reset-search')?.addEventListener('click', () => {
+    category = 'all'
+    input.value = ''
+    filterPosts()
+    input.focus()
+  })
+</script>

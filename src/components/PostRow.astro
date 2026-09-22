@@ -1,0 +1,17 @@
+---
+import type { CollectionEntry } from 'astro:content'
+import { formatDate } from '../lib/posts'
+
+interface Props { post: CollectionEntry<'posts'>; index: number }
+const { post, index } = Astro.props
+---
+
+<li class="post-row" data-post data-category={post.data.category} data-search={`${post.data.title} ${post.data.description} ${post.data.tags.join(' ')}`.toLowerCase()}>
+  <div class="post-number" aria-hidden="true">{String(index + 1).padStart(2, '0')}</div>
+  <div class="post-copy">
+    <div class="post-meta"><span class="category">{post.data.category}</span><time datetime={post.data.date.toISOString()}>{formatDate(post.data.date)}</time></div>
+    <h2><a href={`/posts/${post.id}/`}>{post.data.title}<span class="post-arrow" aria-hidden="true">↗</span></a></h2>
+    <p>{post.data.description}</p>
+    <ul class="tags" aria-label="글 태그">{post.data.tags.map(tag => <li>{tag}</li>)}</ul>
+  </div>
+</li>

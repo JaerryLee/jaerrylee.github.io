@@ -1,0 +1,36 @@
+---
+import { render, type CollectionEntry } from 'astro:content'
+import Base from '../../layouts/Base.astro'
+import { getPosts, formatDate } from '../../lib/posts'
+
+export async function getStaticPaths() {
+  return (await getPosts()).map(post => ({ params: { slug: post.id }, props: { post } }))
+}
+
+interface Props { post: CollectionEntry<'posts'> }
+const { post } = Astro.props
+const { Content, headings } = await render(post)
+const toc = headings.filter(heading => heading.depth === 2)
+const related = (await getPosts()).filter(item => item.id !== post.id).slice(0, 3)
+---
+
+<Base title={post.data.title} description={post.data.description} article date={post.data.date}>
+  <article class="article shell">
+    <header class="article-header">
+      <a class="back-link" href="/">← 모든 글</a>
+      <div class="post-meta"><span class="category">{post.data.category}</span><time datetime={post.data.date.toISOString()}>{formatDate(post.data.date)}</time><span>이정재</span></div>
+      <h1>{post.data.title}</h1>
+      <p class="article-description">{post.data.description}</p>
+      <ul class="tags" aria-label="글 태그">{post.data.tags.map(tag => <li>{tag}</li>)}</ul>
+    </header>
+    <div class="article-grid">
+      <div class="article-body">
+        <details class="mobile-toc"><summary>이 글의 목차</summary><ol>{toc.map(heading => <li><a href={`#${heading.slug}`}>{heading.text}</a></li>)}</ol></details>
+        <div class="prose"><Content /></div>
+        <div class="author-note"><span class="brand-dot" /><p><strong>이정재 · Applied AI Engineer</strong><br />AI 제품을 개발하고, 현재는 LLM Ops와 실행 관측에 집중합니다.</p><a href="https://www.linkedin.com/in/jerrylee1516/" target="_blank" rel="noopener noreferrer" aria-label="이정재 LinkedIn">↗</a></div>
+      </div>
+      <aside class="desktop-toc"><nav aria-label="이 글의 목차"><span class="eyebrow">ON THIS PAGE</span><ol>{toc.map(heading => <li><a href={`#${heading.slug}`}>{heading.text}</a></li>)}</ol><a class="toc-top" href="#main">맨 위로 ↑</a></nav></aside>
+    </div>
+    <section class="related" aria-labelledby="related-title"><h2 id="related-title">이어서 읽기</h2><div>{related.map(item => <a href={`/posts/${item.id}/`}><span class="category">{item.data.category}</span><strong>{item.data.title}</strong><span aria-hidden="true">↗</span></a>)}</div></section>
+  </article>
+</Base>
