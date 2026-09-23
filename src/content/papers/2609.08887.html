@@ -1,0 +1,618 @@
+<section class="ch" id="c1"><div class="ch-eyebrow"><span class="cnum">01</span><span class="clabel">Motivation · 문제</span></div><h2 class="ch-title">사람이 쓴 검색어 시험으로 agent 검색기를 평가하면 어긋난다</h2><div class="tldr"><div class="h">한눈에 요약</div><p>Q2D-Web은 production 대화에서 agent가 재작성한 질의와 web-scale corpus를 결합한다. 첫 단계 retriever가 놓친 문서는 뒤 reranker와 LLM이 볼 수 없으므로 recall을 현실적으로 재야 한다.</p></div><p><figure><div class="fig-top"><span class="fnum">FIG 1</span><span class="ftitle">Q2D-Web 제작 파이프라인</span></div><div class="imgbox"><img alt="Q2D-Web의 질의, corpus, relevance, 축소 corpus 제작 단계" decoding="async" loading="lazy" src="/paper-assets/4b6f1a89d51aee2e2549e94b453cb4fcc7c73ce483c0053cb56a05d60caafb31.png"/></div><figcaption>9개월의 production agent 검색에서 질의를 뽑고, query당 top-5,000 결과를 합쳐 corpus를 만들며, 세 label source와 RRF 축소 corpus를 구성한다.</figcaption></figure></p><p><div class="tbl-wrap"><div class="tbl-cap"><span class="tn">TABLE 1</span>공개 IR benchmark와 Q2D-Web의 규모·질의 출처·label 비교</div><div class="tbl-scroll"><table class="ltx_tabular ltx_guessed_headers ltx_align_middle" id="S1.T1.2.1">
+<thead>
+<tr>
+<th><span>Collection</span></th>
+<th><span>#Indexable units</span></th>
+<th><span>#Lang.</span></th>
+<th><span>Test q.</span></th>
+<th><span>Judg./q.</span></th>
+<th><span>Query origin</span></th>
+<th><span>Relevance labels</span></th>
+<th><span>Domain</span></th></tr>
+</thead>
+<tbody>
+<tr>
+<td><span>TREC Web 2009–12</span></td>
+<td><span>1.04B pages</span></td>
+<td><span>10</span></td>
+<td><span>50 / yr</span></td>
+<td><span>63–137</span></td>
+<td><span>search log</span></td>
+<td><span>human, pooled, graded</span></td>
+<td><span>web</span></td></tr>
+<tr>
+<td><span>TREC DL 2019–23</span></td>
+<td><span>138M passages</span></td>
+<td><span>1</span></td>
+<td><span>43–82 / yr</span></td>
+<td><span>67–1,315</span></td>
+<td><span>search log</span></td>
+<td><span>human, pooled, graded</span></td>
+<td><span>web</span></td></tr>
+<tr>
+<td><span>TREC RAG 2024</span></td>
+<td><span>113.5M segments</span></td>
+<td><span>1</span></td>
+<td><span>301</span></td>
+<td><span>n/a</span></td>
+<td><span>search log</span></td>
+<td><span>human + LLM, pooled</span></td>
+<td><span>web</span></td></tr>
+<tr>
+<td><span>MS MARCO Web</span></td>
+<td><span>100.9M documents</span></td>
+<td><span>93</span></td>
+<td><span>9,374</span></td>
+<td><span>1</span></td>
+<td><span>search log</span></td>
+<td><span>clicks</span></td>
+<td><span>web</span></td></tr>
+<tr>
+<td><span>BioASQ</span></td>
+<td><span>14.9M articles</span></td>
+<td><span>1</span></td>
+<td><span>500</span></td>
+<td><span>4.7</span></td>
+<td><span>domain experts</span></td>
+<td><span>human</span></td>
+<td><span>biomedical</span></td></tr>
+<tr>
+<td><span>MS MARCO Passage</span></td>
+<td><span>8.8M passages</span></td>
+<td><span>1</span></td>
+<td><span>6,980</span></td>
+<td><math><semantics><mo>∼</mo><annotation>\sim</annotation></semantics></math><span>1</span></td>
+<td><span>search log</span></td>
+<td><span>human, sparse</span></td>
+<td><span>web</span></td></tr>
+<tr>
+<td><span>FEVER</span></td>
+<td><span>5.4M articles</span></td>
+<td><span>1</span></td>
+<td><span>19,998</span></td>
+<td><span>n/a</span></td>
+<td><span>crowdworker claims</span></td>
+<td><span>human</span></td>
+<td><span>Wikipedia</span></td></tr>
+<tr>
+<td><span>HotpotQA</span></td>
+<td><span>5.2M paragraphs</span></td>
+<td><span>1</span></td>
+<td><span>7,405</span></td>
+<td><math><semantics><mo>∼</mo><annotation>\sim</annotation></semantics></math><span>2</span></td>
+<td><span>crowdworkers</span></td>
+<td><span>human</span></td>
+<td><span>Wikipedia</span></td></tr>
+<tr>
+<td><span>AIR-Bench 24.05</span></td>
+<td><span>1.0M passages (<math><semantics><mo>×</mo><annotation>\times</annotation></semantics></math>69)</span></td>
+<td><span>13</span></td>
+<td><span>102K</span></td>
+<td><span>n/a</span></td>
+<td><span>LLM-generated</span></td>
+<td><span>LLM judge</span></td>
+<td><span>9 domains</span></td></tr>
+<tr>
+<td><span>BrowseComp-Plus</span></td>
+<td><span>100,195 documents</span></td>
+<td><span>1</span></td>
+<td><span>830</span></td>
+<td><span>6.1</span></td>
+<td><span>human trainers</span></td>
+<td><span>human-verified; gold-answer subset</span></td>
+<td><span>web (curated)</span></td></tr>
+<tr>
+<td><span>Q2D-Web</span></td>
+<td><span>190M documents</span></td>
+<td><span>10</span></td>
+<td><span>70K</span></td>
+<td><span>99.6</span></td>
+<td><span>LLM agents</span></td>
+<td><span>Citation<span> + </span>Web Ranking<span> + LLM</span></span></td>
+<td><span>web</span></td></tr>
+</tbody>
+</table></div><div class="tbl-foot">수치와 표 구조는 원문 그대로 옮겼다.</div></div></p><p>기존 큰 corpus는 시험 질의가 적고, 질의가 많은 benchmark는 corpus가 작다. 또한 click 하나만 정답으로 두면 실제로 관련된 미표시 문서를 오답으로 채점하는 false negative가 커진다.</p><p>Q2D-Web은 약 190M 문서, 69,721 agent 질의, query당 평균 99.6개의 양성 judgment를 제공한다. corpus와 질의는 오염 방지를 위해 공개하지 않고 open-weight model용 leaderboard만 운영한다.</p><div class="call ar"><div class="ct">초등학생도 이해하는 설명</div><p>학교 시험지가 쉬운 연습문제 50개뿐이면 실제 운동장에서 누가 잘하는지 모른다. 이 논문은 AI 검색기가 실제로 받는 말투와 아주 큰 책장을 넣은 시험장을 만든다.</p></div></section>
+<section class="ch" id="c2"><div class="ch-eyebrow"><span class="cnum">02</span><span class="clabel">Prior Benchmarks · 기존 연구</span></div><h2 class="ch-title">큰 책장·많은 질문·깊은 채점표를 한 번에 갖춘 자료가 드물다</h2><div class="tldr"><div class="h">한눈에 요약</div><p>TREC·MS MARCO·BEIR·BrowseComp 계열은 각각 장점이 있지만 Q2D-Web이 겨냥한 세 축을 동시에 충족하지 않는다.</p></div><p>MS MARCO Web Search는 약 1억 문서지만 시험 질의 9,374개와 query당 click label 하나다. BrowseComp-Plus는 사람이 검증한 evidence가 있지만 830개 research query와 10만여 문서다.</p><p>Q2D-Web은 agent 전체의 최종 답보다 <strong>첫 단계 retrieval</strong>을 분리해 평가한다. 이는 “정답을 말했나”가 아니라 “나중 단계가 읽을 evidence 후보를 충분히 올렸나”를 묻는다.</p><div class="call ar"><div class="ct">초등학생도 이해하는 설명</div><p>축구팀 전체 점수 대신 첫 패스를 따로 시험한다. 첫 패스가 공을 못 보내면 다음 선수는 아무리 잘해도 슛할 수 없다.</p></div></section>
+<section class="ch" id="c3"><div class="ch-eyebrow"><span class="cnum">03</span><span class="clabel">Queries &amp; Corpus · 데이터</span></div><h2 class="ch-title">23천 검색에서 69,721개의 기계 작성 질의를 뽑다</h2><div class="tldr"><div class="h">한눈에 요약</div><p>질의의 82.3%는 support query다. query별 production top-5,000 결과를 합치고 5-gram MinHash-LSH로 거의 같은 문서를 합쳐 약 190M 문서를 만든다.</p></div><p><figure><div class="fig-top"><span class="fnum">FIG 2</span><span class="ftitle">사람 요청을 agent가 여러 검색어로 바꾸는 예</span></div><div class="imgbox"><img alt="Q2D-Web primary 및 support query 사례" decoding="async" loading="lazy" src="/paper-assets/9d4bb59394b86bfab138318e8c3e5e9b1c00d839583840256752ba5db612a27f.png"/></div><figcaption>대화 문맥을 반영한 primary query와, 배경·다른 표현·세부 모델을 찾는 support query 예시 세 개다.</figcaption></figure></p><p><figure><div class="fig-top"><span class="fnum">FIG 3</span><span class="ftitle">질의 길이·언어·분야 분포</span></div><div class="imgbox"><img alt="Q2D-Web 질의 통계" decoding="async" loading="lazy" src="/paper-assets/cd2a052dd9a77d8e3fe45ce3447b2d99477d2301a8045c749a8cfdc2c8c3092e.png"/></div><figcaption>질의의 26.1%는 40~50자이며 영어 65.8%, 한국어 2.2%다. 소비재·프로그래밍·법·건강 등 여러 분야를 포함한다.</figcaption></figure></p><p>12,365개 primary query는 사용자 의도를 다시 쓰고, 57,356개 support query는 대체 표현·배경·인접 entity를 찾는다. 월·분야·언어 비율을 production 분포에 맞추고 PII detector에 걸린 질의는 제외한다.</p><p>문서 평균 길이는 13,169자다. corpus는 임의 web sample이 아니라 실제 검색 상위 후보들의 합집합이므로, 각 질의와 그럴듯하게 가까운 hard distractor가 많다.</p><div class="call ar"><div class="ct">초등학생도 이해하는 설명</div><p>사용자가 한 질문을 하면 AI가 대표 질문 한 개와 도우미 질문 여러 개를 만든다. 그 질문들로 실제 찾아 본 책들을 모아, 헷갈리기 쉬운 거대한 책장을 만든다.</p></div></section>
+<section class="ch" id="c4"><div class="ch-eyebrow"><span class="cnum">04</span><span class="clabel">Judgments &amp; Sampling · 채점</span></div><h2 class="ch-title">세 개의 불완전한 정답표를 합치고 어려운 오답을 남긴다</h2><div class="tldr"><div class="h">한눈에 요약</div><p>Citation, 내부 Web Ranking, 이전에 미채점된 후보에 대한 LLM 판정을 각각 보존한다. 모든 양성을 남기고 RRF가 고른 hard distractor로 약 31.7% 축소 corpus를 만든다.</p></div><p><figure><div class="fig-top"><span class="fnum">FIG 4</span><span class="ftitle">문서와 relevance label 분포</span></div><div class="imgbox"><img alt="Q2D-Web corpus 및 label 통계" decoding="async" loading="lazy" src="/paper-assets/2483ca36eff422c83a3976877f80e6c266e7d6eace29b5623b825f31e7d64d7d.png"/></div><figcaption>문서 길이와 언어, citation·web ranking·LLM judgment별 query당 관련 문서 수를 보여 준다.</figcaption></figure></p><p><figure><div class="fig-top"><span class="fnum">FIG 5</span><span class="ftitle">엄격한 LLM relevance 판정 prompt</span></div><div class="imgbox"><img alt="Q2D-Web LLM relevance judge prompt" decoding="async" loading="lazy" src="/paper-assets/ef3280f2e2da9c2d020036ec97c94fea8bf982b823089d1a4875c49d0f15e0b5.png"/></div><figcaption>entity·시간·수량·관점을 모두 만족해야 YES로 채점하게 한 prompt다.</figcaption></figure></p><p>Citation은 실제 답변에 쓰였다는 장점이 있지만 중복 evidence를 덜 표시한다. Web Ranking은 BM25+dense+cross-encoder stack의 편향을 가진다. LLM judge도 길고 유창한 글을 선호할 수 있다. 세 정답표를 따로 보고 합친 이유다.</p><p>full corpus에서 pplx-embed-v1-4b 한 번은 4,608 H200 GPU-hour, 300M model도 약 200 H200 GPU-hour가 든다.</p><p><figure><div class="fig-top"><span class="fnum">FIG 6</span><span class="ftitle">축소 corpus 크기와 평가 보존성</span></div><div class="imgbox"><img alt="Q2D-Web subcorpus sampling 비교" decoding="async" loading="lazy" src="/paper-assets/22fa6a80935d22a8b8a4960deb689b69a27207c13654699309f2492476435671.png"/></div><figcaption>약 31.7% RRF corpus에서 full-corpus model 순위가 유지되며, 절대 Recall@1000은 평균 5.1포인트 높아진다.</figcaption></figure></p><p><strong>장난감 예:</strong> 관련 문서 10개는 무조건 남기고, 여러 검색기가 “관련 있어 보인다”고 상위에 올렸지만 정답 표시는 없는 문서 1,000개를 섞는다. 아무 문서나 뽑는 것보다 실제 검색 혼동을 보존한다.</p><div class="call ar"><div class="ct">초등학생도 이해하는 설명</div><p>정답 책은 모두 남긴다. 오답 책은 검색기들이 자꾸 헷갈리는 책 위주로 골라 작은 시험장을 만든다. 그러면 책장은 줄어도 누가 더 잘 찾는지 순서는 비슷하게 남는다.</p></div></section>
+<section class="ch" id="c5"><div class="ch-eyebrow"><span class="cnum">05</span><span class="clabel">Retriever Results · 결과</span></div><h2 class="ch-title">큰 dense model이 강하지만, 지표와 질의 종류가 바뀌면 답도 바뀐다</h2><div class="tldr"><div class="h">한눈에 요약</div><p>Combined Recall@1000은 pplx-embed-v1-4b 69.11이 최고, Recall@100과 nDCG@10은 Nemotron-3-Embed-8B가 최고다. neural model은 support query에서 일관되게 약했다.</p></div><p><div class="tbl-wrap"><div class="tbl-cap"><span class="tn">TABLE 2</span>평가한 lexical·dense·late-interaction retriever 13개</div><div class="tbl-scroll"><table class="ltx_tabular ltx_centering ltx_align_middle" id="S4.T2.2">
+<tbody>
+<tr>
+<td><span>Model</span></td>
+<td><span>Family</span></td>
+<td><span>#P</span></td>
+<td><math><semantics><mi>d</mi><annotation>d</annotation></semantics></math></td>
+<td><span>Vec.</span></td>
+<td><span>Ctx</span></td>
+<td><span>Rel.</span></td></tr>
+<tr>
+<td>BM25-tantivy<span> <cite>(Masurel et al., 2026)</cite></span></td>
+<td><span>lexical</span></td>
+<td><span>—</span></td>
+<td><span>—</span></td>
+<td><span>single</span></td>
+<td><span>—</span></td>
+<td><span>—</span></td></tr>
+<tr>
+<td>EmbeddingGemma-300M<span>
+<cite>(Vera et al., 2025)</cite></span></td>
+<td><span>dense</span></td>
+<td><span>0.3B</span></td>
+<td><span>768</span></td>
+<td><span>single</span></td>
+<td><span>2k</span></td>
+<td><span>2025-09</span></td></tr>
+<tr>
+<td>mDenseOn<span>
+<cite>(Sourty et al., 2026)</cite></span></td>
+<td><span>dense</span></td>
+<td><span>0.3B</span></td>
+<td><span>768</span></td>
+<td><span>single</span></td>
+<td><span>8k</span></td>
+<td><span>2026-07</span></td></tr>
+<tr>
+<td>Nemotron-3-Embed-1B<span>
+<cite>(Babakhin et al., 2026)</cite></span></td>
+<td><span>dense</span></td>
+<td><span>1.1B</span></td>
+<td><span>2048</span></td>
+<td><span>single</span></td>
+<td><span>32k</span></td>
+<td><span>2026-07</span></td></tr>
+<tr>
+<td>Nemotron-3-Embed-8B</td>
+<td><span>dense</span></td>
+<td><span>8B</span></td>
+<td><span>4096</span></td>
+<td><span>single</span></td>
+<td><span>32k</span></td>
+<td><span>2026-07</span></td></tr>
+<tr>
+<td>pplx-embed-v1-0.6b<span>
+<cite>(Eslami et al., 2026)</cite></span></td>
+<td><span>dense</span></td>
+<td><span>0.6B</span></td>
+<td><span>1024</span></td>
+<td><span>single</span></td>
+<td><span>32k</span></td>
+<td><span>2026-01</span></td></tr>
+<tr>
+<td>pplx-embed-v1-4b<span>
+<cite>(Eslami et al., 2026)</cite></span></td>
+<td><span>dense</span></td>
+<td><span>4B</span></td>
+<td><span>2560</span></td>
+<td><span>single</span></td>
+<td><span>32k</span></td>
+<td><span>2026-01</span></td></tr>
+<tr>
+<td>Qwen3-Embedding-0.6B<span>
+<cite>(Zhang et al., 2025b)</cite></span></td>
+<td><span>dense</span></td>
+<td><span>0.6B</span></td>
+<td><span>1024</span></td>
+<td><span>single</span></td>
+<td><span>32k</span></td>
+<td><span>2025-06</span></td></tr>
+<tr>
+<td>Qwen3-Embedding-4B</td>
+<td><span>dense</span></td>
+<td><span>4B</span></td>
+<td><span>2560</span></td>
+<td><span>single</span></td>
+<td><span>32k</span></td>
+<td><span>2025-06</span></td></tr>
+<tr>
+<td>Qwen3-Embedding-8B</td>
+<td><span>dense</span></td>
+<td><span>8B</span></td>
+<td><span>4096</span></td>
+<td><span>single</span></td>
+<td><span>32k</span></td>
+<td><span>2025-06</span></td></tr>
+<tr>
+<td>voyage-4-nano</td>
+<td><span>dense</span></td>
+<td><span>0.3B</span></td>
+<td><span>2048</span></td>
+<td><span>single</span></td>
+<td><span>32k</span></td>
+<td><span>2026-01</span></td></tr>
+<tr>
+<td>mLateOn<span>
+<cite>(Sourty et al., 2026)</cite></span></td>
+<td><span>late</span></td>
+<td><span>0.3B</span></td>
+<td><span>128</span></td>
+<td><span>multi</span></td>
+<td><span>8k</span></td>
+<td><span>2026-07</span></td></tr>
+<tr>
+<td>pplx-embed-v1-late-0.6B<span> <cite>(Eslami et al., 2026)</cite></span></td>
+<td><span>late</span></td>
+<td><span>0.6B</span></td>
+<td><span>128</span></td>
+<td><span>multi</span></td>
+<td><span>32k</span></td>
+<td><span>2026-03</span></td></tr>
+</tbody>
+</table></div><div class="tbl-foot">수치와 표 구조는 원문 그대로 옮겼다.</div></div></p><p><div class="tbl-wrap"><div class="tbl-cap"><span class="tn">TABLE 3</span>세 relevance set과 full/sub corpus의 Recall·nDCG 결과</div><div class="tbl-scroll"><table class="ltx_tabular ltx_guessed_headers ltx_align_middle" id="S4.T3.8.1">
+<tbody>
+<tr>
+<th></th>
+<td colspan="6"><span>Recall@1000</span></td>
+<td colspan="6"><span>Recall@100</span></td>
+<td colspan="6"><span>nDCG@10</span></td></tr>
+<tr>
+<th></th>
+<td colspan="2"><span>Citation</span></td>
+<td colspan="2"><span>Web Ranking</span></td>
+<td colspan="2"><span>Comb.</span></td>
+<td colspan="2"><span>Citation</span></td>
+<td colspan="2"><span>Web Ranking</span></td>
+<td colspan="2"><span>Comb.</span></td>
+<td colspan="2"><span>Citation</span></td>
+<td colspan="2"><span>Web Ranking</span></td>
+<td colspan="2"><span>Comb.</span></td></tr>
+<tr>
+<th><span>Model</span></th>
+<td><span>F</span></td>
+<td><span>S</span></td>
+<td><span>F</span></td>
+<td><span>S</span></td>
+<td><span>F</span></td>
+<td><span>S</span></td>
+<td><span>F</span></td>
+<td><span>S</span></td>
+<td><span>F</span></td>
+<td><span>S</span></td>
+<td><span>F</span></td>
+<td><span>S</span></td>
+<td><span>F</span></td>
+<td><span>S</span></td>
+<td><span>F</span></td>
+<td><span>S</span></td>
+<td><span>F</span></td>
+<td><span>S</span></td></tr>
+<tr>
+<th><span>BM25-tantivy</span></th>
+<td><span>43.92</span></td>
+<td><span>48.12</span></td>
+<td><span>42.50</span></td>
+<td><span>47.61</span></td>
+<td><span>44.77</span></td>
+<td><span>49.85</span></td>
+<td><span>21.78</span></td>
+<td><span>21.86</span></td>
+<td><span>16.97</span></td>
+<td><span>17.07</span></td>
+<td><span>18.16</span></td>
+<td><span>18.27</span></td>
+<td><span>5.74</span></td>
+<td><span>5.74</span></td>
+<td><span>11.45</span></td>
+<td><span>11.46</span></td>
+<td><span>30.30</span></td>
+<td><span>30.33</span></td></tr>
+<tr>
+<th><span>EmbeddingGemma-300M</span></th>
+<td><span>58.17</span></td>
+<td><span>61.77</span></td>
+<td><span>58.93</span></td>
+<td><span>63.75</span></td>
+<td><span>65.45</span></td>
+<td><span>70.10</span></td>
+<td><span>32.00</span></td>
+<td><span>32.47</span></td>
+<td><span>25.02</span></td>
+<td><span>25.54</span></td>
+<td><span>27.42</span></td>
+<td><span>28.01</span></td>
+<td><span>9.20</span></td>
+<td><span>9.22</span></td>
+<td><span>17.30</span></td>
+<td><span>17.37</span></td>
+<td><span>43.56</span></td>
+<td><span>43.72</span></td></tr>
+<tr>
+<th><span>mDenseOn</span></th>
+<td><span>51.78</span></td>
+<td><span>55.50</span></td>
+<td><span>52.56</span></td>
+<td><span>57.41</span></td>
+<td><span>59.31</span></td>
+<td><span>64.13</span></td>
+<td><span>27.36</span></td>
+<td><span>27.95</span></td>
+<td><span>21.70</span></td>
+<td><span>22.28</span></td>
+<td><span>23.93</span></td>
+<td><span>24.59</span></td>
+<td><span>7.63</span></td>
+<td><span>7.67</span></td>
+<td><span>15.06</span></td>
+<td><span>15.17</span></td>
+<td><span>40.20</span></td>
+<td><span>40.43</span></td></tr>
+<tr>
+<th><span>Nemotron-3-Embed-1B</span></th>
+<td><span>54.40</span></td>
+<td><span>58.52</span></td>
+<td><span>54.37</span></td>
+<td><span>59.72</span></td>
+<td><span>61.68</span></td>
+<td><span>66.88</span></td>
+<td><span>27.97</span></td>
+<td><span>28.70</span></td>
+<td><span>21.76</span></td>
+<td><span>22.49</span></td>
+<td><span>24.88</span></td>
+<td><span>25.74</span></td>
+<td><span>7.54</span></td>
+<td><span>7.59</span></td>
+<td><span>14.83</span></td>
+<td><span>14.95</span></td>
+<td><span>40.21</span></td>
+<td><span>40.59</span></td></tr>
+<tr>
+<th><span>Nemotron-3-Embed-8B</span></th>
+<td><span>61.68</span></td>
+<td><span>65.08</span></td>
+<td><span>61.73</span></td>
+<td><span>66.29</span></td>
+<td><span>68.58</span></td>
+<td><span>72.79</span></td>
+<td><span>34.86</span></td>
+<td><span>35.34</span></td>
+<td><span>26.88</span></td>
+<td><span>27.41</span></td>
+<td><span>30.03</span></td>
+<td><span>30.63</span></td>
+<td><span>10.16</span></td>
+<td><span>10.19</span></td>
+<td><span>18.69</span></td>
+<td><span>18.76</span></td>
+<td><span>47.44</span></td>
+<td><span>47.60</span></td></tr>
+<tr>
+<th><span>pplx-embed-v1-0.6b</span></th>
+<td><span>58.35</span></td>
+<td><span>61.70</span></td>
+<td><span>62.15</span></td>
+<td><span>66.70</span></td>
+<td><span>67.02</span></td>
+<td><span>71.52</span></td>
+<td><span>32.88</span></td>
+<td><span>33.30</span></td>
+<td><span>27.81</span></td>
+<td><span>28.28</span></td>
+<td><span>28.29</span></td>
+<td><span>28.79</span></td>
+<td><span>9.37</span></td>
+<td><span>9.39</span></td>
+<td><span>19.76</span></td>
+<td><span>19.82</span></td>
+<td><span>44.36</span></td>
+<td><span>44.49</span></td></tr>
+<tr>
+<th><span>pplx-embed-v1-4b</span></th>
+<td><span>61.22</span></td>
+<td><span>64.73</span></td>
+<td><span>65.73</span></td>
+<td><span>70.63</span></td>
+<td><span>69.11</span></td>
+<td><span>74.07</span></td>
+<td><span>35.57</span></td>
+<td><span>36.16</span></td>
+<td><span>30.28</span></td>
+<td><span>30.95</span></td>
+<td><span>29.82</span></td>
+<td><span>30.52</span></td>
+<td><span>10.33</span></td>
+<td><span>10.36</span></td>
+<td><span>21.29</span></td>
+<td><span>21.40</span></td>
+<td><span>45.84</span></td>
+<td><span>46.06</span></td></tr>
+<tr>
+<th><span>Qwen3-Embedding-0.6B</span></th>
+<td><span>50.10</span></td>
+<td><span>54.39</span></td>
+<td><span>51.82</span></td>
+<td><span>57.38</span></td>
+<td><span>57.89</span></td>
+<td><span>63.52</span></td>
+<td><span>25.02</span></td>
+<td><span>25.58</span></td>
+<td><span>20.63</span></td>
+<td><span>21.21</span></td>
+<td><span>22.48</span></td>
+<td><span>23.15</span></td>
+<td><span>6.58</span></td>
+<td><span>6.60</span></td>
+<td><span>14.11</span></td>
+<td><span>14.19</span></td>
+<td><span>37.38</span></td>
+<td><span>37.58</span></td></tr>
+<tr>
+<th><span>Qwen3-Embedding-4B</span></th>
+<td><span>54.95</span></td>
+<td><span>59.20</span></td>
+<td><span>55.60</span></td>
+<td><span>61.35</span></td>
+<td><span>62.01</span></td>
+<td><span>67.58</span></td>
+<td><span>28.45</span></td>
+<td><span>29.08</span></td>
+<td><span>22.33</span></td>
+<td><span>22.99</span></td>
+<td><span>24.93</span></td>
+<td><span>25.69</span></td>
+<td><span>7.67</span></td>
+<td><span>7.70</span></td>
+<td><span>14.97</span></td>
+<td><span>15.06</span></td>
+<td><span>40.21</span></td>
+<td><span>40.48</span></td></tr>
+<tr>
+<th><span>Qwen3-Embedding-8B</span></th>
+<td><span>57.38</span></td>
+<td><span>61.37</span></td>
+<td><span>58.34</span></td>
+<td><span>63.64</span></td>
+<td><span>64.53</span></td>
+<td><span>69.61</span></td>
+<td><span>30.47</span></td>
+<td><span>31.06</span></td>
+<td><span>24.14</span></td>
+<td><span>24.73</span></td>
+<td><span>26.67</span></td>
+<td><span>27.33</span></td>
+<td><span>8.30</span></td>
+<td><span>8.33</span></td>
+<td><span>16.27</span></td>
+<td><span>16.36</span></td>
+<td><span>42.69</span></td>
+<td><span>42.89</span></td></tr>
+<tr>
+<th><span>voyage-4-nano</span></th>
+<td><span>49.38</span></td>
+<td><span>54.88</span></td>
+<td><span>50.14</span></td>
+<td><span>57.03</span></td>
+<td><span>56.67</span></td>
+<td><span>63.06</span></td>
+<td><span>23.52</span></td>
+<td><span>24.66</span></td>
+<td><span>18.92</span></td>
+<td><span>19.99</span></td>
+<td><span>21.19</span></td>
+<td><span>22.43</span></td>
+<td><span>5.41</span></td>
+<td><span>5.51</span></td>
+<td><span>11.77</span></td>
+<td><span>12.01</span></td>
+<td><span>31.63</span></td>
+<td><span>32.43</span></td></tr>
+<tr>
+<th><span>mLateOn</span></th>
+<td><span>52.85</span></td>
+<td><span>56.45</span></td>
+<td><span>53.12</span></td>
+<td><span>57.92</span></td>
+<td><span>60.98</span></td>
+<td><span>65.62</span></td>
+<td><span>29.02</span></td>
+<td><span>29.66</span></td>
+<td><span>22.55</span></td>
+<td><span>23.21</span></td>
+<td><span>26.04</span></td>
+<td><span>26.81</span></td>
+<td><span>8.44</span></td>
+<td><span>8.52</span></td>
+<td><span>15.51</span></td>
+<td><span>15.68</span></td>
+<td><span>43.11</span></td>
+<td><span>43.50</span></td></tr>
+<tr>
+<th><span>pplx-embed-v1-late-0.6B</span></th>
+<td><span>56.56</span></td>
+<td><span>60.75</span></td>
+<td><span>58.14</span></td>
+<td><span>63.80</span></td>
+<td><span>63.40</span></td>
+<td><span>68.95</span></td>
+<td><span>31.37</span></td>
+<td><span>32.07</span></td>
+<td><span>25.01</span></td>
+<td><span>25.77</span></td>
+<td><span>27.04</span></td>
+<td><span>27.91</span></td>
+<td><span>9.13</span></td>
+<td><span>9.19</span></td>
+<td><span>17.25</span></td>
+<td><span>17.39</span></td>
+<td><span>43.39</span></td>
+<td><span>43.78</span></td></tr>
+</tbody>
+</table></div><div class="tbl-foot">수치와 표 구조는 원문 그대로 옮겼다.</div></div></p><p>Qwen3 family는 0.6B→4B→8B로 커지며 Combined Recall@1000이 57.89→62.01→64.53으로 증가했다. late interaction은 dense보다 항상 우세하지 않았고, nDCG@10에서는 차이가 줄었다.</p><p><figure><div class="fig-top"><span class="fnum">FIG 7</span><span class="ftitle">분야·언어별 Recall@1000</span></div><div class="imgbox"><img alt="Q2D-Web 분야 및 언어별 retriever 성능 heatmap" decoding="async" loading="lazy" src="/paper-assets/7535897058f94f0ba57a2b6fe2cda15a736e63744f197b5a05bd252609e777e1.png"/></div><figcaption>retriever의 순위와 격차가 분야·언어에 따라 달라진다.</figcaption></figure></p><p><figure><div class="fig-top"><span class="fnum">FIG 8</span><span class="ftitle">primary와 support query 성능 차이</span></div><div class="imgbox"><img alt="Q2D-Web primary 및 support query의 Recall 비교" decoding="async" loading="lazy" src="/paper-assets/585aaf938a2b4c81d02d9fc6214a2c9f1b1e19eed2da2e53955ff4eb94d675f8.png"/></div><figcaption>모든 neural retriever는 support query에서 낮아지고 BM25는 1.9포인트 높아진다.</figcaption></figure></p><p>문서의 첫 512 token만 encode했기 때문에 평균 약 3.3k token 문서의 대부분은 모델이 보지 못했다. 긴 입력 spot check가 순위를 바꾸지는 않았지만 full-document 성능을 보장하지는 않는다.</p><div class="call ar"><div class="ct">초등학생도 이해하는 설명</div><p>큰 돋보기가 대체로 잘 찾지만, “많이 찾기”와 “맨 위에 잘 놓기”의 우승자는 다르다. AI가 만든 도우미 질문은 사람 질문보다 더 어려웠다.</p></div></section>
+<section class="ch" id="c6"><div class="ch-eyebrow"><span class="cnum">06</span><span class="clabel">Analysis · 해석</span></div><h2 class="ch-title">약한 BM25가 다른 누구도 못 찾은 정답을 가장 많이 찾았다</h2><div class="tldr"><div class="h">한눈에 요약</div><p>BM25의 전체 Recall은 44.77로 최하였지만 독점 양성 14,621개로 2위의 거의 6배였다. 강한 neural model끼리만 합치는 것보다 서로 다른 family를 섞을 가능성을 보여 준다.</p></div><p>pplx-4B와 Nemotron-8B는 전체 recall이 높지만 독점 양성은 각각 884개와 705개다. 평균 점수와 ensemble 기여는 같은 순서가 아니다.</p><p><figure><div class="fig-top"><span class="fnum">FIG 9</span><span class="ftitle">hard negative·positive 분류 prompt</span></div><div class="imgbox"><img alt="Q2D-Web retrieval error taxonomy prompt" decoding="async" loading="lazy" src="/paper-assets/c05c80f1ec9bd9c8d7dae6b76587483777de40ec971e9767101c86312bb36d0c.png"/></div><figcaption>모두가 틀리는 문서 쌍을 wrong aspect, lexical gap, truncation, multilingual 등으로 나누는 prompt다.</figcaption></figure></p><p>hard negative 표본의 15.8%는 재판정하면 실제 relevant였다. 진짜 hard negative는 wrong aspect 39.0%, partial 17.8%, related entity 13.8%가 컸다. 어떤 retriever도 top-1000에 못 올린 6,424개 hard positive는 lexical gap 51.1%, truncation 17.7%, multilingual 15.4%였다.</p><p><div class="tbl-wrap"><div class="tbl-cap"><span class="tn">TABLE 4</span>label pooling과 subcorpus sampling에 사용한 2025년 이전 retriever</div><div class="tbl-scroll"><table class="ltx_tabular ltx_centering ltx_guessed_headers ltx_align_middle" id="A1.T4.4">
+<thead>
+<tr>
+<th><span>Model</span></th>
+<th><span>Type</span></th>
+<th><span>Params</span></th>
+<th><span>Dim.</span></th>
+<th><span>Max tok.</span></th>
+<th><span>Lang.</span></th></tr>
+</thead>
+<tbody>
+<tr>
+<td><span>BM25-tantivy <cite>(Robertson and Zaragoza, 2009)</cite></span></td>
+<td><span>lexical</span></td>
+<td><span>–</span></td>
+<td><span>–</span></td>
+<td><span>–</span></td>
+<td><span>multi</span></td></tr>
+<tr>
+<td><span>ColBERTv2 <cite>(Santhanam et al., 2022)</cite></span></td>
+<td><span>late int.</span></td>
+<td><span>110M</span></td>
+<td><span>128</span></td>
+<td><span>180</span></td>
+<td><span>en</span></td></tr>
+<tr>
+<td><span>arctic-l-v2 <cite>(Yu et al., 2024)</cite></span></td>
+<td><span>dense</span></td>
+<td><span>568M</span></td>
+<td><span>1024</span></td>
+<td><span>8192</span></td>
+<td><span>multi</span></td></tr>
+<tr>
+<td><span>bge-m3 <cite>(Chen et al., 2024a)</cite></span></td>
+<td><span>dense</span></td>
+<td><span>568M</span></td>
+<td><span>1024</span></td>
+<td><span>8192</span></td>
+<td><span>multi</span></td></tr>
+<tr>
+<td><span>e5-large-instruct <cite>(Wang et al., 2024)</cite></span></td>
+<td><span>dense</span></td>
+<td><span>560M</span></td>
+<td><span>1024</span></td>
+<td><span>512</span></td>
+<td><span>multi</span></td></tr>
+<tr>
+<td><span>gte-multilingual-base <cite>(Zhang et al., 2024)</cite></span></td>
+<td><span>dense</span></td>
+<td><span>305M</span></td>
+<td><span>768</span></td>
+<td><span>8192</span></td>
+<td><span>multi</span></td></tr>
+<tr>
+<td><span>mxbai-large-v1 <cite>(Lee et al., 2024; Li and Li, 2023)</cite></span></td>
+<td><span>dense</span></td>
+<td><span>335M</span></td>
+<td><span>1024</span></td>
+<td><span>512</span></td>
+<td><span>en</span></td></tr>
+<tr>
+<td><span>nomic-v1.5 <cite>(Nussbaum et al., 2024)</cite></span></td>
+<td><span>dense</span></td>
+<td><span>137M</span></td>
+<td><span>768</span></td>
+<td><span>8192</span></td>
+<td><span>en</span></td></tr>
+<tr>
+<td><span>stella-400m-v5 <cite>(Zhang et al., 2025a)</cite></span></td>
+<td><span>dense</span></td>
+<td><span>435M</span></td>
+<td><span>1024</span></td>
+<td><span>512</span></td>
+<td><span>en</span></td></tr>
+</tbody>
+</table></div><div class="tbl-foot">수치와 표 구조는 원문 그대로 옮겼다.</div></div></p><div class="call ar"><div class="ct">초등학생도 이해하는 설명</div><p>늘 1등인 친구도 못 푸는 문제를 꼴찌 친구가 혼자 풀 수 있다. 팀을 만들 때 평균 점수뿐 아니라 “남들이 못 푸는 어떤 문제를 푸는지”를 봐야 한다.</p></div></section>
+<section class="ch" id="c7"><div class="ch-eyebrow"><span class="cnum">07</span><span class="clabel">Decision · 결론</span></div><h2 class="ch-title">검색 설계는 평균 1등 한 개가 아니라 질의 분포와 독점 recall로 고른다</h2><div class="tldr"><div class="h">한눈에 요약</div><p>agentic RAG에서는 primary/support를 나눠 보고, dense·late·lexical의 독점 양성과 실패 유형을 측정해야 한다. 축소 corpus는 빠른 후보 선별용이지 절대 점수의 대체물이 아니다.</p></div><p>실무 임계점은 문서 수가 커졌다는 사실만이 아니다. <strong>agent가 만든 support query에서 recall이 떨어지고, 강한 dense retriever들이 같은 정답을 반복해서 놓치는지</strong>가 hybrid retrieval을 켤 신호다.</p><p>이 논문은 retrieval benchmark이지 GraphRAG 논문이 아니다. HNSW나 knowledge graph traversal을 비교하지 않는다. BM25·single-vector dense·multi-vector late interaction이라는 검색 표현 계열을 비교한다.</p><p>가장 큰 근거 경계는 private benchmark다. 개인정보 보호와 contamination 방지에는 유리하지만, 외부 연구자가 corpus·질의·label을 직접 감사하거나 완전히 재현할 수 없다. LLM judge가 자기 label을 재검토한 error analysis도 독립 판정은 아니다.</p><div class="call ar"><div class="ct">초등학생도 이해하는 설명</div><p>AI가 실제로 묻는 질문으로 먼저 시험하고, 한 검색기가 계속 놓치는 종류를 다른 검색기가 채우는지 본다. 작은 시험장은 빠른 예선이고, 마지막 결승은 큰 책장에서 다시 해야 한다.</p></div></section>
+<section class="ch" id="gloss"><div class="ch-eyebrow"><span class="cnum">＋</span><span class="clabel">Glossary · 핵심 용어</span></div><h2 class="ch-title">핵심 용어 정리</h2><div class="gloss"><div class="gitem"><div class="term">첫 단계 검색기<span class="en">First-stage retriever</span></div><p>전체 corpus에서 reranker가 볼 후보 수백~수천 개를 빠르게 고르는 검색기.</p></div><div class="gitem"><div class="term">Primary query<span class="en">Primary query</span></div><p>사용자 의도를 대화 문맥과 함께 대표적으로 다시 쓴 질의.</p></div><div class="gitem"><div class="term">Support query<span class="en">Support query</span></div><p>배경·다른 표현·인접 entity를 찾기 위해 agent가 추가한 질의.</p></div><div class="gitem"><div class="term">Recall@1000<span class="en">Recall at 1000</span></div><p>관련 문서 중 top-1000 안에 들어온 비율.</p></div><div class="gitem"><div class="term">Late interaction<span class="en">Late interaction</span></div><p>query/document token vector 여러 개를 검색 시점에 비교하는 방식.</p></div><div class="gitem"><div class="term">RRF<span class="en">Reciprocal Rank Fusion</span></div><p>여러 순위에서 위에 나온 문서에 큰 점수를 주어 목록을 합치는 방법.</p></div></div></section>
+<section class="ch" id="take"><div class="ch-eyebrow"><span class="cnum">＋</span><span class="clabel">One-page Summary · 한 장 정리</span></div><h2 class="ch-title">이 논문을 한 장으로</h2><div class="takeaways"><div class="take"><div class="n">01</div><div class="body"><b>agent가 실제로 쓰는 질의 분포로 검색기를 시험해야 한다.</b></div></div><div class="take"><div class="n">02</div><div class="body">69,721개 질의 중 82.3%가 support query였고 neural retriever는 여기서 약했다.</div></div><div class="take"><div class="n">03</div><div class="body">Combined Recall@1000 최고는 pplx-embed-v1-4b 69.11이었다.</div></div><div class="take"><div class="n">04</div><div class="body">BM25는 최저 평균 recall이지만 독점 양성 14,621개를 찾았다.</div></div><div class="take"><div class="n">05</div><div class="body">약 31.7% RRF corpus는 model 순위를 보존하지만 절대 recall을 부풀린다.</div></div><div class="take"><div class="n">06</div><div class="body">private benchmark라 독립 재현·감사에는 뚜렷한 한계가 있다.</div></div></div></section>

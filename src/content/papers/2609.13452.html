@@ -1,0 +1,68 @@
+<section class="ch" id="c1">
+<div class="ch-eyebrow"><span class="cnum">01</span><span class="clabel">Background · 배경</span></div>
+<h2 class="ch-title">임베딩 검색의 도로를 그래프로 배치한다</h2>
+<div class="tldr"><div class="h">한눈에 요약</div><p>분산 벡터 검색은 보통 모든 샤드에 질문을 보내고 결과를 합친다. COMPASS는 지식 그래프에서 가까운 개체를 같은 샤드에 놓고, 질문 속 개체에서 Personalized PageRank로 관련 샤드만 고른다.</p></div>
+<p class="lead">핵심은 새 임베딩 모델이 아니라 <strong>어떤 벡터를 어느 서버에 둘지</strong>를 그래프 관계로 정하는 것이다.</p><p>각 사실은 주어(subject) 개체가 놓인 샤드에 저장된다. 샤드 안에서는 기존 HNSW가 평소처럼 벡터 유사도를 계산하므로, 그래프는 저장 위치와 검색 범위를 안내하고 최종 순위를 대신하지 않는다.</p><div class="call ar"><div class="ct">초등학생도 이해하는 설명</div><p>책을 도서관 방에 나눠 놓는다고 하자. 서로 친구인 책은 같은 방에 두고, 질문에 나온 사람과 가까운 방 두 곳만 먼저 살펴보는 방식이다.</p></div><figure>
+<div class="fig-top"><span class="fnum">FIG 1</span><span class="ftitle">COMPASS의 데이터 배치·삽입·질의 라우팅</span></div>
+<div class="imgbox"><img alt="COMPASS의 데이터 배치·삽입·질의 라우팅" decoding="async" loading="lazy" src="/paper-assets/bd7a982d24154486c95e24a9ae391dff7af0d82b454c45f003d8452b03c2a6e2.png"/></div>
+<figcaption>그래프를 이용해 사실을 샤드에 배치하고, 질문의 앵커 개체에서 관련 샤드를 선택한 뒤 각 샤드의 ANN 검색을 합친다.</figcaption>
+</figure>
+</section>
+<section class="ch" id="c2">
+<div class="ch-eyebrow"><span class="cnum">02</span><span class="clabel">Method · 방법</span></div>
+<h2 class="ch-title">Louvain으로 공동체를 나누고, PPR로 길을 찾는다</h2>
+<div class="tldr"><div class="h">한눈에 요약</div><p>오프라인에서는 Louvain 커뮤니티를 찾고 너무 큰 커뮤니티만 bounded split으로 나눈다. 온라인 삽입과 질의에서는 이웃 개체를 시작점으로 PPR 질량을 샤드별로 합산한다.</p></div>
+<p class="lead">배치 점수는 개체 유형이 비슷한지와 샤드 부하가 균형적인지를 함께 본다.</p><p>질문에 개체가 명시되면 그 개체들을 앵커로 삼는다. 연결된 앵커가 없으면 질문 임베딩과 샤드 중심 벡터의 코사인 유사도로 돌아간다. 기본 실험은 16샤드 중 2개만 질의했다.</p><div class="call ar"><div class="ct">초등학생도 이해하는 설명</div><p>PPR은 “친구의 친구”를 따라가며 어느 방에 관련 책이 많이 있는지 세는 방법이다. 단, 처음 질문에 나온 친구 주변을 가장 중요하게 센다.</p></div><figure>
+<div class="fig-top"><span class="fnum">FIG 2</span><span class="ftitle">검색한 데이터 비율과 Recall의 비교</span></div>
+<div class="imgbox"><img alt="검색한 데이터 비율과 Recall의 비교" decoding="async" loading="lazy" src="/paper-assets/8ce3dc2d42e7c076580915207203009293bde147f5db8231baae917568e7e332.png"/></div>
+<figcaption>샤드를 더 적게 보면서도 COMPASS가 k-means보다 높은 회수율을 유지하고 broadcast에 근접하는 모습을 보인다.</figcaption>
+</figure><div class="tbl-wrap"><div class="tbl-cap"><span class="tn">TABLE I</span>평가에 사용한 바이오메디컬 지식 그래프</div>
+<div class="tbl-scroll"><table><thead><tr><th>그래프</th><th>간선(사실)</th><th>노드(개체)</th><th>질문</th></tr></thead><tbody><tr><td>PriKG</td><td>298k</td><td>54k</td><td>1044</td></tr><tr><td>HipKG</td><td>190k</td><td>17k</td><td>909</td></tr><tr><td>PhaKG</td><td>91k</td><td>43k</td><td>961</td></tr><tr><td>GoKG</td><td>44k</td><td>44k</td><td>926</td></tr></tbody></table></div></div>
+</section>
+<section class="ch" id="c3">
+<div class="ch-eyebrow"><span class="cnum">03</span><span class="clabel">Evidence · 실험 결과</span></div>
+<h2 class="ch-title">두 샤드만 보고도 다중 홉 근거를 더 많이 건진다</h2>
+<div class="tldr"><div class="h">한눈에 요약</div><p>PriKG·HipKG·PhaKG에서는 그래프 기반 공동 배치가 k-means보다 다중 홉 회수율을 크게 높였다. GoKG는 원래 임베딩만으로도 연결 개체가 가까워 이득이 작았다.</p></div>
+<p class="lead">PriKG에서 15노드·60샤드 기준 COMPASS는 71.8k QPS, p95 1.03ms, Recall@10 .511을 기록했다.</p><p>k-means는 비슷한 속도지만 recall이 .306에 그쳤다. COMPASS의 이득은 정답 간선을 질의 라우팅에서 제거해도 거의 유지되어, 정답을 미리 훔쳐본 결과가 아님을 확인했다.</p><div class="call ar"><div class="ct">초등학생도 이해하는 설명</div><p>그래프를 모르면 비슷하게 생긴 책만 모으게 된다. 그래프를 보면 서로 이어지는 책을 같은 방에 둘 수 있어, 적은 방만 열어도 필요한 이야기를 더 잘 찾는다.</p></div><div class="tbl-wrap"><div class="tbl-cap"><span class="tn">TABLE II</span>두 샤드만 검색할 때의 Recall@10</div>
+<div class="tbl-scroll"><table><thead><tr><th>그래프</th><th>COMPASS</th><th>k-means</th><th>Broadcast</th><th>검색한 말뭉치</th><th>다중 홉 COMPASS</th></tr></thead><tbody><tr><td>PriKG</td><td>.496</td><td>.335</td><td>.469</td><td>17.4%</td><td>.324</td></tr><tr><td>HipKG</td><td>.434</td><td>.338</td><td>.393</td><td>12.8%</td><td>.217</td></tr><tr><td>PhaKG</td><td>.587</td><td>.396</td><td>.567</td><td>14.8%</td><td>.176</td></tr><tr><td>GoKG</td><td>.571</td><td>.523</td><td>.601</td><td>18.5%</td><td>.372</td></tr></tbody></table></div><div class="tbl-foot">다중 홉은 여러 사실을 이어야 하는 질문이다. 원문에는 각 기준선의 다중 홉 값도 함께 제시되어 있다.</div></div><div class="tbl-wrap"><div class="tbl-cap"><span class="tn">TABLE III</span>PriKG, 128샤드에서 배치 방식 비교</div>
+<div class="tbl-scroll"><table><thead><tr><th>전략</th><th>커뮤니티 span</th><th>Gini</th><th>검색 비율</th><th>Recall@10</th><th>QPS</th></tr></thead><tbody><tr><td>커뮤니티 분할 없음</td><td>1.00</td><td>.95</td><td>44.6%</td><td>.465</td><td>15.0k</td></tr><tr><td>COMPASS</td><td>1.02</td><td>.37</td><td>2.9%</td><td>.511</td><td>18.6k</td></tr><tr><td>완전 분산</td><td>1.78</td><td>.19</td><td>3.1%</td><td>.488</td><td>16.2k</td></tr></tbody></table></div></div><div class="tbl-wrap"><div class="tbl-cap"><span class="tn">TABLE IV</span>15노드·60샤드 시스템 성능</div>
+<div class="tbl-scroll"><table><thead><tr><th>전략</th><th>QPS(k)</th><th>p95(ms)</th><th>Recall@10</th><th>CPU%</th><th>메모리(GB)</th></tr></thead><tbody><tr><td>ID-hash broadcast</td><td>9.0</td><td>8.09</td><td>.473</td><td>15.4</td><td>5.1</td></tr><tr><td>k-means</td><td>70.2</td><td>.99</td><td>.306</td><td>7.5</td><td>5.2</td></tr><tr><td>분할 없음</td><td>49.6</td><td>1.73</td><td>.464</td><td>17.7</td><td>6.1</td></tr><tr><td>COMPASS</td><td>71.8</td><td>1.03</td><td>.511</td><td>5.6</td><td>5.4</td></tr></tbody></table></div></div><figure>
+<div class="fig-top"><span class="fnum">FIG 3</span><span class="ftitle">커뮤니티 분할이 부하와 지역성을 조절하는 방식</span></div>
+<div class="imgbox"><img alt="커뮤니티 분할이 부하와 지역성을 조절하는 방식" decoding="async" loading="lazy" src="/paper-assets/0ba4bb6733057dfc1020dd44e5298f33e0b6aee668a84c80ddb8eaa000ff967d.png"/></div>
+<figcaption>큰 공동체를 그대로 두면 한 샤드가 과부하가 되고, 모두 흩으면 관련 근거가 분산된다. bounded split은 두 문제의 중간을 택한다.</figcaption>
+</figure><figure>
+<div class="fig-top"><span class="fnum">FIG 4</span><span class="ftitle">노드 수 확장과 recall</span></div>
+<div class="imgbox"><img alt="노드 수 확장과 recall" decoding="async" loading="lazy" src="/paper-assets/d512ca9cfaa8f29325b50d519ac5eac762240659f0b6ee1cf83139f61561ca49.png"/></div>
+<figcaption>선택적 검색은 노드를 늘릴수록 처리량이 커지고, COMPASS는 k-means보다 높은 recall을 유지한다.</figcaption>
+</figure>
+</section>
+<section class="ch" id="c4">
+<div class="ch-eyebrow"><span class="cnum">04</span><span class="clabel">Trade-offs · 비용</span></div>
+<h2 class="ch-title">검색은 빨라지지만 그래프 구축 비용과 범위가 있다</h2>
+<div class="tldr"><div class="h">한눈에 요약</div><p>초기 구축은 6.0–29.6초이며, 새 데이터 라우팅은 그래프가 크거나 복잡할수록 늘어난다. 라우터 자체 메모리는 4.6–13.1MB로 작고, PriKG에서는 약 75만 질의 뒤 구축 비용이 상쇄된다.</p></div>
+<p class="lead">속도는 “두 샤드만 검색”에서, 품질은 “그래프 관련 사실을 함께 배치”한 데서 나온다.</p><p>세그먼트 수를 늘리면 recall은 거의 그대로지만 각 샤드에서 할 일이 늘어 처리량이 감소한다. 따라서 샤드 수·세그먼트·노드 수를 함께 조정해야 한다.</p><div class="call ar"><div class="ct">초등학생도 이해하는 설명</div><p>방을 적게 열면 빨라지지만, 어느 방에 책을 넣었는지가 틀리면 중요한 책을 놓친다. COMPASS는 책을 잘 나누는 준비 작업을 먼저 한다.</p></div><div class="tbl-wrap"><div class="tbl-cap"><span class="tn">TABLE V</span>COMPASS 구축 시간(초)</div>
+<div class="tbl-scroll"><table><thead><tr><th>단계</th><th>PriKG</th><th>HipKG</th><th>PhaKG</th><th>GoKG</th></tr></thead><tbody><tr><td>대량 배치</td><td>1.21</td><td>.74</td><td>.24</td><td>.25</td></tr><tr><td>커뮤니티 검출</td><td>.15</td><td>.10</td><td>.06</td><td>.07</td></tr><tr><td>bounded split</td><td>.80</td><td>.61</td><td>.05</td><td>.04</td></tr><tr><td>샤드 할당</td><td>.26</td><td>.03</td><td>.13</td><td>.14</td></tr><tr><td>새 데이터 라우팅</td><td>20.2</td><td>5.4</td><td>8.5</td><td>1.4</td></tr><tr><td>Qdrant 삽입</td><td>1.1</td><td>.8</td><td>.5</td><td>.3</td></tr><tr><td>HNSW 인덱싱</td><td>7.1</td><td>4.0</td><td>4.0</td><td>4.0</td></tr><tr><td>전체</td><td>29.6</td><td>10.9</td><td>13.2</td><td>6.0</td></tr></tbody></table></div></div><div class="tbl-wrap"><div class="tbl-cap"><span class="tn">TABLE VI</span>샤드당 HNSW 세그먼트 수의 영향</div>
+<div class="tbl-scroll"><table><thead><tr><th>세그먼트/샤드</th><th>COMPASS QPS</th><th>COMPASS p95</th><th>COMPASS R@10</th><th>Broadcast QPS</th><th>Broadcast p95</th><th>Broadcast R@10</th></tr></thead><tbody><tr><td>2</td><td>16.0</td><td>1.4</td><td>.491</td><td>8.5</td><td>2.3</td><td>.471</td></tr><tr><td>4</td><td>14.7</td><td>1.6</td><td>.496</td><td>6.6</td><td>3.2</td><td>.472</td></tr><tr><td>8</td><td>12.1</td><td>1.9</td><td>.498</td><td>3.3</td><td>8.3</td><td>.477</td></tr><tr><td>16</td><td>8.9</td><td>2.9</td><td>.496</td><td>1.8</td><td>16.4</td><td>.480</td></tr></tbody></table></div></div><figure>
+<div class="fig-top"><span class="fnum">FIG 5</span><span class="ftitle">최종 RAG 답변 정확도</span></div>
+<div class="imgbox"><img alt="최종 RAG 답변 정확도" decoding="async" loading="lazy" src="/paper-assets/3152fab7288927670c6ccd997145b9bb5f4ccd1815779e15501e607d83229f35.png"/></div>
+<figcaption>그래프 기반 선택적 검색은 PriKG·HipKG·PhaKG의 독자 모델 답변 정확도도 높였고, GoKG처럼 임베딩이 이미 좋은 경우에는 차이가 작다.</figcaption>
+</figure>
+</section>
+<section class="ch" id="c5">
+<div class="ch-eyebrow"><span class="cnum">05</span><span class="clabel">Limits · 해석 경계</span></div>
+<h2 class="ch-title">그래프는 벡터 검색을 대체하지 않고, 배치·라우팅을 보조한다</h2>
+<div class="tldr"><div class="h">한눈에 요약</div><p>실험은 4개의 중간 규모 바이오메디컬 KG, 하나의 임베딩 인코더, Qdrant/HNSW에 한정됐다. 억지로 연결할 앵커가 없는 질문은 centroid fallback을 쓰므로 그래프 이득이 제한된다.</p></div>
+<p class="lead">이 논문을 “GraphRAG가 답을 추론한다”로 읽으면 안 된다. <strong>그래프는 지식 추론기라기보다 분산 벡터 검색의 교통 지도</strong>다.</p><p>수십억 규모·다른 도메인·다른 인덱스에서 같은 수치가 재현되는지는 아직 확인되지 않았다.</p><div class="call ar"><div class="ct">초등학생도 이해하는 설명</div><p>그래프는 답을 직접 말해주는 선생님이 아니라, 필요한 책이 있는 도서관 방을 빨리 알려주는 안내판이다.</p></div><div class="call arb"><div class="ct">실전 판독법</div><p>HNSW·Vamana·nearest-neighbor만 나오면 벡터 검색 내부 도로일 가능성이 크다. COMPASS처럼 Louvain·PPR·개체-샤드 매핑이 나오면 그래프가 저장 배치와 라우팅에 쓰인 것이다.</p></div>
+</section>
+<section class="ch" id="gloss">
+<div class="ch-eyebrow"><span class="cnum">＋</span><span class="clabel">Glossary · 핵심 용어</span></div>
+<h2 class="ch-title">핵심 용어 정리</h2>
+<div class="tldr"><div class="h">한눈에 요약</div><p>논문의 주장을 따라가는 데 필요한 용어만 간결하게 모았다.</p></div>
+<div class="gloss"><div class="gitem"><div class="term">샤드<span class="en">Shard</span></div><p>전체 벡터 모음을 나눈 서버 단위.</p></div><div class="gitem"><div class="term">Louvain<span class="en">Louvain community detection</span></div><p>서로 많이 연결된 개체 공동체를 찾는 알고리즘.</p></div><div class="gitem"><div class="term">PPR<span class="en">Personalized PageRank</span></div><p>질문에 나온 앵커에서 그래프를 퍼뜨려 관련 노드의 중요도를 계산.</p></div><div class="gitem"><div class="term">HNSW<span class="en">Hierarchical Navigable Small World</span></div><p>벡터와 가까운 벡터를 연결해 근접 이웃을 빨리 찾는 인덱스.</p></div><div class="gitem"><div class="term">Gini<span class="en">Gini coefficient</span></div><p>샤드 부하가 얼마나 한쪽으로 쏠렸는지 나타내는 값. 0은 균등, 1은 극단적 쏠림.</p></div></div>
+</section>
+<section class="ch" id="take">
+<div class="ch-eyebrow"><span class="cnum">＋</span><span class="clabel">One-page Summary · 한 장 정리</span></div>
+<h2 class="ch-title">이 논문을 한 장으로</h2>
+<div class="tldr"><div class="h">한눈에 요약</div><p>문제, 방법, 증거, 한계를 한 번에 다시 정리한다.</p></div>
+<div class="takeaways"><div class="take"><div class="n">01</div><div class="body"><b>그래프는 답 추론이 아니라 데이터 배치·샤드 라우팅에 쓰인다.</b></div></div><div class="take"><div class="n">02</div><div class="body">COMPASS는 질문과 연결된 두 샤드만 검색해도 여러 KG에서 k-means보다 높은 recall을 냈다.</div></div><div class="take"><div class="n">03</div><div class="body">PriKG 15노드에서 71.8k QPS·p95 1.03ms·Recall@10 .511을 기록했다.</div></div><div class="take"><div class="n">04</div><div class="body">다중 홉 이득은 임베딩이 놓치는 그래프 연결성을 같은 샤드에 보존한 데서 나온다.</div></div><div class="take"><div class="n">05</div><div class="body">바이오메디컬 KG·단일 인코더·Qdrant 실험이므로 대규모·타 도메인 일반화는 미확인이다.</div></div></div>
+</section>

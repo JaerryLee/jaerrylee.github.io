@@ -1,0 +1,523 @@
+<section class="ch" id="c1">
+<div class="ch-eyebrow"><span class="cnum">01</span><span class="clabel">Question · 질문</span></div>
+<h2 class="ch-title">HNSW 검색은 정말 로그 비용으로 커지는가</h2>
+<div class="tldr"><div class="h">한눈에 요약</div><p>산업 문서와 기존 논문은 그래프 기반 ANN 검색 비용이 데이터 크기의 로그에 비례한다고 널리 설명한다. 이 논문은 고정 recall에서 HNSW와 Vamana의 실제 거리 계산량을 데이터 규모별로 다시 측정한다.</p></div>
+<p class="lead">핵심 반론은 대부분의 현실적 규모가 아직 <strong>로그 구간에 도달하지 않았다</strong>는 것이다.</p><p>벡터 검색은 정확한 최근접 이웃 대신 recall을 조금 양보해 비용을 줄인다. 따라서 비교에서는 데이터 크기가 커져도 recall을 90–99%로 고정하고 그 정확도를 유지하는 데 필요한 거리 계산을 잰다.</p><figure>
+<div class="fig-top"><span class="fnum">FIG 1</span><span class="ftitle">그래프 인덱스별 간선 선택 규칙</span></div>
+<div class="imgbox"><img alt="그래프 인덱스별 간선 선택 규칙" decoding="async" loading="lazy" src="/paper-assets/3d55303031ed6569bf38352df590b684e0b7ab3a3e2f157eeee8354ba5577e27.png"/></div>
+<figcaption>Randomized NG, SNG, Vamana, τ-MG가 가까움과 방향 다양성을 서로 다르게 보존한다.</figcaption>
+</figure><div class="tbl-wrap"><div class="tbl-cap"><span class="tn">TABLE 1</span>기호 정의</div><div class="tbl-scroll"><table>
+<tr class="ltx_tr" id="S2.T1.7.1">
+<td class="ltx_td ltx_align_left ltx_border_tt" id="S2.T1.7.1.1"><span class="ltx_text ltx_font_bold" id="S2.T1.7.1.1.1">Symbol</span></td>
+<td class="ltx_td ltx_align_left ltx_border_tt" id="S2.T1.7.1.2"><span class="ltx_text ltx_font_bold" id="S2.T1.7.1.2.1">Description</span></td></tr>
+<tr class="ltx_tr" id="S2.T1.7.2">
+<td class="ltx_td ltx_align_left ltx_border_t" colspan="2" id="S2.T1.7.2.1"><span class="ltx_text ltx_font_italic" id="S2.T1.7.2.1.1">Dataset and query</span></td></tr>
+<tr class="ltx_tr" id="S2.T1.7.3">
+<td class="ltx_td ltx_align_left" id="S2.T1.7.3.1"><math class="ltx_Math" display="inline" id="S2.T1.m1"><semantics><mi>N</mi><annotation encoding="application/x-tex">N</annotation></semantics></math></td>
+<td class="ltx_td ltx_align_left" id="S2.T1.7.3.2"><span class="ltx_text" id="S2.T1.7.3.2.1">Number of vectors in the index</span></td></tr>
+<tr class="ltx_tr" id="S2.T1.7.4">
+<td class="ltx_td ltx_align_left" id="S2.T1.7.4.1"><math class="ltx_Math" display="inline" id="S2.T1.m2"><semantics><msub><mi>d</mi><mi>amb</mi></msub><annotation encoding="application/x-tex">d_{\mathrm{amb}}</annotation></semantics></math></td>
+<td class="ltx_td ltx_align_left" id="S2.T1.7.4.2"><span class="ltx_text" id="S2.T1.7.4.2.1">Ambient dimensionality of the embedding space</span></td></tr>
+<tr class="ltx_tr" id="S2.T1.7.5">
+<td class="ltx_td ltx_align_left" id="S2.T1.7.5.1"><math class="ltx_Math" display="inline" id="S2.T1.m3"><semantics><msub><mi>d</mi><mi>int</mi></msub><annotation encoding="application/x-tex">d_{\mathrm{int}}</annotation></semantics></math></td>
+<td class="ltx_td ltx_align_left" id="S2.T1.7.5.2"><span class="ltx_text" id="S2.T1.7.5.2.1">Intrinsic dimensionality of the dataset</span></td></tr>
+<tr class="ltx_tr" id="S2.T1.7.6">
+<td class="ltx_td ltx_align_left" id="S2.T1.7.6.1"><math class="ltx_Math" display="inline" id="S2.T1.m4"><semantics><mi>k</mi><annotation encoding="application/x-tex">k</annotation></semantics></math></td>
+<td class="ltx_td ltx_align_left" id="S2.T1.7.6.2"><span class="ltx_text" id="S2.T1.7.6.2.1">Number of nearest neighbors returned per query</span></td></tr>
+<tr class="ltx_tr" id="S2.T1.7.7">
+<td class="ltx_td ltx_align_left" id="S2.T1.7.7.1"><math class="ltx_Math" display="inline" id="S2.T1.m5"><semantics><mi>q</mi><annotation encoding="application/x-tex">q</annotation></semantics></math></td>
+<td class="ltx_td ltx_align_left" id="S2.T1.7.7.2"><span class="ltx_text" id="S2.T1.7.7.2.1">A query vector</span></td></tr>
+<tr class="ltx_tr" id="S2.T1.7.8">
+<td class="ltx_td ltx_align_left" colspan="2" id="S2.T1.7.8.1"><span class="ltx_text ltx_font_italic" id="S2.T1.7.8.1.1">Index parameters</span></td></tr>
+<tr class="ltx_tr" id="S2.T1.7.9">
+<td class="ltx_td ltx_align_left" id="S2.T1.7.9.1"><math class="ltx_Math" display="inline" id="S2.T1.m6"><semantics><mi>M</mi><annotation encoding="application/x-tex">M</annotation></semantics></math></td>
+<td class="ltx_td ltx_align_left" id="S2.T1.7.9.2"><span class="ltx_text" id="S2.T1.7.9.2.1">Maximum out-degree of each node in the graph</span></td></tr>
+<tr class="ltx_tr" id="S2.T1.7.10">
+<td class="ltx_td ltx_align_left" id="S2.T1.7.10.1"><math class="ltx_Math" display="inline" id="S2.T1.m7"><semantics><mrow><mi>e</mi><mo>​</mo><msub><mi>f</mi><mtext>construction</mtext></msub></mrow><annotation encoding="application/x-tex">ef_{\text{construction}}</annotation></semantics></math><span class="ltx_text" id="S2.T1.7.10.1.1">, <math class="ltx_Math" display="inline" id="S2.T1.m8"><semantics><mrow><mi>e</mi><mo>​</mo><msub><mi>f</mi><mtext>search</mtext></msub></mrow><annotation encoding="application/x-tex">ef_{\text{search}}</annotation></semantics></math></span></td>
+<td class="ltx_td ltx_align_left" id="S2.T1.7.10.2"><span class="ltx_text" id="S2.T1.7.10.2.1">Candidate list size at build and search time</span></td></tr>
+<tr class="ltx_tr" id="S2.T1.7.11">
+<td class="ltx_td ltx_align_left" colspan="2" id="S2.T1.7.11.1"><span class="ltx_text ltx_font_italic" id="S2.T1.7.11.1.1">Cost metrics</span></td></tr>
+<tr class="ltx_tr" id="S2.T1.7.12">
+<td class="ltx_td ltx_align_left" id="S2.T1.7.12.1"><math class="ltx_Math" display="inline" id="S2.T1.m9"><semantics><mi>dc</mi><annotation encoding="application/x-tex">\mathrm{dc}</annotation></semantics></math></td>
+<td class="ltx_td ltx_align_left" id="S2.T1.7.12.2"><span class="ltx_text" id="S2.T1.7.12.2.1">Distance computations per query</span></td></tr>
+<tr class="ltx_tr" id="S2.T1.7.13">
+<td class="ltx_td ltx_align_left" id="S2.T1.7.13.1"><math class="ltx_Math" display="inline" id="S2.T1.m10"><semantics><msub><mi>dc</mi><mtext>build</mtext></msub><annotation encoding="application/x-tex">\mathrm{dc}_{\text{build}}</annotation></semantics></math></td>
+<td class="ltx_td ltx_align_left" id="S2.T1.7.13.2"><span class="ltx_text" id="S2.T1.7.13.2.1">Total distance computations to build an index of size <math class="ltx_Math" display="inline" id="S2.T1.m11"><semantics><mi>N</mi><annotation encoding="application/x-tex">N</annotation></semantics></math></span></td></tr>
+<tr class="ltx_tr" id="S2.T1.7.14">
+<td class="ltx_td ltx_align_left" colspan="2" id="S2.T1.7.14.1"><span class="ltx_text ltx_font_italic" id="S2.T1.7.14.1.1">Query-cost model (Eq. <span class="ltx_text ltx_ref_tag">1</span>, <span class="ltx_text ltx_ref_tag">2</span>, <span class="ltx_text ltx_ref_tag">3</span>)</span></td></tr>
+<tr class="ltx_tr" id="S2.T1.7.15">
+<td class="ltx_td ltx_align_left" id="S2.T1.7.15.1"><math class="ltx_Math" display="inline" id="S2.T1.m12"><semantics><mi>c</mi><annotation encoding="application/x-tex">c</annotation></semantics></math></td>
+<td class="ltx_td ltx_align_left" id="S2.T1.7.15.2"><span class="ltx_text" id="S2.T1.7.15.2.1">Query-cost scaling exponent, <math class="ltx_Math" display="inline" id="S2.T1.m13"><semantics><mrow><mi>dc</mi><mo>∝</mo><msup><mi>N</mi><mi>c</mi></msup></mrow><annotation encoding="application/x-tex">\mathrm{dc}\propto N^{c}</annotation></semantics></math></span></td></tr>
+<tr class="ltx_tr" id="S2.T1.7.16">
+<td class="ltx_td ltx_align_left" id="S2.T1.7.16.1"><math class="ltx_Math" display="inline" id="S2.T1.m14"><semantics><msub><mi>c</mi><mn>0</mn></msub><annotation encoding="application/x-tex">c_{0}</annotation></semantics></math></td>
+<td class="ltx_td ltx_align_left" id="S2.T1.7.16.2"><span class="ltx_text" id="S2.T1.7.16.2.1">Dataset-specific baseline exponent</span></td></tr>
+<tr class="ltx_tr" id="S2.T1.7.17">
+<td class="ltx_td ltx_align_left" id="S2.T1.7.17.1"><math class="ltx_Math" display="inline" id="S2.T1.m15"><semantics><mi>α</mi><annotation encoding="application/x-tex">\alpha</annotation></semantics></math></td>
+<td class="ltx_td ltx_align_left" id="S2.T1.7.17.2"><span class="ltx_text" id="S2.T1.7.17.2.1">Sensitivity of <math class="ltx_Math" display="inline" id="S2.T1.m16"><semantics><mi>c</mi><annotation encoding="application/x-tex">c</annotation></semantics></math> to recall demand <math class="ltx_Math" display="inline" id="S2.T1.m17"><semantics><mrow><mi>ln</mi><mo>⁡</mo><mrow><mo stretchy="false">(</mo><mrow><mn>1</mn><mo>/</mo><mi>δ</mi></mrow><mo stretchy="false">)</mo></mrow></mrow><annotation encoding="application/x-tex">\ln(1/\delta)</annotation></semantics></math></span></td></tr>
+<tr class="ltx_tr" id="S2.T1.7.18">
+<td class="ltx_td ltx_align_left" id="S2.T1.7.18.1"><math class="ltx_Math" display="inline" id="S2.T1.m18"><semantics><msub><mi>γ</mi><mn>1</mn></msub><annotation encoding="application/x-tex">\gamma_{1}</annotation></semantics></math><span class="ltx_text" id="S2.T1.7.18.1.1">, <math class="ltx_Math" display="inline" id="S2.T1.m19"><semantics><msub><mi>γ</mi><mn>2</mn></msub><annotation encoding="application/x-tex">\gamma_{2}</annotation></semantics></math></span></td>
+<td class="ltx_td ltx_align_left" id="S2.T1.7.18.2"><span class="ltx_text" id="S2.T1.7.18.2.1">Reduction in <math class="ltx_Math" display="inline" id="S2.T1.m20"><semantics><mi>c</mi><annotation encoding="application/x-tex">c</annotation></semantics></math> per <math class="ltx_Math" display="inline" id="S2.T1.m21"><semantics><mrow><mi>ln</mi><mo>⁡</mo><mrow><mo stretchy="false">(</mo><mrow><mi>e</mi><mo>​</mo><msub><mi>f</mi><mtext>construction</mtext></msub></mrow><mo stretchy="false">)</mo></mrow></mrow><annotation encoding="application/x-tex">\ln(ef_{\text{construction}})</annotation></semantics></math> and per <math class="ltx_Math" display="inline" id="S2.T1.m22"><semantics><mrow><mi>ln</mi><mo>⁡</mo><mrow><mo stretchy="false">(</mo><mi>M</mi><mo stretchy="false">)</mo></mrow></mrow><annotation encoding="application/x-tex">\ln(M)</annotation></semantics></math></span></td></tr>
+<tr class="ltx_tr" id="S2.T1.7.19">
+<td class="ltx_td ltx_align_left" id="S2.T1.7.19.1"><math class="ltx_Math" display="inline" id="S2.T1.m23"><semantics><mi>β</mi><annotation encoding="application/x-tex">\beta</annotation></semantics></math></td>
+<td class="ltx_td ltx_align_left" id="S2.T1.7.19.2"><span class="ltx_text" id="S2.T1.7.19.2.1">Search-side exponent, <math class="ltx_Math" display="inline" id="S2.T1.m24"><semantics><mrow><mrow><mi>dc</mi><mo>/</mo><mi>q</mi></mrow><mo>∝</mo><mrow><mi>e</mi><mo>​</mo><msubsup><mi>f</mi><mtext>search</mtext><mi>β</mi></msubsup></mrow></mrow><annotation encoding="application/x-tex">\mathrm{dc}/q\propto ef_{\text{search}}^{\,\beta}</annotation></semantics></math></span></td></tr>
+<tr class="ltx_tr" id="S2.T1.7.20">
+<td class="ltx_td ltx_align_left" colspan="2" id="S2.T1.7.20.1"><span class="ltx_text ltx_font_italic" id="S2.T1.7.20.1.1">Build-cost model (Eq. <span class="ltx_text ltx_ref_tag">4</span>)</span></td></tr>
+<tr class="ltx_tr" id="S2.T1.7.21">
+<td class="ltx_td ltx_align_left" id="S2.T1.7.21.1"><math class="ltx_Math" display="inline" id="S2.T1.m25"><semantics><mi>κ</mi><annotation encoding="application/x-tex">\kappa</annotation></semantics></math></td>
+<td class="ltx_td ltx_align_left" id="S2.T1.7.21.2"><span class="ltx_text" id="S2.T1.7.21.2.1">Dataset-specific intercept for build cost</span></td></tr>
+<tr class="ltx_tr" id="S2.T1.7.22">
+<td class="ltx_td ltx_align_left" id="S2.T1.7.22.1"><math class="ltx_Math" display="inline" id="S2.T1.m26"><semantics><msup><mi>β</mi><mo>′</mo></msup><annotation encoding="application/x-tex">\beta^{\prime}</annotation></semantics></math></td>
+<td class="ltx_td ltx_align_left" id="S2.T1.7.22.2"><span class="ltx_text" id="S2.T1.7.22.2.1">Exponent of <math class="ltx_Math" display="inline" id="S2.T1.m27"><semantics><mrow><mi>e</mi><mo>​</mo><msub><mi>f</mi><mtext>construction</mtext></msub></mrow><annotation encoding="application/x-tex">ef_{\text{construction}}</annotation></semantics></math> in build cost</span></td></tr>
+<tr class="ltx_tr" id="S2.T1.7.23">
+<td class="ltx_td ltx_align_left" id="S2.T1.7.23.1"><math class="ltx_Math" display="inline" id="S2.T1.m28"><semantics><msubsup><mi>c</mi><mn>0</mn><mo>′</mo></msubsup><annotation encoding="application/x-tex">c^{\prime}_{0}</annotation></semantics></math></td>
+<td class="ltx_td ltx_align_left" id="S2.T1.7.23.2"><span class="ltx_text" id="S2.T1.7.23.2.1">Baseline size-dependence of build cost</span></td></tr>
+<tr class="ltx_tr" id="S2.T1.7.24">
+<td class="ltx_td ltx_align_left ltx_border_bb" id="S2.T1.7.24.1"><math class="ltx_Math" display="inline" id="S2.T1.m29"><semantics><msubsup><mi>γ</mi><mn>2</mn><mo>′</mo></msubsup><annotation encoding="application/x-tex">\gamma^{\prime}_{2}</annotation></semantics></math></td>
+<td class="ltx_td ltx_align_left ltx_border_bb" id="S2.T1.7.24.2"><span class="ltx_text" id="S2.T1.7.24.2.1">Interaction coefficient between <math class="ltx_Math" display="inline" id="S2.T1.m30"><semantics><mrow><mi>ln</mi><mo>⁡</mo><mi>M</mi></mrow><annotation encoding="application/x-tex">\ln M</annotation></semantics></math> and <math class="ltx_Math" display="inline" id="S2.T1.m31"><semantics><mrow><mi>ln</mi><mo>⁡</mo><mi>N</mi></mrow><annotation encoding="application/x-tex">\ln N</annotation></semantics></math></span></td></tr>
+</table></div><div class="tbl-foot">원문 arXiv HTML의 셀과 수치를 순서대로 재구성했다.</div></div><div class="tbl-wrap"><div class="tbl-cap"><span class="tn">TABLE 2</span>실험 데이터셋</div><div class="tbl-scroll"><table>
+<tr class="ltx_tr" id="S2.T2.7.1">
+<td class="ltx_td ltx_align_left ltx_border_tt" id="S2.T2.7.1.1"><span class="ltx_text ltx_font_bold" id="S2.T2.7.1.1.1">Dataset</span></td>
+<td class="ltx_td ltx_align_center ltx_border_tt" id="S2.T2.7.1.2"><span class="ltx_text ltx_font_bold" id="S2.T2.7.1.2.1">Dim.</span></td>
+<td class="ltx_td ltx_align_center ltx_border_tt" id="S2.T2.7.1.3"><span class="ltx_text ltx_font_bold" id="S2.T2.7.1.3.1">Int. Dim. @ 1M</span></td>
+<td class="ltx_td ltx_align_center ltx_border_tt" id="S2.T2.7.1.4"><span class="ltx_text ltx_font_bold" id="S2.T2.7.1.4.1">Type</span></td>
+<td class="ltx_td ltx_align_center ltx_border_tt" id="S2.T2.7.1.5"><span class="ltx_text ltx_font_bold" id="S2.T2.7.1.5.1">Metric</span></td>
+<td class="ltx_td ltx_align_center ltx_border_tt" id="S2.T2.7.1.6"><span class="ltx_text ltx_font_bold" id="S2.T2.7.1.6.1">Model</span></td>
+<td class="ltx_td ltx_align_center ltx_border_tt" id="S2.T2.7.1.7"><span class="ltx_text ltx_font_bold" id="S2.T2.7.1.7.1">Sampled From</span></td></tr>
+<tr class="ltx_tr" id="S2.T2.7.2">
+<td class="ltx_td ltx_align_left ltx_border_t" id="S2.T2.7.2.1"><span class="ltx_text" id="S2.T2.7.2.1.1">SIFT</span></td>
+<td class="ltx_td ltx_align_center ltx_border_t" id="S2.T2.7.2.2"><span class="ltx_text" id="S2.T2.7.2.2.1">128</span></td>
+<td class="ltx_td ltx_align_center ltx_border_t" id="S2.T2.7.2.3"><span class="ltx_text" id="S2.T2.7.2.3.1">19.2</span></td>
+<td class="ltx_td ltx_align_center ltx_border_t" id="S2.T2.7.2.4"><span class="ltx_text" id="S2.T2.7.2.4.1">Image</span></td>
+<td class="ltx_td ltx_align_center ltx_border_t" id="S2.T2.7.2.5"><span class="ltx_text" id="S2.T2.7.2.5.1">L2</span></td>
+<td class="ltx_td ltx_align_center ltx_border_t" id="S2.T2.7.2.6"><span class="ltx_text" id="S2.T2.7.2.6.1">SIFT descriptors <cite class="ltx_cite ltx_citemacro_citep">(Lowe, 2004)</cite></span></td>
+<td class="ltx_td ltx_align_center ltx_border_t" id="S2.T2.7.2.7"><span class="ltx_text" id="S2.T2.7.2.7.1">SIFT1B <cite class="ltx_cite ltx_citemacro_citep">(Jégou et al., 2011)</cite></span></td></tr>
+<tr class="ltx_tr" id="S2.T2.7.3">
+<td class="ltx_td ltx_align_left" id="S2.T2.7.3.1"><span class="ltx_text" id="S2.T2.7.3.1.1">DEEP</span></td>
+<td class="ltx_td ltx_align_center" id="S2.T2.7.3.2"><span class="ltx_text" id="S2.T2.7.3.2.1">96</span></td>
+<td class="ltx_td ltx_align_center" id="S2.T2.7.3.3"><span class="ltx_text" id="S2.T2.7.3.3.1">20.7</span></td>
+<td class="ltx_td ltx_align_center" id="S2.T2.7.3.4"><span class="ltx_text" id="S2.T2.7.3.4.1">Image</span></td>
+<td class="ltx_td ltx_align_center" id="S2.T2.7.3.5"><span class="ltx_text" id="S2.T2.7.3.5.1">L2</span></td>
+<td class="ltx_td ltx_align_center" id="S2.T2.7.3.6"><span class="ltx_text" id="S2.T2.7.3.6.1">GoogLeNet <cite class="ltx_cite ltx_citemacro_citep">(Szegedy et al., 2015)</cite></span></td>
+<td class="ltx_td ltx_align_center" id="S2.T2.7.3.7"><span class="ltx_text" id="S2.T2.7.3.7.1">DEEP1B <cite class="ltx_cite ltx_citemacro_citep">(Babenko and Lempitsky, 2016)</cite></span></td></tr>
+<tr class="ltx_tr" id="S2.T2.7.4">
+<td class="ltx_td ltx_align_left" id="S2.T2.7.4.1"><span class="ltx_text" id="S2.T2.7.4.1.1">SpaceV</span></td>
+<td class="ltx_td ltx_align_center" id="S2.T2.7.4.2"><span class="ltx_text" id="S2.T2.7.4.2.1">100</span></td>
+<td class="ltx_td ltx_align_center" id="S2.T2.7.4.3"><span class="ltx_text" id="S2.T2.7.4.3.1">29.2</span></td>
+<td class="ltx_td ltx_align_center" id="S2.T2.7.4.4"><span class="ltx_text" id="S2.T2.7.4.4.1">Text</span></td>
+<td class="ltx_td ltx_align_center" id="S2.T2.7.4.5"><span class="ltx_text" id="S2.T2.7.4.5.1">L2</span></td>
+<td class="ltx_td ltx_align_center" id="S2.T2.7.4.6"><span class="ltx_text" id="S2.T2.7.4.6.1">SpaceV Superior <cite class="ltx_cite ltx_citemacro_citep">(Shan et al., 2021)</cite></span></td>
+<td class="ltx_td ltx_align_center" id="S2.T2.7.4.7"><span class="ltx_text" id="S2.T2.7.4.7.1">SpaceV1B <cite class="ltx_cite ltx_citemacro_citep">(Microsoft, 2021)</cite></span></td></tr>
+<tr class="ltx_tr" id="S2.T2.7.5">
+<td class="ltx_td ltx_align_left" id="S2.T2.7.5.1"><span class="ltx_text" id="S2.T2.7.5.1.1">Wiki</span></td>
+<td class="ltx_td ltx_align_center" id="S2.T2.7.5.2"><span class="ltx_text" id="S2.T2.7.5.2.1">768</span></td>
+<td class="ltx_td ltx_align_center" id="S2.T2.7.5.3"><span class="ltx_text" id="S2.T2.7.5.3.1">30.1</span></td>
+<td class="ltx_td ltx_align_center" id="S2.T2.7.5.4"><span class="ltx_text" id="S2.T2.7.5.4.1">Text</span></td>
+<td class="ltx_td ltx_align_center" id="S2.T2.7.5.5"><span class="ltx_text" id="S2.T2.7.5.5.1">L2</span></td>
+<td class="ltx_td ltx_align_center" id="S2.T2.7.5.6"><span class="ltx_text" id="S2.T2.7.5.6.1">MPNet <cite class="ltx_cite ltx_citemacro_citep">(Song et al., 2020)</cite></span></td>
+<td class="ltx_td ltx_align_center" id="S2.T2.7.5.7"><span class="ltx_text" id="S2.T2.7.5.7.1">Wiki-all <cite class="ltx_cite ltx_citemacro_citep">(RAPIDS Team, 2024)</cite></span></td></tr>
+<tr class="ltx_tr" id="S2.T2.7.6">
+<td class="ltx_td ltx_align_left" id="S2.T2.7.6.1"><span class="ltx_text" id="S2.T2.7.6.1.1">GloVe</span></td>
+<td class="ltx_td ltx_align_center" id="S2.T2.7.6.2"><span class="ltx_text" id="S2.T2.7.6.2.1">100</span></td>
+<td class="ltx_td ltx_align_center" id="S2.T2.7.6.3"><span class="ltx_text" id="S2.T2.7.6.3.1">32.4</span></td>
+<td class="ltx_td ltx_align_center" id="S2.T2.7.6.4"><span class="ltx_text" id="S2.T2.7.6.4.1">Text</span></td>
+<td class="ltx_td ltx_align_center" id="S2.T2.7.6.5"><span class="ltx_text" id="S2.T2.7.6.5.1">Angular</span></td>
+<td class="ltx_td ltx_align_center" id="S2.T2.7.6.6"><span class="ltx_text" id="S2.T2.7.6.6.1">GloVe <cite class="ltx_cite ltx_citemacro_citep">(Pennington et al., 2014)</cite></span></td>
+<td class="ltx_td ltx_align_center" id="S2.T2.7.6.7"><span class="ltx_text" id="S2.T2.7.6.7.1">GloVe-100 <cite class="ltx_cite ltx_citemacro_citep">(Pennington et al., 2014)</cite></span></td></tr>
+<tr class="ltx_tr" id="S2.T2.7.7">
+<td class="ltx_td ltx_align_left" id="S2.T2.7.7.1"><span class="ltx_text" id="S2.T2.7.7.1.1">Rand64</span></td>
+<td class="ltx_td ltx_align_center" id="S2.T2.7.7.2"><span class="ltx_text" id="S2.T2.7.7.2.1">64</span></td>
+<td class="ltx_td ltx_align_center" id="S2.T2.7.7.3"><span class="ltx_text" id="S2.T2.7.7.3.1">40.2</span></td>
+<td class="ltx_td ltx_align_center" id="S2.T2.7.7.4"><span class="ltx_text" id="S2.T2.7.7.4.1">Synthetic</span></td>
+<td class="ltx_td ltx_align_center" id="S2.T2.7.7.5"><span class="ltx_text" id="S2.T2.7.7.5.1">Angular</span></td>
+<td class="ltx_td ltx_align_center" id="S2.T2.7.7.6"><span class="ltx_text" id="S2.T2.7.7.6.1">—</span></td>
+<td class="ltx_td ltx_align_center" id="S2.T2.7.7.7"><math class="ltx_Math" display="inline" id="S2.T2.m1"><semantics><mrow><mi>Unif</mi><mo>⁡</mo><mrow><mo>(</mo><msup><mi>S</mi><mn>63</mn></msup><mo>)</mo></mrow></mrow><annotation encoding="application/x-tex">\mathrm{Unif}(S^{63})</annotation></semantics></math><span class="ltx_note ltx_role_footnote" id="footnote5"><sup class="ltx_note_mark">5</sup><span class="ltx_note_outer"><span class="ltx_note_content"><sup class="ltx_note_mark">5</sup>
+<span class="ltx_tag ltx_tag_note">5</span>
+
+
+
+              Generated by sampling each vector i.i.d. from <math class="ltx_Math" display="inline" id="footnote5.m1"><semantics><mrow><mi class="ltx_font_mathcaligraphic">𝒩</mi><mo>⁡</mo><mrow><mo stretchy="false">(</mo><mn>0</mn><mo>,</mo><msub><mi>I</mi><mn>64</mn></msub><mo stretchy="false">)</mo></mrow></mrow><annotation encoding="application/x-tex">\mathcal{N}(0,I_{64})</annotation></semantics></math> and normalizing to unit length, which yields a uniform distribution on <math class="ltx_Math" display="inline" id="footnote5.m2"><semantics><msup><mi>S</mi><mn>63</mn></msup><annotation encoding="application/x-tex">S^{63}</annotation></semantics></math>.</span></span></span></td></tr>
+<tr class="ltx_tr" id="S2.T2.7.8">
+<td class="ltx_td ltx_align_left" id="S2.T2.7.8.1"><span class="ltx_text" id="S2.T2.7.8.1.1">GIST</span></td>
+<td class="ltx_td ltx_align_center" id="S2.T2.7.8.2"><span class="ltx_text" id="S2.T2.7.8.2.1">960</span></td>
+<td class="ltx_td ltx_align_center" id="S2.T2.7.8.3"><span class="ltx_text" id="S2.T2.7.8.3.1">42.5</span></td>
+<td class="ltx_td ltx_align_center" id="S2.T2.7.8.4"><span class="ltx_text" id="S2.T2.7.8.4.1">Image</span></td>
+<td class="ltx_td ltx_align_center" id="S2.T2.7.8.5"><span class="ltx_text" id="S2.T2.7.8.5.1">L2</span></td>
+<td class="ltx_td ltx_align_center" id="S2.T2.7.8.6"><span class="ltx_text" id="S2.T2.7.8.6.1">GIST descriptors <cite class="ltx_cite ltx_citemacro_citep">(Oliva and Torralba, 2001)</cite></span></td>
+<td class="ltx_td ltx_align_center" id="S2.T2.7.8.7"><span class="ltx_text" id="S2.T2.7.8.7.1">GIST1M <cite class="ltx_cite ltx_citemacro_citep">(Jegou et al., 2011)</cite></span></td></tr>
+<tr class="ltx_tr" id="S2.T2.7.9">
+<td class="ltx_td ltx_align_left ltx_border_bb" id="S2.T2.7.9.1"><span class="ltx_text" id="S2.T2.7.9.1.1">OpenAI</span></td>
+<td class="ltx_td ltx_align_center ltx_border_bb" id="S2.T2.7.9.2"><span class="ltx_text" id="S2.T2.7.9.2.1">1536</span></td>
+<td class="ltx_td ltx_align_center ltx_border_bb" id="S2.T2.7.9.3"><span class="ltx_text" id="S2.T2.7.9.3.1">46.5</span></td>
+<td class="ltx_td ltx_align_center ltx_border_bb" id="S2.T2.7.9.4"><span class="ltx_text" id="S2.T2.7.9.4.1">Text</span></td>
+<td class="ltx_td ltx_align_center ltx_border_bb" id="S2.T2.7.9.5"><span class="ltx_text" id="S2.T2.7.9.5.1">L2</span></td>
+<td class="ltx_td ltx_align_center ltx_border_bb" id="S2.T2.7.9.6"><span class="ltx_text" id="S2.T2.7.9.6.1">ada-002 <cite class="ltx_cite ltx_citemacro_citep">(OpenAI, 2022)</cite></span></td>
+<td class="ltx_td ltx_align_center ltx_border_bb" id="S2.T2.7.9.7"><span class="ltx_text" id="S2.T2.7.9.7.1">OpenAI-ArXiv <cite class="ltx_cite ltx_citemacro_citep">(OpenAI-ArXiv, 2023)</cite></span></td></tr>
+</table></div><div class="tbl-foot">원문 arXiv HTML의 셀과 수치를 순서대로 재구성했다.</div></div>
+</section>
+<section class="ch" id="c2">
+<div class="ch-eyebrow"><span class="cnum">02</span><span class="clabel">Measurements · 관측</span></div>
+<h2 class="ch-title">현재 규모에서는 비용이 N^c의 부분선형 멱법칙을 따른다</h2>
+<div class="tldr"><div class="h">한눈에 요약</div><p>8개 데이터셋, 여러 인덱스 설정, 쉬운·어려운 질의에서 고정 recall 비용은 0</p></div>
+<p class="lead">저자들은 이 초기 구간을 Sublinear Power Law라고 부른다.</p><p>이 결과는 선형 스캔보다는 훨씬 낫지만, 로그 성장을 가정한 용량 계획보다는 빠르게 비용이 늘 수 있다는 뜻이다. 회수율 목표가 높고 그래프 구성이 빈약할수록 지수가 커진다.</p><figure>
+<div class="fig-top"><span class="fnum">FIG 2</span><span class="ftitle">데이터 증가 시 비용·재현율</span></div>
+<div class="imgbox"><img alt="데이터 증가 시 비용·재현율" decoding="async" loading="lazy" src="/paper-assets/12eb6c9d6ccd9357090f3bd1d64d416e6ee1d36ad14da45ef1d3f1a8b1b5e83c.png"/></div>
+<figcaption>검색 노력을 고정하면 recall이 낮아지고, recall을 고정하려면 거리 계산량이 커진다.</figcaption>
+</figure><figure>
+<div class="fig-top"><span class="fnum">FIG 3</span><span class="ftitle">고정 재현율에서 데이터 크기와 검색 비용</span></div>
+<div class="imgbox"><img alt="고정 재현율에서 데이터 크기와 검색 비용" decoding="async" loading="lazy" src="/paper-assets/867bd75bee74ee090f39b252873281d50d057ac91b7d89c70cc0873db9307ffd.png"/></div>
+<figcaption>로그-로그 직선은 여러 데이터셋에서 N^c 멱법칙 구간이 길게 지속됨을 보여준다.</figcaption>
+</figure><figure>
+<div class="fig-top"><span class="fnum">FIG 4</span><span class="ftitle">쉬운/어려운 질의의 멱법칙</span></div>
+<div class="imgbox"><img alt="쉬운/어려운 질의의 멱법칙" decoding="async" loading="lazy" src="/paper-assets/d24383ed5709f6308ea6e8521f1c8e85455ca527fc7df8d4ebd0b5686b83c339.png"/></div>
+<figcaption>질의 난도가 달라도 같은 질적 스케일링이 관찰된다.</figcaption>
+</figure><figure>
+<div class="fig-top"><span class="fnum">FIG 5</span><span class="ftitle">10억 규모에서의 비용 증가</span></div>
+<div class="imgbox"><img alt="10억 규모에서의 비용 증가" decoding="async" loading="lazy" src="/paper-assets/906388e6b9f5c95628b3dbfb3626d835e4e6aced2e80c4aaccaee63140f72a12.png"/></div>
+<figcaption>대규모 데이터에서도 멱법칙이 지속되며 일부 데이터에서만 전환이 보인다.</figcaption>
+</figure>
+</section>
+<section class="ch" id="c3">
+<div class="ch-eyebrow"><span class="cnum">03</span><span class="clabel">Theory · 이론</span></div>
+<h2 class="ch-title">국소 내재 차원이 두 비용 구간을 연결한다</h2>
+<div class="tldr"><div class="h">한눈에 요약</div><p>검색 비용은 질의 주변의 작은 이웃에 얼마나 많은 점이 들어가는지에 지배된다. 데이터가 기저 분포를 성기게 표본화할 때 관측 내재 차원은 log N과 함께 커지고, 이웃 크기의 지수적 증가는 N^c가 된다. 충분히 조밀해지면 내재 차원 성장이 둔화해 비용도 부분다항식으로 전환한다.</p></div>
+<p class="lead">즉 멱법칙과 다중로그 주장은 서로 모순이 아니라 같은 분포를 다른 규모에서 본 두 구간이다.</p><p>저자들은 HNSW·Vamana의 정확 구성과 차수 제한 구성에 대해 이 전환을 분석하고 다른 그래프 인덱스로 논리를 확장한다. 다만 조밀 구간에서 SNG와 HNSW shortcut 비용의 타이트한 상한은 열린 문제로 남긴다.</p><figure>
+<div class="fig-top"><span class="fnum">FIG 6</span><span class="ftitle">쿼리 주변 국소 다양체</span></div>
+<div class="imgbox"><img alt="쿼리 주변 국소 다양체" decoding="async" loading="lazy" src="/paper-assets/eb0f62d8c176be6c9bccb965071ba5c31aa22ee2f79cdbdd2b449c49a5af6f57.png"/></div>
+<figcaption>실제 임베딩은 전체 좌표 차원보다 낮은 국소 다양체에 놓이며 이 구조가 탐색 비용을 정한다.</figcaption>
+</figure><figure>
+<div class="fig-top"><span class="fnum">FIG 7</span><span class="ftitle">데이터 규모에 따른 국소 내재 차원</span></div>
+<div class="imgbox"><img alt="데이터 규모에 따른 국소 내재 차원" decoding="async" loading="lazy" src="/paper-assets/13254d1cd4f5d31df412081bc85629e922a4b6e86b46e4cb4ea3617aadc47b8f.png"/></div>
+<figcaption>성긴 구간에서는 내재 차원이 log N과 함께 증가하다 조밀 구간에서 둔화한다.</figcaption>
+</figure><figure>
+<div class="fig-top"><span class="fnum">FIG 8</span><span class="ftitle">희소·조밀 구간의 검색 비용 전환</span></div>
+<div class="imgbox"><img alt="희소·조밀 구간의 검색 비용 전환" decoding="async" loading="lazy" src="/paper-assets/04ab5f7be75becdb420982fcd49d2223a969ab8825f681b633659079cffff1c2.png"/></div>
+<figcaption>국소 이웃의 성장률이 멱법칙에서 부분다항식·다중로그와 일치하는 구간으로 바뀐다.</figcaption>
+</figure><figure>
+<div class="fig-top"><span class="fnum">FIG 9</span><span class="ftitle">HNSW 방문 노드 거리 분포</span></div>
+<div class="imgbox"><img alt="HNSW 방문 노드 거리 분포" decoding="async" loading="lazy" src="/paper-assets/90a5bb44730fc22c93de2f68d5b28567be2973b806da1d94ff2045994b657316.png"/></div>
+<figcaption>검색의 shortcut 단계와 질의 주변 탐색 단계가 비용을 어떻게 나누는지 보여준다.</figcaption>
+</figure><div class="tbl-wrap"><div class="tbl-cap"><span class="tn">TABLE 3</span>데이터 규모별 검색 비용 차수</div><div class="tbl-scroll"><table>
+<tr class="ltx_tr" id="S4.T3.8.1">
+<td class="ltx_td ltx_border_tt" id="S4.T3.8.1.1"></td>
+<td class="ltx_td ltx_align_center ltx_border_tt" colspan="3" id="S4.T3.8.1.2"><span class="ltx_text ltx_font_smallcaps" id="S4.T3.8.1.2.1">Sparse<span class="ltx_text ltx_font_upright" id="S4.T3.8.1.2.1.1">: <math class="ltx_Math" display="inline" id="S4.T3.m3"><semantics><mrow><msub><mi>d</mi><mi>int</mi></msub><mo>=</mo><mrow><mi mathvariant="normal">Θ</mi><mo>⁡</mo><mrow><mo stretchy="false">(</mo><mrow><mi>log</mi><mo>⁡</mo><mi>N</mi></mrow><mo stretchy="false">)</mo></mrow></mrow></mrow><annotation encoding="application/x-tex">d_{\mathrm{int}}=\Theta(\log N)</annotation></semantics></math></span></span></td>
+<td class="ltx_td ltx_border_tt" id="S4.T3.8.1.3"></td>
+<td class="ltx_td ltx_align_center ltx_border_tt" colspan="3" id="S4.T3.8.1.4"><span class="ltx_text ltx_font_smallcaps" id="S4.T3.8.1.4.1">Dense<span class="ltx_text ltx_font_upright" id="S4.T3.8.1.4.1.1">: <math class="ltx_Math" display="inline" id="S4.T3.m4"><semantics><mrow><msub><mi>d</mi><mi>int</mi></msub><mo>=</mo><mrow><mi>o</mi><mo>⁡</mo><mrow><mo stretchy="false">(</mo><mrow><mi>log</mi><mo>⁡</mo><mi>N</mi></mrow><mo stretchy="false">)</mo></mrow></mrow></mrow><annotation encoding="application/x-tex">d_{\mathrm{int}}=o(\log N)</annotation></semantics></math></span></span></td></tr>
+<tr class="ltx_tr" id="S4.T3.8.2">
+<td class="ltx_td ltx_align_left" id="S4.T3.8.2.1"><math class="ltx_Math" display="inline" id="S4.T3.m5"><semantics><mrow><mi>N</mi><mo>:</mo><mphantom></mphantom></mrow><annotation encoding="application/x-tex">N\colon</annotation></semantics></math></td>
+<td class="ltx_td ltx_align_center ltx_border_t" id="S4.T3.8.2.2"><span class="ltx_text ltx_leader" id="S4.T3.8.2.2.1"><span class="ltx_rule"> </span></span></td>
+<td class="ltx_td ltx_align_center ltx_border_t" id="S4.T3.8.2.3"><math class="ltx_Math" display="inline" id="S4.T3.m6"><semantics><mrow><mi>O</mi><mo>⁡</mo><mrow><mo>(</mo><mi>M</mi><mo>)</mo></mrow></mrow><annotation encoding="application/x-tex">O(M)</annotation></semantics></math><sup class="ltx_sup" id="S4.T3.8.2.3.1"><math class="ltx_Math" display="inline" id="S4.T3.m7"><semantics><mo>∗</mo><annotation encoding="application/x-tex">\ast</annotation></semantics></math></sup></td>
+<td class="ltx_td ltx_align_center ltx_border_t" id="S4.T3.8.2.4"><span class="ltx_text ltx_leader" id="S4.T3.8.2.4.1"><span class="ltx_rule"> </span></span></td>
+<td class="ltx_td ltx_align_center" id="S4.T3.8.2.5"><math class="ltx_Math" display="inline" id="S4.T3.m8"><semantics><msup><mn>2</mn><mrow><mi mathvariant="normal">Θ</mi><mo>⁡</mo><mrow><mo>(</mo><msub><mi>d</mi><mi>int</mi></msub><mo>)</mo></mrow></mrow></msup><annotation encoding="application/x-tex">2^{\Theta(d_{\mathrm{int}})}</annotation></semantics></math></td>
+<td class="ltx_td ltx_align_center ltx_border_t" id="S4.T3.8.2.6"><span class="ltx_text ltx_leader" id="S4.T3.8.2.6.1"><span class="ltx_rule"> </span></span></td>
+<td class="ltx_td ltx_align_center ltx_border_t" id="S4.T3.8.2.7"><math class="ltx_Math" display="inline" id="S4.T3.m9"><semantics><msup><mn>2</mn><msup><mn>2</mn><mrow><mi mathvariant="normal">Θ</mi><mo>⁡</mo><mrow><mo>(</mo><msub><mi>d</mi><mi>int</mi></msub><mo>)</mo></mrow></mrow></msup></msup><annotation encoding="application/x-tex">2^{2^{\Theta(d_{\mathrm{int}})}}</annotation></semantics></math></td>
+<td class="ltx_td ltx_align_center ltx_border_t" id="S4.T3.8.2.8"><span class="ltx_text ltx_leader" id="S4.T3.8.2.8.1"><span class="ltx_rule"> </span></span><span class="ltx_text" id="S4.T3.8.2.8.2"><math class="ltx_Math" display="inline" id="S4.T3.m10"><semantics><mo class="ltx_mathvariant_bold" mathvariant="bold">≻</mo><annotation encoding="application/x-tex">\boldsymbol{\succ}</annotation></semantics></math></span></td></tr>
+<tr class="ltx_tr" id="S4.T3.8.3">
+<td class="ltx_td ltx_align_left ltx_border_t" id="S4.T3.8.3.1"><span class="ltx_text" id="S4.T3.8.3.1.1">Shortcut</span></td>
+<td class="ltx_td ltx_align_center ltx_border_t" id="S4.T3.8.3.2"><math class="ltx_Math" display="inline" id="S4.T3.m11"><semantics><mrow><mi>O</mi><mo>⁡</mo><mrow><mo>(</mo><mn>1</mn><mo>)</mo></mrow></mrow><annotation encoding="application/x-tex">O(1)</annotation></semantics></math></td>
+<td class="ltx_td ltx_border_t" id="S4.T3.8.3.3"></td>
+<td class="ltx_td ltx_align_center ltx_border_t" id="S4.T3.8.3.4"><math class="ltx_Math" display="inline" id="S4.T3.m12"><semantics><msup><mi>N</mi><mrow><mi mathvariant="normal">Θ</mi><mo>⁡</mo><mrow><mo>(</mo><mn>1</mn><mo>)</mo></mrow></mrow></msup><annotation encoding="application/x-tex">N^{\Theta(1)}</annotation></semantics></math></td>
+<td class="ltx_td ltx_border_t" id="S4.T3.8.3.5"></td>
+<td class="ltx_td ltx_align_center ltx_border_t" id="S4.T3.8.3.6"><math class="ltx_Math" display="inline" id="S4.T3.m13"><semantics><msup><mi>N</mi><mrow><mi>o</mi><mo>⁡</mo><mrow><mo>(</mo><mn>1</mn><mo>)</mo></mrow></mrow></msup><annotation encoding="application/x-tex">N^{o(1)}</annotation></semantics></math></td>
+<td class="ltx_td ltx_border_t" id="S4.T3.8.3.7"></td>
+<td class="ltx_td ltx_align_center ltx_border_t" id="S4.T3.8.3.8"><math class="ltx_Math" display="inline" id="S4.T3.m14"><semantics><mrow><mi mathvariant="normal">Θ</mi><mo>⁡</mo><mrow><mo>(</mo><mrow><mtext>poly</mtext><mo>​</mo><mrow><mi>log</mi><mo>⁡</mo><mi>N</mi></mrow></mrow><mo>)</mo></mrow></mrow><annotation encoding="application/x-tex">\Theta(\text{poly}\log N)</annotation></semantics></math><sup class="ltx_sup" id="S4.T3.8.3.8.1"><math class="ltx_Math" display="inline" id="S4.T3.m15"><semantics><mo>†</mo><annotation encoding="application/x-tex">\dagger</annotation></semantics></math></sup></td></tr>
+<tr class="ltx_tr" id="S4.T3.8.4">
+<td class="ltx_td ltx_align_left" id="S4.T3.8.4.1"><span class="ltx_text" id="S4.T3.8.4.1.1">Exploration</span></td>
+<td class="ltx_td ltx_align_center" id="S4.T3.8.4.2"><math class="ltx_Math" display="inline" id="S4.T3.m16"><semantics><mrow><mi mathvariant="normal">Θ</mi><mo>⁡</mo><mrow><mo>(</mo><mi>N</mi><mo>)</mo></mrow></mrow><annotation encoding="application/x-tex">\Theta(N)</annotation></semantics></math></td>
+<td class="ltx_td" id="S4.T3.8.4.3"></td>
+<td class="ltx_td ltx_align_center" id="S4.T3.8.4.4"><math class="ltx_Math" display="inline" id="S4.T3.m17"><semantics><msup><mi>N</mi><mrow><mi mathvariant="normal">Θ</mi><mo>⁡</mo><mrow><mo>(</mo><mn>1</mn><mo>)</mo></mrow></mrow></msup><annotation encoding="application/x-tex">N^{\Theta(1)}</annotation></semantics></math></td>
+<td class="ltx_td" id="S4.T3.8.4.5"></td>
+<td class="ltx_td ltx_align_center" id="S4.T3.8.4.6"><math class="ltx_Math" display="inline" id="S4.T3.m18"><semantics><msup><mi>N</mi><mrow><mi>o</mi><mo>⁡</mo><mrow><mo>(</mo><mn>1</mn><mo>)</mo></mrow></mrow></msup><annotation encoding="application/x-tex">N^{o(1)}</annotation></semantics></math></td>
+<td class="ltx_td" id="S4.T3.8.4.7"></td>
+<td class="ltx_td ltx_align_center" id="S4.T3.8.4.8"><math class="ltx_Math" display="inline" id="S4.T3.m19"><semantics><mrow><mi>O</mi><mo>⁡</mo><mrow><mo>(</mo><mrow><mtext>poly</mtext><mo>​</mo><mrow><mi>log</mi><mo>⁡</mo><mi>N</mi></mrow></mrow><mo>)</mo></mrow></mrow><annotation encoding="application/x-tex">O(\text{poly}\log N)</annotation></semantics></math></td></tr>
+<tr class="ltx_tr" id="S4.T3.8.5">
+<td class="ltx_td ltx_align_left ltx_border_bb ltx_border_t" id="S4.T3.8.5.1"><span class="ltx_text" id="S4.T3.8.5.1.1">Total</span></td>
+<td class="ltx_td ltx_align_center ltx_border_bb ltx_border_t" id="S4.T3.8.5.2"><math class="ltx_Math" display="inline" id="S4.T3.m20"><semantics><mrow><mi mathvariant="normal">Θ</mi><mo>⁡</mo><mrow><mo>(</mo><mi>N</mi><mo>)</mo></mrow></mrow><annotation encoding="application/x-tex">\Theta(N)</annotation></semantics></math></td>
+<td class="ltx_td ltx_border_bb ltx_border_t" id="S4.T3.8.5.3"></td>
+<td class="ltx_td ltx_align_center ltx_border_bb ltx_border_t" id="S4.T3.8.5.4"><math class="ltx_Math" display="inline" id="S4.T3.m21"><semantics><msup><mi>N</mi><mrow><mi mathvariant="normal">Θ</mi><mo>⁡</mo><mrow><mo>(</mo><mn>1</mn><mo>)</mo></mrow></mrow></msup><annotation encoding="application/x-tex">N^{\Theta(1)}</annotation></semantics></math></td>
+<td class="ltx_td ltx_border_bb ltx_border_t" id="S4.T3.8.5.5"></td>
+<td class="ltx_td ltx_align_center ltx_border_bb ltx_border_t" id="S4.T3.8.5.6"><math class="ltx_Math" display="inline" id="S4.T3.m22"><semantics><msup><mi>N</mi><mrow><mi>o</mi><mo>⁡</mo><mrow><mo>(</mo><mn>1</mn><mo>)</mo></mrow></mrow></msup><annotation encoding="application/x-tex">N^{o(1)}</annotation></semantics></math></td>
+<td class="ltx_td ltx_border_bb ltx_border_t" id="S4.T3.8.5.7"></td>
+<td class="ltx_td ltx_align_center ltx_border_bb ltx_border_t" id="S4.T3.8.5.8"><math class="ltx_Math" display="inline" id="S4.T3.m23"><semantics><mrow><mi mathvariant="normal">Θ</mi><mo>⁡</mo><mrow><mo>(</mo><mrow><mtext>poly</mtext><mo>​</mo><mrow><mi>log</mi><mo>⁡</mo><mi>N</mi></mrow></mrow><mo>)</mo></mrow></mrow><annotation encoding="application/x-tex">\Theta(\text{poly}\log N)</annotation></semantics></math></td></tr>
+</table></div><div class="tbl-foot">원문 arXiv HTML의 셀과 수치를 순서대로 재구성했다.</div></div>
+</section>
+<section class="ch" id="c4">
+<div class="ch-eyebrow"><span class="cnum">04</span><span class="clabel">Cost model · 비용 모델</span></div>
+<h2 class="ch-title">recall과 구성 파라미터로 성장 지수를 예측한다</h2>
+<div class="tldr"><div class="h">한눈에 요약</div><p>질의 비용 지수 c를 recall 수요 1/(1−recall), 구성 후보 폭 ef_construction, 최대 차수 M의 로그항으로 모델링했다. 데이터셋·알고리즘별 평균 R²는 약 0.88이며, ef_search와 거리 계산의 멱법칙 적합도는 모든 데이터셋에서 R²&gt;0.98이었다.</p></div>
+<p class="lead">삽입 비용 모델도 R²≥0.92로 맞았고, ef_construction을 두 배로 하면 평균 삽입 비용은 대략 1.8배가 됐다.</p><p>이 모델은 recall을 유지할 ef_search를 데이터 증가에 따라 정하고, 질의 비용과 빌드 비용 사이의 파라미터 절충을 예상하는 데 쓸 수 있다.</p><figure>
+<div class="fig-top"><span class="fnum">FIG 10</span><span class="ftitle">비용 모델 부분 회귀</span></div>
+<div class="imgbox"><img alt="비용 모델 부분 회귀" decoding="async" loading="lazy" src="/paper-assets/6f7555196c1ded04ccb2b92c8547893c9c063904d6271f7d14503252245c33cb.png"/></div>
+<figcaption>recall·ef_construction·M이 질의 지수에, N·ef_construction·M이 삽입 비용에 미치는 효과를 분리한다.</figcaption>
+</figure><div class="tbl-wrap"><div class="tbl-cap"><span class="tn">TABLE 4</span>데이터셋·알고리즘별 비용 모델 계수와 적합도</div><div class="tbl-scroll"><table>
+<tr class="ltx_tr" id="S5.T4.13.1">
+<td class="ltx_td" id="S5.T4.13.1.1"></td>
+<td class="ltx_td" id="S5.T4.13.1.2"></td>
+<td class="ltx_td ltx_align_center" colspan="7" id="S5.T4.13.1.3"><span class="ltx_text ltx_font_bold" id="S5.T4.13.1.3.1">(a) Query cost model</span></td>
+<td class="ltx_td ltx_align_center" colspan="5" id="S5.T4.13.1.4"><span class="ltx_text ltx_font_bold" id="S5.T4.13.1.4.1">(b) Build cost model</span></td></tr>
+<tr class="ltx_tr" id="S5.T4.13.2">
+<td class="ltx_td" id="S5.T4.13.2.1"></td>
+<td class="ltx_td ltx_align_left" id="S5.T4.13.2.2"><span class="ltx_text" id="S5.T4.13.2.2.1">Dataset</span></td>
+<td class="ltx_td ltx_align_center ltx_border_t" id="S5.T4.13.2.3"><math class="ltx_Math" display="inline" id="S5.T4.m7"><semantics><msub><mi>c</mi><mn>0</mn></msub><annotation encoding="application/x-tex">c_{0}</annotation></semantics></math></td>
+<td class="ltx_td ltx_align_center ltx_border_t" id="S5.T4.13.2.4"><math class="ltx_Math" display="inline" id="S5.T4.m8"><semantics><mi>α</mi><annotation encoding="application/x-tex">\alpha</annotation></semantics></math></td>
+<td class="ltx_td ltx_align_center ltx_border_t" id="S5.T4.13.2.5"><math class="ltx_Math" display="inline" id="S5.T4.m9"><semantics><msub><mi>γ</mi><mn>1</mn></msub><annotation encoding="application/x-tex">\gamma_{1}</annotation></semantics></math></td>
+<td class="ltx_td ltx_align_center ltx_border_t" id="S5.T4.13.2.6"><math class="ltx_Math" display="inline" id="S5.T4.m10"><semantics><msub><mi>γ</mi><mn>2</mn></msub><annotation encoding="application/x-tex">\gamma_{2}</annotation></semantics></math></td>
+<td class="ltx_td ltx_align_center ltx_border_t" id="S5.T4.13.2.7"><math class="ltx_Math" display="inline" id="S5.T4.m11"><semantics><mi>β</mi><annotation encoding="application/x-tex">\beta</annotation></semantics></math></td>
+<td class="ltx_td ltx_align_center ltx_border_t" id="S5.T4.13.2.8"><math class="ltx_Math" display="inline" id="S5.T4.m12"><semantics><msubsup><mi>R</mi><mi>c</mi><mn>2</mn></msubsup><annotation encoding="application/x-tex">R^{2}_{c}</annotation></semantics></math></td>
+<td class="ltx_td ltx_align_center ltx_border_r ltx_border_t" id="S5.T4.13.2.9"><math class="ltx_Math" display="inline" id="S5.T4.m13"><semantics><msubsup><mi>R</mi><mi>β</mi><mn>2</mn></msubsup><annotation encoding="application/x-tex">R^{2}_{\beta}</annotation></semantics></math></td>
+<td class="ltx_td ltx_align_center ltx_border_t" id="S5.T4.13.2.10"><math class="ltx_Math" display="inline" id="S5.T4.m14"><semantics><mi>κ</mi><annotation encoding="application/x-tex">\kappa</annotation></semantics></math></td>
+<td class="ltx_td ltx_align_center ltx_border_t" id="S5.T4.13.2.11"><math class="ltx_Math" display="inline" id="S5.T4.m15"><semantics><msup><mi>β</mi><mo>′</mo></msup><annotation encoding="application/x-tex">\beta^{\prime}</annotation></semantics></math></td>
+<td class="ltx_td ltx_align_center ltx_border_t" id="S5.T4.13.2.12"><math class="ltx_Math" display="inline" id="S5.T4.m16"><semantics><msubsup><mi>c</mi><mn>0</mn><mo>′</mo></msubsup><annotation encoding="application/x-tex">c^{\prime}_{0}</annotation></semantics></math></td>
+<td class="ltx_td ltx_align_center ltx_border_t" id="S5.T4.13.2.13"><math class="ltx_Math" display="inline" id="S5.T4.m17"><semantics><msubsup><mi>γ</mi><mn>2</mn><mo>′</mo></msubsup><annotation encoding="application/x-tex">\gamma^{\prime}_{2}</annotation></semantics></math></td>
+<td class="ltx_td ltx_align_center ltx_border_t" id="S5.T4.13.2.14"><math class="ltx_Math" display="inline" id="S5.T4.m18"><semantics><msup><mi>R</mi><mn>2</mn></msup><annotation encoding="application/x-tex">R^{2}</annotation></semantics></math></td></tr>
+<tr class="ltx_tr" id="S5.T4.13.3">
+<td class="ltx_td ltx_align_left ltx_border_t" id="S5.T4.13.3.1" rowspan="8"><span class="ltx_text" id="S5.T4.13.3.1.1">
+<span class="ltx_inline-block ltx_transformed_outer" id="S5.T4.13.3.1.1.1"><span class="ltx_transformed_inner">
+<span class="ltx_p" id="S5.T4.13.3.1.1.1.1"><span class="ltx_text ltx_font_bold" id="S5.T4.13.3.1.1.1.1.1">HNSW</span></span>
+</span></span></span></td>
+<td class="ltx_td ltx_align_left ltx_border_t" id="S5.T4.13.3.2"><span class="ltx_text" id="S5.T4.13.3.2.1">sift</span></td>
+<td class="ltx_td ltx_align_center ltx_border_t" id="S5.T4.13.3.3"><span class="ltx_text" id="S5.T4.13.3.3.1">.244</span></td>
+<td class="ltx_td ltx_align_center ltx_border_t" id="S5.T4.13.3.4"><span class="ltx_text" id="S5.T4.13.3.4.1">.035</span></td>
+<td class="ltx_td ltx_align_center ltx_border_t" id="S5.T4.13.3.5"><span class="ltx_text" id="S5.T4.13.3.5.1">.012</span></td>
+<td class="ltx_td ltx_align_center ltx_border_t" id="S5.T4.13.3.6"><span class="ltx_text" id="S5.T4.13.3.6.1">.022</span></td>
+<td class="ltx_td ltx_align_center ltx_border_t" id="S5.T4.13.3.7"><span class="ltx_text" id="S5.T4.13.3.7.1">.762</span></td>
+<td class="ltx_td ltx_align_center ltx_border_t" id="S5.T4.13.3.8"><span class="ltx_text" id="S5.T4.13.3.8.1">.919</span></td>
+<td class="ltx_td ltx_align_center ltx_border_r ltx_border_t" id="S5.T4.13.3.9"><span class="ltx_text" id="S5.T4.13.3.9.1">.992</span></td>
+<td class="ltx_td ltx_align_center ltx_border_t" id="S5.T4.13.3.10"><span class="ltx_text" id="S5.T4.13.3.10.1">2.497</span></td>
+<td class="ltx_td ltx_align_center ltx_border_t" id="S5.T4.13.3.11"><span class="ltx_text" id="S5.T4.13.3.11.1">.864</span></td>
+<td class="ltx_td ltx_align_center ltx_border_t" id="S5.T4.13.3.12"><span class="ltx_text ltx_phantom" id="S5.T4.13.3.12.1"><span><math class="ltx_Math" display="inline" id="S5.T4.m19"><semantics><mo>−</mo><annotation encoding="application/x-tex">-</annotation></semantics></math></span></span><span class="ltx_text" id="S5.T4.13.3.12.2">.031</span></td>
+<td class="ltx_td ltx_align_center ltx_border_t" id="S5.T4.13.3.13"><span class="ltx_text" id="S5.T4.13.3.13.1">.020</span></td>
+<td class="ltx_td ltx_align_center ltx_border_t" id="S5.T4.13.3.14"><span class="ltx_text" id="S5.T4.13.3.14.1">.979</span></td></tr>
+<tr class="ltx_tr" id="S5.T4.13.4">
+<td class="ltx_td ltx_align_left" id="S5.T4.13.4.1"><span class="ltx_text" id="S5.T4.13.4.1.1">deep</span></td>
+<td class="ltx_td ltx_align_center" id="S5.T4.13.4.2"><span class="ltx_text" id="S5.T4.13.4.2.1">.281</span></td>
+<td class="ltx_td ltx_align_center" id="S5.T4.13.4.3"><span class="ltx_text" id="S5.T4.13.4.3.1">.054</span></td>
+<td class="ltx_td ltx_align_center" id="S5.T4.13.4.4"><span class="ltx_text" id="S5.T4.13.4.4.1">.020</span></td>
+<td class="ltx_td ltx_align_center" id="S5.T4.13.4.5"><span class="ltx_text" id="S5.T4.13.4.5.1">.022</span></td>
+<td class="ltx_td ltx_align_center" id="S5.T4.13.4.6"><span class="ltx_text" id="S5.T4.13.4.6.1">.742</span></td>
+<td class="ltx_td ltx_align_center" id="S5.T4.13.4.7"><span class="ltx_text" id="S5.T4.13.4.7.1">.934</span></td>
+<td class="ltx_td ltx_align_center ltx_border_r" id="S5.T4.13.4.8"><span class="ltx_text" id="S5.T4.13.4.8.1">.992</span></td>
+<td class="ltx_td ltx_align_center" id="S5.T4.13.4.9"><span class="ltx_text" id="S5.T4.13.4.9.1">2.163</span></td>
+<td class="ltx_td ltx_align_center" id="S5.T4.13.4.10"><span class="ltx_text" id="S5.T4.13.4.10.1">.880</span></td>
+<td class="ltx_td ltx_align_center" id="S5.T4.13.4.11"><span class="ltx_text ltx_phantom" id="S5.T4.13.4.11.1"><span><math class="ltx_Math" display="inline" id="S5.T4.m20"><semantics><mo>−</mo><annotation encoding="application/x-tex">-</annotation></semantics></math></span></span><span class="ltx_text" id="S5.T4.13.4.11.2">.048</span></td>
+<td class="ltx_td ltx_align_center" id="S5.T4.13.4.12"><span class="ltx_text" id="S5.T4.13.4.12.1">.018</span></td>
+<td class="ltx_td ltx_align_center" id="S5.T4.13.4.13"><span class="ltx_text" id="S5.T4.13.4.13.1">.983</span></td></tr>
+<tr class="ltx_tr" id="S5.T4.13.5">
+<td class="ltx_td ltx_align_left" id="S5.T4.13.5.1"><span class="ltx_text" id="S5.T4.13.5.1.1">spacev</span></td>
+<td class="ltx_td ltx_align_center" id="S5.T4.13.5.2"><span class="ltx_text" id="S5.T4.13.5.2.1">.181</span></td>
+<td class="ltx_td ltx_align_center" id="S5.T4.13.5.3"><span class="ltx_text" id="S5.T4.13.5.3.1">.067</span></td>
+<td class="ltx_td ltx_align_center" id="S5.T4.13.5.4"><span class="ltx_text" id="S5.T4.13.5.4.1">.020</span></td>
+<td class="ltx_td ltx_align_center" id="S5.T4.13.5.5"><span class="ltx_text" id="S5.T4.13.5.5.1">.017</span></td>
+<td class="ltx_td ltx_align_center" id="S5.T4.13.5.6"><span class="ltx_text" id="S5.T4.13.5.6.1">.747</span></td>
+<td class="ltx_td ltx_align_center" id="S5.T4.13.5.7"><span class="ltx_text" id="S5.T4.13.5.7.1">.818</span></td>
+<td class="ltx_td ltx_align_center ltx_border_r" id="S5.T4.13.5.8"><span class="ltx_text" id="S5.T4.13.5.8.1">.992</span></td>
+<td class="ltx_td ltx_align_center" id="S5.T4.13.5.9"><span class="ltx_text" id="S5.T4.13.5.9.1">2.653</span></td>
+<td class="ltx_td ltx_align_center" id="S5.T4.13.5.10"><span class="ltx_text" id="S5.T4.13.5.10.1">.900</span></td>
+<td class="ltx_td ltx_align_center" id="S5.T4.13.5.11"><span class="ltx_text ltx_phantom" id="S5.T4.13.5.11.1"><span><math class="ltx_Math" display="inline" id="S5.T4.m21"><semantics><mo>−</mo><annotation encoding="application/x-tex">-</annotation></semantics></math></span></span><span class="ltx_text" id="S5.T4.13.5.11.2">.002</span></td>
+<td class="ltx_td ltx_align_center" id="S5.T4.13.5.12"><span class="ltx_text" id="S5.T4.13.5.12.1">.024</span></td>
+<td class="ltx_td ltx_align_center" id="S5.T4.13.5.13"><span class="ltx_text" id="S5.T4.13.5.13.1">.963</span></td></tr>
+<tr class="ltx_tr" id="S5.T4.13.6">
+<td class="ltx_td ltx_align_left" id="S5.T4.13.6.1"><span class="ltx_text" id="S5.T4.13.6.1.1">wiki</span></td>
+<td class="ltx_td ltx_align_center" id="S5.T4.13.6.2"><span class="ltx_text" id="S5.T4.13.6.2.1">.310</span></td>
+<td class="ltx_td ltx_align_center" id="S5.T4.13.6.3"><span class="ltx_text" id="S5.T4.13.6.3.1">.079</span></td>
+<td class="ltx_td ltx_align_center" id="S5.T4.13.6.4"><span class="ltx_text" id="S5.T4.13.6.4.1">.037</span></td>
+<td class="ltx_td ltx_align_center" id="S5.T4.13.6.5"><span class="ltx_text" id="S5.T4.13.6.5.1">.022</span></td>
+<td class="ltx_td ltx_align_center" id="S5.T4.13.6.6"><span class="ltx_text" id="S5.T4.13.6.6.1">.737</span></td>
+<td class="ltx_td ltx_align_center" id="S5.T4.13.6.7"><span class="ltx_text" id="S5.T4.13.6.7.1">.886</span></td>
+<td class="ltx_td ltx_align_center ltx_border_r" id="S5.T4.13.6.8"><span class="ltx_text" id="S5.T4.13.6.8.1">.991</span></td>
+<td class="ltx_td ltx_align_center" id="S5.T4.13.6.9"><span class="ltx_text" id="S5.T4.13.6.9.1">2.424</span></td>
+<td class="ltx_td ltx_align_center" id="S5.T4.13.6.10"><span class="ltx_text" id="S5.T4.13.6.10.1">.869</span></td>
+<td class="ltx_td ltx_align_center" id="S5.T4.13.6.11"><span class="ltx_text ltx_phantom" id="S5.T4.13.6.11.1"><span><math class="ltx_Math" display="inline" id="S5.T4.m22"><semantics><mo>−</mo><annotation encoding="application/x-tex">-</annotation></semantics></math></span></span><span class="ltx_text" id="S5.T4.13.6.11.2">.032</span></td>
+<td class="ltx_td ltx_align_center" id="S5.T4.13.6.12"><span class="ltx_text" id="S5.T4.13.6.12.1">.018</span></td>
+<td class="ltx_td ltx_align_center" id="S5.T4.13.6.13"><span class="ltx_text" id="S5.T4.13.6.13.1">.991</span></td></tr>
+<tr class="ltx_tr" id="S5.T4.13.7">
+<td class="ltx_td ltx_align_left" id="S5.T4.13.7.1"><span class="ltx_text" id="S5.T4.13.7.1.1">glove</span></td>
+<td class="ltx_td ltx_align_center" id="S5.T4.13.7.2"><span class="ltx_text" id="S5.T4.13.7.2.1">.336</span></td>
+<td class="ltx_td ltx_align_center" id="S5.T4.13.7.3"><span class="ltx_text" id="S5.T4.13.7.3.1">.090</span></td>
+<td class="ltx_td ltx_align_center" id="S5.T4.13.7.4"><span class="ltx_text" id="S5.T4.13.7.4.1">.036</span></td>
+<td class="ltx_td ltx_align_center" id="S5.T4.13.7.5"><span class="ltx_text" id="S5.T4.13.7.5.1">.012</span></td>
+<td class="ltx_td ltx_align_center" id="S5.T4.13.7.6"><span class="ltx_text" id="S5.T4.13.7.6.1">.759</span></td>
+<td class="ltx_td ltx_align_center" id="S5.T4.13.7.7"><span class="ltx_text" id="S5.T4.13.7.7.1">.916</span></td>
+<td class="ltx_td ltx_align_center ltx_border_r" id="S5.T4.13.7.8"><span class="ltx_text" id="S5.T4.13.7.8.1">.993</span></td>
+<td class="ltx_td ltx_align_center" id="S5.T4.13.7.9"><span class="ltx_text" id="S5.T4.13.7.9.1">2.147</span></td>
+<td class="ltx_td ltx_align_center" id="S5.T4.13.7.10"><span class="ltx_text" id="S5.T4.13.7.10.1">.917</span></td>
+<td class="ltx_td ltx_align_center" id="S5.T4.13.7.11"><span class="ltx_text ltx_phantom" id="S5.T4.13.7.11.1"><span><math class="ltx_Math" display="inline" id="S5.T4.m23"><semantics><mo>−</mo><annotation encoding="application/x-tex">-</annotation></semantics></math></span></span><span class="ltx_text" id="S5.T4.13.7.11.2">.052</span></td>
+<td class="ltx_td ltx_align_center" id="S5.T4.13.7.12"><span class="ltx_text" id="S5.T4.13.7.12.1">.023</span></td>
+<td class="ltx_td ltx_align_center" id="S5.T4.13.7.13"><span class="ltx_text" id="S5.T4.13.7.13.1">.977</span></td></tr>
+<tr class="ltx_tr" id="S5.T4.13.8">
+<td class="ltx_td ltx_align_left" id="S5.T4.13.8.1"><span class="ltx_text" id="S5.T4.13.8.1.1">rand64</span></td>
+<td class="ltx_td ltx_align_center" id="S5.T4.13.8.2"><span class="ltx_text" id="S5.T4.13.8.2.1">1.068</span></td>
+<td class="ltx_td ltx_align_center" id="S5.T4.13.8.3"><span class="ltx_text" id="S5.T4.13.8.3.1">.022</span></td>
+<td class="ltx_td ltx_align_center" id="S5.T4.13.8.4"><span class="ltx_text" id="S5.T4.13.8.4.1">.055</span></td>
+<td class="ltx_td ltx_align_center" id="S5.T4.13.8.5"><span class="ltx_text" id="S5.T4.13.8.5.1">.082</span></td>
+<td class="ltx_td ltx_align_center" id="S5.T4.13.8.6"><span class="ltx_text" id="S5.T4.13.8.6.1">.812</span></td>
+<td class="ltx_td ltx_align_center" id="S5.T4.13.8.7"><span class="ltx_text" id="S5.T4.13.8.7.1">.912</span></td>
+<td class="ltx_td ltx_align_center ltx_border_r" id="S5.T4.13.8.8"><span class="ltx_text" id="S5.T4.13.8.8.1">.992</span></td>
+<td class="ltx_td ltx_align_center" id="S5.T4.13.8.9"><span class="ltx_text" id="S5.T4.13.8.9.1">3.569</span></td>
+<td class="ltx_td ltx_align_center" id="S5.T4.13.8.10"><span class="ltx_text" id="S5.T4.13.8.10.1">.681</span></td>
+<td class="ltx_td ltx_align_center" id="S5.T4.13.8.11"><span class="ltx_text ltx_phantom" id="S5.T4.13.8.11.1"><span><math class="ltx_Math" display="inline" id="S5.T4.m24"><semantics><mo>−</mo><annotation encoding="application/x-tex">-</annotation></semantics></math></span></span><span class="ltx_text" id="S5.T4.13.8.11.2">.028</span></td>
+<td class="ltx_td ltx_align_center" id="S5.T4.13.8.12"><span class="ltx_text" id="S5.T4.13.8.12.1">.044</span></td>
+<td class="ltx_td ltx_align_center" id="S5.T4.13.8.13"><span class="ltx_text" id="S5.T4.13.8.13.1">.922</span></td></tr>
+<tr class="ltx_tr" id="S5.T4.13.9">
+<td class="ltx_td ltx_align_left" id="S5.T4.13.9.1"><span class="ltx_text" id="S5.T4.13.9.1.1">gist</span></td>
+<td class="ltx_td ltx_align_center" id="S5.T4.13.9.2"><span class="ltx_text" id="S5.T4.13.9.2.1">.513</span></td>
+<td class="ltx_td ltx_align_center" id="S5.T4.13.9.3"><span class="ltx_text" id="S5.T4.13.9.3.1">.096</span></td>
+<td class="ltx_td ltx_align_center" id="S5.T4.13.9.4"><span class="ltx_text" id="S5.T4.13.9.4.1">.045</span></td>
+<td class="ltx_td ltx_align_center" id="S5.T4.13.9.5"><span class="ltx_text" id="S5.T4.13.9.5.1">.017</span></td>
+<td class="ltx_td ltx_align_center" id="S5.T4.13.9.6"><span class="ltx_text" id="S5.T4.13.9.6.1">.705</span></td>
+<td class="ltx_td ltx_align_center" id="S5.T4.13.9.7"><span class="ltx_text" id="S5.T4.13.9.7.1">.859</span></td>
+<td class="ltx_td ltx_align_center ltx_border_r" id="S5.T4.13.9.8"><span class="ltx_text" id="S5.T4.13.9.8.1">.992</span></td>
+<td class="ltx_td ltx_align_center" id="S5.T4.13.9.9"><span class="ltx_text" id="S5.T4.13.9.9.1">1.268</span></td>
+<td class="ltx_td ltx_align_center" id="S5.T4.13.9.10"><span class="ltx_text" id="S5.T4.13.9.10.1">.836</span></td>
+<td class="ltx_td ltx_align_center" id="S5.T4.13.9.11"><span class="ltx_text ltx_phantom" id="S5.T4.13.9.11.1"><span><math class="ltx_Math" display="inline" id="S5.T4.m25"><semantics><mo>−</mo><annotation encoding="application/x-tex">-</annotation></semantics></math></span></span><span class="ltx_text" id="S5.T4.13.9.11.2">.155</span></td>
+<td class="ltx_td ltx_align_center" id="S5.T4.13.9.12"><span class="ltx_text" id="S5.T4.13.9.12.1">.015</span></td>
+<td class="ltx_td ltx_align_center" id="S5.T4.13.9.13"><span class="ltx_text" id="S5.T4.13.9.13.1">.991</span></td></tr>
+<tr class="ltx_tr" id="S5.T4.13.10">
+<td class="ltx_td ltx_align_left" id="S5.T4.13.10.1"><span class="ltx_text" id="S5.T4.13.10.1.1">openai</span></td>
+<td class="ltx_td ltx_align_center" id="S5.T4.13.10.2"><span class="ltx_text" id="S5.T4.13.10.2.1">.191</span></td>
+<td class="ltx_td ltx_align_center" id="S5.T4.13.10.3"><span class="ltx_text" id="S5.T4.13.10.3.1">.079</span></td>
+<td class="ltx_td ltx_align_center" id="S5.T4.13.10.4"><span class="ltx_text" id="S5.T4.13.10.4.1">.029</span></td>
+<td class="ltx_td ltx_align_center" id="S5.T4.13.10.5"><span class="ltx_text" id="S5.T4.13.10.5.1">.001</span></td>
+<td class="ltx_td ltx_align_center" id="S5.T4.13.10.6"><span class="ltx_text" id="S5.T4.13.10.6.1">.741</span></td>
+<td class="ltx_td ltx_align_center" id="S5.T4.13.10.7"><span class="ltx_text" id="S5.T4.13.10.7.1">.910</span></td>
+<td class="ltx_td ltx_align_center ltx_border_r" id="S5.T4.13.10.8"><span class="ltx_text" id="S5.T4.13.10.8.1">.992</span></td>
+<td class="ltx_td ltx_align_center" id="S5.T4.13.10.9"><span class="ltx_text" id="S5.T4.13.10.9.1">2.197</span></td>
+<td class="ltx_td ltx_align_center" id="S5.T4.13.10.10"><span class="ltx_text" id="S5.T4.13.10.10.1">.858</span></td>
+<td class="ltx_td ltx_align_center" id="S5.T4.13.10.11"><span class="ltx_text ltx_phantom" id="S5.T4.13.10.11.1"><span><math class="ltx_Math" display="inline" id="S5.T4.m26"><semantics><mo>−</mo><annotation encoding="application/x-tex">-</annotation></semantics></math></span></span><span class="ltx_text" id="S5.T4.13.10.11.2">.063</span></td>
+<td class="ltx_td ltx_align_center" id="S5.T4.13.10.12"><span class="ltx_text" id="S5.T4.13.10.12.1">.019</span></td>
+<td class="ltx_td ltx_align_center" id="S5.T4.13.10.13"><span class="ltx_text" id="S5.T4.13.10.13.1">.981</span></td></tr>
+<tr class="ltx_tr" id="S5.T4.13.11">
+<td class="ltx_td ltx_align_left ltx_border_bb ltx_border_t" id="S5.T4.13.11.1" rowspan="8"><span class="ltx_text" id="S5.T4.13.11.1.1">
+<span class="ltx_inline-block ltx_transformed_outer" id="S5.T4.13.11.1.1.1"><span class="ltx_transformed_inner">
+<span class="ltx_p" id="S5.T4.13.11.1.1.1.1"><span class="ltx_text ltx_font_bold" id="S5.T4.13.11.1.1.1.1.1">Vamana</span></span>
+</span></span></span></td>
+<td class="ltx_td ltx_align_left ltx_border_t" id="S5.T4.13.11.2"><span class="ltx_text" id="S5.T4.13.11.2.1">sift</span></td>
+<td class="ltx_td ltx_align_center ltx_border_t" id="S5.T4.13.11.3"><span class="ltx_text" id="S5.T4.13.11.3.1">.415</span></td>
+<td class="ltx_td ltx_align_center ltx_border_t" id="S5.T4.13.11.4"><span class="ltx_text" id="S5.T4.13.11.4.1">.046</span></td>
+<td class="ltx_td ltx_align_center ltx_border_t" id="S5.T4.13.11.5"><span class="ltx_text" id="S5.T4.13.11.5.1">.014</span></td>
+<td class="ltx_td ltx_align_center ltx_border_t" id="S5.T4.13.11.6"><span class="ltx_text" id="S5.T4.13.11.6.1">.069</span></td>
+<td class="ltx_td ltx_align_center ltx_border_t" id="S5.T4.13.11.7"><span class="ltx_text" id="S5.T4.13.11.7.1">.752</span></td>
+<td class="ltx_td ltx_align_center ltx_border_t" id="S5.T4.13.11.8"><span class="ltx_text" id="S5.T4.13.11.8.1">.841</span></td>
+<td class="ltx_td ltx_align_center ltx_border_r ltx_border_t" id="S5.T4.13.11.9"><span class="ltx_text" id="S5.T4.13.11.9.1">.992</span></td>
+<td class="ltx_td ltx_align_center ltx_border_t" id="S5.T4.13.11.10"><span class="ltx_text" id="S5.T4.13.11.10.1">3.622</span></td>
+<td class="ltx_td ltx_align_center ltx_border_t" id="S5.T4.13.11.11"><span class="ltx_text" id="S5.T4.13.11.11.1">.826</span></td>
+<td class="ltx_td ltx_align_center ltx_border_t" id="S5.T4.13.11.12"><math class="ltx_Math" display="inline" id="S5.T4.m27"><semantics><mo>−</mo><annotation encoding="application/x-tex">-</annotation></semantics></math><span class="ltx_text" id="S5.T4.13.11.12.1">.076</span></td>
+<td class="ltx_td ltx_align_center ltx_border_t" id="S5.T4.13.11.13"><span class="ltx_text" id="S5.T4.13.11.13.1">.041</span></td>
+<td class="ltx_td ltx_align_center ltx_border_t" id="S5.T4.13.11.14"><span class="ltx_text" id="S5.T4.13.11.14.1">.977</span></td></tr>
+<tr class="ltx_tr" id="S5.T4.13.12">
+<td class="ltx_td ltx_align_left" id="S5.T4.13.12.1"><span class="ltx_text" id="S5.T4.13.12.1.1">deep</span></td>
+<td class="ltx_td ltx_align_center" id="S5.T4.13.12.2"><span class="ltx_text" id="S5.T4.13.12.2.1">.479</span></td>
+<td class="ltx_td ltx_align_center" id="S5.T4.13.12.3"><span class="ltx_text" id="S5.T4.13.12.3.1">.064</span></td>
+<td class="ltx_td ltx_align_center" id="S5.T4.13.12.4"><span class="ltx_text" id="S5.T4.13.12.4.1">.021</span></td>
+<td class="ltx_td ltx_align_center" id="S5.T4.13.12.5"><span class="ltx_text" id="S5.T4.13.12.5.1">.080</span></td>
+<td class="ltx_td ltx_align_center" id="S5.T4.13.12.6"><span class="ltx_text" id="S5.T4.13.12.6.1">.730</span></td>
+<td class="ltx_td ltx_align_center" id="S5.T4.13.12.7"><span class="ltx_text" id="S5.T4.13.12.7.1">.869</span></td>
+<td class="ltx_td ltx_align_center ltx_border_r" id="S5.T4.13.12.8"><span class="ltx_text" id="S5.T4.13.12.8.1">.992</span></td>
+<td class="ltx_td ltx_align_center" id="S5.T4.13.12.9"><span class="ltx_text" id="S5.T4.13.12.9.1">3.388</span></td>
+<td class="ltx_td ltx_align_center" id="S5.T4.13.12.10"><span class="ltx_text" id="S5.T4.13.12.10.1">.843</span></td>
+<td class="ltx_td ltx_align_center" id="S5.T4.13.12.11"><math class="ltx_Math" display="inline" id="S5.T4.m28"><semantics><mo>−</mo><annotation encoding="application/x-tex">-</annotation></semantics></math><span class="ltx_text" id="S5.T4.13.12.11.1">.064</span></td>
+<td class="ltx_td ltx_align_center" id="S5.T4.13.12.12"><span class="ltx_text" id="S5.T4.13.12.12.1">.038</span></td>
+<td class="ltx_td ltx_align_center" id="S5.T4.13.12.13"><span class="ltx_text" id="S5.T4.13.12.13.1">.973</span></td></tr>
+<tr class="ltx_tr" id="S5.T4.13.13">
+<td class="ltx_td ltx_align_left" id="S5.T4.13.13.1"><span class="ltx_text" id="S5.T4.13.13.1.1">spacev</span></td>
+<td class="ltx_td ltx_align_center" id="S5.T4.13.13.2"><span class="ltx_text" id="S5.T4.13.13.2.1">.351</span></td>
+<td class="ltx_td ltx_align_center" id="S5.T4.13.13.3"><span class="ltx_text" id="S5.T4.13.13.3.1">.074</span></td>
+<td class="ltx_td ltx_align_center" id="S5.T4.13.13.4"><span class="ltx_text" id="S5.T4.13.13.4.1">.021</span></td>
+<td class="ltx_td ltx_align_center" id="S5.T4.13.13.5"><span class="ltx_text" id="S5.T4.13.13.5.1">.066</span></td>
+<td class="ltx_td ltx_align_center" id="S5.T4.13.13.6"><span class="ltx_text" id="S5.T4.13.13.6.1">.739</span></td>
+<td class="ltx_td ltx_align_center" id="S5.T4.13.13.7"><span class="ltx_text" id="S5.T4.13.13.7.1">.825</span></td>
+<td class="ltx_td ltx_align_center ltx_border_r" id="S5.T4.13.13.8"><span class="ltx_text" id="S5.T4.13.13.8.1">.991</span></td>
+<td class="ltx_td ltx_align_center" id="S5.T4.13.13.9"><span class="ltx_text" id="S5.T4.13.13.9.1">4.253</span></td>
+<td class="ltx_td ltx_align_center" id="S5.T4.13.13.10"><span class="ltx_text" id="S5.T4.13.13.10.1">.857</span></td>
+<td class="ltx_td ltx_align_center" id="S5.T4.13.13.11"><math class="ltx_Math" display="inline" id="S5.T4.m29"><semantics><mo>−</mo><annotation encoding="application/x-tex">-</annotation></semantics></math><span class="ltx_text" id="S5.T4.13.13.11.1">.168</span></td>
+<td class="ltx_td ltx_align_center" id="S5.T4.13.13.12"><span class="ltx_text" id="S5.T4.13.13.12.1">.055</span></td>
+<td class="ltx_td ltx_align_center" id="S5.T4.13.13.13"><span class="ltx_text" id="S5.T4.13.13.13.1">.976</span></td></tr>
+<tr class="ltx_tr" id="S5.T4.13.14">
+<td class="ltx_td ltx_align_left" id="S5.T4.13.14.1"><span class="ltx_text" id="S5.T4.13.14.1.1">wiki</span></td>
+<td class="ltx_td ltx_align_center" id="S5.T4.13.14.2"><span class="ltx_text" id="S5.T4.13.14.2.1">.447</span></td>
+<td class="ltx_td ltx_align_center" id="S5.T4.13.14.3"><span class="ltx_text" id="S5.T4.13.14.3.1">.086</span></td>
+<td class="ltx_td ltx_align_center" id="S5.T4.13.14.4"><span class="ltx_text" id="S5.T4.13.14.4.1">.036</span></td>
+<td class="ltx_td ltx_align_center" id="S5.T4.13.14.5"><span class="ltx_text" id="S5.T4.13.14.5.1">.068</span></td>
+<td class="ltx_td ltx_align_center" id="S5.T4.13.14.6"><span class="ltx_text" id="S5.T4.13.14.6.1">.742</span></td>
+<td class="ltx_td ltx_align_center" id="S5.T4.13.14.7"><span class="ltx_text" id="S5.T4.13.14.7.1">.845</span></td>
+<td class="ltx_td ltx_align_center ltx_border_r" id="S5.T4.13.14.8"><span class="ltx_text" id="S5.T4.13.14.8.1">.992</span></td>
+<td class="ltx_td ltx_align_center" id="S5.T4.13.14.9"><span class="ltx_text" id="S5.T4.13.14.9.1">3.137</span></td>
+<td class="ltx_td ltx_align_center" id="S5.T4.13.14.10"><span class="ltx_text" id="S5.T4.13.14.10.1">.859</span></td>
+<td class="ltx_td ltx_align_center" id="S5.T4.13.14.11"><math class="ltx_Math" display="inline" id="S5.T4.m30"><semantics><mo>−</mo><annotation encoding="application/x-tex">-</annotation></semantics></math><span class="ltx_text" id="S5.T4.13.14.11.1">.059</span></td>
+<td class="ltx_td ltx_align_center" id="S5.T4.13.14.12"><span class="ltx_text" id="S5.T4.13.14.12.1">.037</span></td>
+<td class="ltx_td ltx_align_center" id="S5.T4.13.14.13"><span class="ltx_text" id="S5.T4.13.14.13.1">.986</span></td></tr>
+<tr class="ltx_tr" id="S5.T4.13.15">
+<td class="ltx_td ltx_align_left" id="S5.T4.13.15.1"><span class="ltx_text" id="S5.T4.13.15.1.1">glove</span></td>
+<td class="ltx_td ltx_align_center" id="S5.T4.13.15.2"><span class="ltx_text" id="S5.T4.13.15.2.1">.480</span></td>
+<td class="ltx_td ltx_align_center" id="S5.T4.13.15.3"><span class="ltx_text" id="S5.T4.13.15.3.1">.086</span></td>
+<td class="ltx_td ltx_align_center" id="S5.T4.13.15.4"><span class="ltx_text" id="S5.T4.13.15.4.1">.027</span></td>
+<td class="ltx_td ltx_align_center" id="S5.T4.13.15.5"><span class="ltx_text" id="S5.T4.13.15.5.1">.059</span></td>
+<td class="ltx_td ltx_align_center" id="S5.T4.13.15.6"><span class="ltx_text" id="S5.T4.13.15.6.1">.760</span></td>
+<td class="ltx_td ltx_align_center" id="S5.T4.13.15.7"><span class="ltx_text" id="S5.T4.13.15.7.1">.835</span></td>
+<td class="ltx_td ltx_align_center ltx_border_r" id="S5.T4.13.15.8"><span class="ltx_text" id="S5.T4.13.15.8.1">.993</span></td>
+<td class="ltx_td ltx_align_center" id="S5.T4.13.15.9"><span class="ltx_text" id="S5.T4.13.15.9.1">3.977</span></td>
+<td class="ltx_td ltx_align_center" id="S5.T4.13.15.10"><span class="ltx_text" id="S5.T4.13.15.10.1">.857</span></td>
+<td class="ltx_td ltx_align_center" id="S5.T4.13.15.11"><math class="ltx_Math" display="inline" id="S5.T4.m31"><semantics><mo>−</mo><annotation encoding="application/x-tex">-</annotation></semantics></math><span class="ltx_text" id="S5.T4.13.15.11.1">.159</span></td>
+<td class="ltx_td ltx_align_center" id="S5.T4.13.15.12"><span class="ltx_text" id="S5.T4.13.15.12.1">.063</span></td>
+<td class="ltx_td ltx_align_center" id="S5.T4.13.15.13"><span class="ltx_text" id="S5.T4.13.15.13.1">.990</span></td></tr>
+<tr class="ltx_tr" id="S5.T4.13.16">
+<td class="ltx_td ltx_align_left" id="S5.T4.13.16.1"><span class="ltx_text" id="S5.T4.13.16.1.1">rand64</span></td>
+<td class="ltx_td ltx_align_center" id="S5.T4.13.16.2"><span class="ltx_text" id="S5.T4.13.16.2.1">1.252</span></td>
+<td class="ltx_td ltx_align_center" id="S5.T4.13.16.3"><span class="ltx_text" id="S5.T4.13.16.3.1">.020</span></td>
+<td class="ltx_td ltx_align_center" id="S5.T4.13.16.4"><span class="ltx_text" id="S5.T4.13.16.4.1">.059</span></td>
+<td class="ltx_td ltx_align_center" id="S5.T4.13.16.5"><span class="ltx_text" id="S5.T4.13.16.5.1">.111</span></td>
+<td class="ltx_td ltx_align_center" id="S5.T4.13.16.6"><span class="ltx_text" id="S5.T4.13.16.6.1">.833</span></td>
+<td class="ltx_td ltx_align_center" id="S5.T4.13.16.7"><span class="ltx_text" id="S5.T4.13.16.7.1">.929</span></td>
+<td class="ltx_td ltx_align_center ltx_border_r" id="S5.T4.13.16.8"><span class="ltx_text" id="S5.T4.13.16.8.1">.993</span></td>
+<td class="ltx_td ltx_align_center" id="S5.T4.13.16.9"><span class="ltx_text" id="S5.T4.13.16.9.1">5.239</span></td>
+<td class="ltx_td ltx_align_center" id="S5.T4.13.16.10"><span class="ltx_text" id="S5.T4.13.16.10.1">.764</span></td>
+<td class="ltx_td ltx_align_center" id="S5.T4.13.16.11"><math class="ltx_Math" display="inline" id="S5.T4.m32"><semantics><mo>−</mo><annotation encoding="application/x-tex">-</annotation></semantics></math><span class="ltx_text" id="S5.T4.13.16.11.1">.233</span></td>
+<td class="ltx_td ltx_align_center" id="S5.T4.13.16.12"><span class="ltx_text" id="S5.T4.13.16.12.1">.076</span></td>
+<td class="ltx_td ltx_align_center" id="S5.T4.13.16.13"><span class="ltx_text" id="S5.T4.13.16.13.1">.996</span></td></tr>
+<tr class="ltx_tr" id="S5.T4.13.17">
+<td class="ltx_td ltx_align_left" id="S5.T4.13.17.1"><span class="ltx_text" id="S5.T4.13.17.1.1">gist</span></td>
+<td class="ltx_td ltx_align_center" id="S5.T4.13.17.2"><span class="ltx_text" id="S5.T4.13.17.2.1">.670</span></td>
+<td class="ltx_td ltx_align_center" id="S5.T4.13.17.3"><span class="ltx_text" id="S5.T4.13.17.3.1">.108</span></td>
+<td class="ltx_td ltx_align_center" id="S5.T4.13.17.4"><span class="ltx_text" id="S5.T4.13.17.4.1">.026</span></td>
+<td class="ltx_td ltx_align_center" id="S5.T4.13.17.5"><span class="ltx_text" id="S5.T4.13.17.5.1">.098</span></td>
+<td class="ltx_td ltx_align_center" id="S5.T4.13.17.6"><span class="ltx_text" id="S5.T4.13.17.6.1">.706</span></td>
+<td class="ltx_td ltx_align_center" id="S5.T4.13.17.7"><span class="ltx_text" id="S5.T4.13.17.7.1">.782</span></td>
+<td class="ltx_td ltx_align_center ltx_border_r" id="S5.T4.13.17.8"><span class="ltx_text" id="S5.T4.13.17.8.1">.991</span></td>
+<td class="ltx_td ltx_align_center" id="S5.T4.13.17.9"><span class="ltx_text" id="S5.T4.13.17.9.1">2.654</span></td>
+<td class="ltx_td ltx_align_center" id="S5.T4.13.17.10"><span class="ltx_text" id="S5.T4.13.17.10.1">.797</span></td>
+<td class="ltx_td ltx_align_center" id="S5.T4.13.17.11"><math class="ltx_Math" display="inline" id="S5.T4.m33"><semantics><mo>−</mo><annotation encoding="application/x-tex">-</annotation></semantics></math><span class="ltx_text" id="S5.T4.13.17.11.1">.018</span></td>
+<td class="ltx_td ltx_align_center" id="S5.T4.13.17.12"><span class="ltx_text" id="S5.T4.13.17.12.1">.046</span></td>
+<td class="ltx_td ltx_align_center" id="S5.T4.13.17.13"><span class="ltx_text" id="S5.T4.13.17.13.1">.985</span></td></tr>
+<tr class="ltx_tr" id="S5.T4.13.18">
+<td class="ltx_td ltx_align_left ltx_border_bb" id="S5.T4.13.18.1"><span class="ltx_text" id="S5.T4.13.18.1.1">openai</span></td>
+<td class="ltx_td ltx_align_center ltx_border_bb" id="S5.T4.13.18.2"><span class="ltx_text" id="S5.T4.13.18.2.1">.334</span></td>
+<td class="ltx_td ltx_align_center ltx_border_bb" id="S5.T4.13.18.3"><span class="ltx_text" id="S5.T4.13.18.3.1">.081</span></td>
+<td class="ltx_td ltx_align_center ltx_border_bb" id="S5.T4.13.18.4"><span class="ltx_text" id="S5.T4.13.18.4.1">.025</span></td>
+<td class="ltx_td ltx_align_center ltx_border_bb" id="S5.T4.13.18.5"><span class="ltx_text" id="S5.T4.13.18.5.1">.046</span></td>
+<td class="ltx_td ltx_align_center ltx_border_bb" id="S5.T4.13.18.6"><span class="ltx_text" id="S5.T4.13.18.6.1">.714</span></td>
+<td class="ltx_td ltx_align_center ltx_border_bb" id="S5.T4.13.18.7"><span class="ltx_text" id="S5.T4.13.18.7.1">.947</span></td>
+<td class="ltx_td ltx_align_center ltx_border_bb ltx_border_r" id="S5.T4.13.18.8"><span class="ltx_text" id="S5.T4.13.18.8.1">.991</span></td>
+<td class="ltx_td ltx_align_center ltx_border_bb" id="S5.T4.13.18.9"><span class="ltx_text" id="S5.T4.13.18.9.1">4.492</span></td>
+<td class="ltx_td ltx_align_center ltx_border_bb" id="S5.T4.13.18.10"><span class="ltx_text" id="S5.T4.13.18.10.1">.818</span></td>
+<td class="ltx_td ltx_align_center ltx_border_bb" id="S5.T4.13.18.11"><math class="ltx_Math" display="inline" id="S5.T4.m34"><semantics><mo>−</mo><annotation encoding="application/x-tex">-</annotation></semantics></math><span class="ltx_text" id="S5.T4.13.18.11.1">.177</span></td>
+<td class="ltx_td ltx_align_center ltx_border_bb" id="S5.T4.13.18.12"><span class="ltx_text" id="S5.T4.13.18.12.1">.057</span></td>
+<td class="ltx_td ltx_align_center ltx_border_bb" id="S5.T4.13.18.13"><span class="ltx_text" id="S5.T4.13.18.13.1">.983</span></td></tr>
+</table></div><div class="tbl-foot">원문 arXiv HTML의 셀과 수치를 순서대로 재구성했다.</div></div>
+</section>
+<section class="ch" id="c5">
+<div class="ch-eyebrow"><span class="cnum">05</span><span class="clabel">Implications · 적용과 한계</span></div>
+<h2 class="ch-title">운영자는 로그 가정 대신 자신의 데이터 성장 곡선을 재야 한다</h2>
+<div class="tldr"><div class="h">한눈에 요약</div><p>현실의 벡터 데이터가 전환 규모에 도달하기 전이라면, 로그 복잡도만 믿은 용량 계획은 비용을 과소평가할 수 있다. 여러 데이터 크기의 부분집합에서 목표 recall과 거리 계산량을 직접 재고 멱법칙 지수와 전환 징후를 추정하는 편이 안전하다.</p></div>
+<p class="lead">논문은 8개 데이터셋과 두 대표 인덱스에서 강한 증거를 주지만 모든 임베딩 분포와 구현을 포괄하지는 않는다.</p><p>이론은 국소 균일성, 분포 표본화, 특정 그래프 구성에 관한 가정을 사용하고 실제 HNSW·Vamana는 휴리스틱 빌드다. 또한 결론은 고정 recall의 평균 거리 계산량에 관한 것이며 지연시간, 메모리, 동시성, 필터 결합까지 자동으로 설명하지 않는다.</p><div class="call arb"><div class="ct">실무 판독법</div><p>데이터가 10배 늘 때 ef_search와 거리 계산이 얼마나 변하는지 작은 축척 실험으로 먼저 맞춘 뒤, 목표 recall별 비용 모델을 따로 유지하는 것이 이 논문의 가장 직접적인 활용법이다.</p></div>
+</section>
+<section class="ch" id="gloss">
+<div class="ch-eyebrow"><span class="cnum">＋</span><span class="clabel">Glossary · 핵심 용어</span></div>
+<h2 class="ch-title">핵심 용어 정리</h2>
+<div class="tldr"><div class="h">한눈에 요약</div><p>논문의 주장을 따라가는 데 필요한 용어만 간결하게 모았다.</p></div>
+<div class="gloss"><div class="gitem"><div class="term">근사 최근접 이웃<span class="en">Approximate nearest neighbor</span></div><p>일부 정확도를 양보해 고차원 벡터의 가까운 이웃을 빠르게 찾는 검색.</p></div><div class="gitem"><div class="term">고정 재현율<span class="en">Fixed recall</span></div><p>데이터 규모가 달라도 참 이웃 중 찾아낸 비율을 같은 목표로 유지하는 비교 조건.</p></div><div class="gitem"><div class="term">부분선형 멱법칙<span class="en">Sublinear Power Law</span></div><p>비용이 N^c로 자라되 지수 c가 0과 1 사이인 성장.</p></div><div class="gitem"><div class="term">내재 차원<span class="en">Intrinsic dimensionality</span></div><p>벡터 좌표 수가 아니라 데이터가 실제로 놓인 국소 구조의 유효 차원.</p></div><div class="gitem"><div class="term">HNSW<span class="en">Hierarchical Navigable Small World</span></div><p>계층형 근접 그래프를 beam search로 탐색하는 대표 ANN 인덱스.</p></div><div class="gitem"><div class="term">Vamana<span class="en">Vamana</span></div><p>거리 축소와 방향 다양성을 고려해 간선을 가지치기하는 그래프 ANN 인덱스.</p></div></div>
+</section>
+<section class="ch" id="take">
+<div class="ch-eyebrow"><span class="cnum">＋</span><span class="clabel">One-page Summary · 한 장 정리</span></div>
+<h2 class="ch-title">이 논문을 한 장으로</h2>
+<div class="tldr"><div class="h">한눈에 요약</div><p>문제, 방법, 증거, 한계를 한 번에 다시 정리한다.</p></div>
+<div class="takeaways"><div class="take"><div class="n">01</div><div class="body">그래프 ANN의 <b>로그 검색 비용</b> 통념을 고정 recall 실험으로 다시 검증했다.</div></div><div class="take"><div class="n">02</div><div class="body">8개 데이터셋, recall 90–99%, 여러 설정에서 현실적 규모는 N^c 멱법칙을 따랐다.</div></div><div class="take"><div class="n">03</div><div class="body">SpaceV와 OpenAI 데이터에서는 큰 규모에서 증가세가 멱법칙 아래로 꺾였다.</div></div><div class="take"><div class="n">04</div><div class="body">국소 내재 차원의 성장과 포화가 멱법칙·부분다항식 구간을 하나로 설명한다.</div></div><div class="take"><div class="n">05</div><div class="body">질의 지수 모델 평균 R²≈0.88, ef_search 비용 적합도 R²&gt;0.98, 삽입 모델 R²≥0.92였다.</div></div><div class="take"><div class="n">06</div><div class="body">결론은 평균 거리 계산·고정 recall에 관한 것이며 실제 지연시간과 모든 인덱스 구현을 보장하지 않는다.</div></div></div>
+</section>

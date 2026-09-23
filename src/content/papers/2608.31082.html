@@ -1,0 +1,82 @@
+<section class="ch" id="c1">
+<div class="ch-eyebrow"><span class="cnum">01</span><span class="clabel">Problem · 반복해서 긴 문서를 여는 비용</span></div>
+<h2 class="ch-title">정답은 짧은데, 찾느라 수십만 토큰을 다시 읽는다</h2>
+<div class="tldr"><div class="h">한눈에 요약</div><p>여러 문서에 흩어진 사실을 조합하는 에이전트는 정확하지만, 같은 긴 문서를 반복해서 읽어 비용이 커진다.</p><p>저자들은 한 번 읽을 때 재사용할 사실까지 구조화해 두면 다음 질문이 훨씬 싸질 수 있다고 본다.</p></div>
+<p class="lead">이 논문이 겨냥하는 것은 단순한 “관련 문단 하나 찾기”가 아니라, 여러 문서를 열어 중간 표를 만들고 다시 계산해야 하는 <strong>data reasoning</strong>이다.</p>
+<p>예를 들어 “히치콕과 스코세이지 둘 다와 일한 배우는 누구인가?”라는 질문은 두 감독의 영화 목록, 각 영화의 출연진, 두 집합의 교집합을 차례로 구해야 한다. FanOutQA의 질문은 평균 일곱 문서를 가로지르며, 저자 환경에서 에이전트 한 질문이 최대 약 100만 토큰과 거의 1달러를 소비했다. 비용의 대부분은 답을 길게 쓰는 decode가 아니라 문서를 입력으로 다시 읽는 prefill에서 나온다.</p>
+<figure><div class="fig-top"><span class="fnum">FIG 1</span><span class="ftitle">정확도와 비용 사이의 빈 공간</span></div><div class="imgbox"><img alt="RAG, 에이전트 추론, context cracking의 정확도와 비용 비교" decoding="async" loading="lazy" src="/paper-assets/1e0890674f0e78933f75772a242bb9c265f36c5db4d3431fa5371ee3335ad626.png"/></div><figcaption>왼쪽은 고정 top-k RAG보다 에이전트 추론이 정확하지만 비싸고, 제안법은 정확도를 거의 유지하며 비용을 낮춘다는 주장이다. 오른쪽의 <b>28배</b>는 저자들이 필요한 사실을 수작업으로 완전히 구조화한 이상적 저장소와 비교한 잠재 상한이지, 제안법이 실제로 28배 빨라졌다는 뜻은 아니다.</figcaption></figure>
+<div class="call arb"><div class="ct">초등학생도 이해하는 설명</div><p>두꺼운 백과사전에서 선수 키를 찾은 뒤, 다음 날 같은 선수의 생일을 찾으려고 책을 처음부터 또 펼친다고 생각해 보자. 이 논문은 첫날 책을 펼친 김에 “이 선수의 키·생일·팀”을 작은 카드에 적어 두자는 생각이다. 다만 카드에 무엇을 적을지는 앞으로 어떤 질문이 올지 완전히 모르기 때문에 에이전트가 추측한다.</p></div>
+</section>
+
+
+<section class="ch" id="c2">
+<div class="ch-eyebrow"><span class="cnum">02</span><span class="clabel">Method · 질의가 구조를 만든다</span></div>
+<h2 class="ch-title">미리 전부 구조화하지 않고, 필요해서 연 문서만 조금 더 캐낸다</h2>
+<div class="tldr"><div class="h">한눈에 요약</div><p>질문을 처리하다 어쩔 수 없이 문서를 열었을 때, 별도 cracking 하위 에이전트가 미래에 쓸 법한 개체·속성·관계를 함께 추출한다.</p><p>다음 질문은 이 구조화된 저장소를 먼저 보고, 없을 때만 원문으로 돌아간다.</p></div>
+<p class="lead">핵심은 <span class="ar-t">adaptive</span>와 <span class="arb-t">speculative</span>다. 실제 질문이 어떤 문서와 관계가 중요한지 알려 주고, 현재 질문보다 조금 넓은 사실을 추측해서 저장한다.</p>
+<p>각 저장 항목은 확장된 RDF 간선 <code>c = &lt;s, r, o, κ, u, ε&gt;</code>다. 여기서 <code>s</code>는 주어, <code>r</code>은 관계, <code>o</code>는 다른 개체 또는 값, <code>κ</code>는 단일값인지 완전한 목록인지, <code>u</code>는 단위, <code>ε</code>는 어느 문서의 어느 부분이 근거인지 뜻한다. 목록 관계는 일부만 저장하면 완전한 답으로 오해할 수 있어, 전체를 뽑았을 때만 재사용 가능하게 표시한다.</p>
+<p>전통적인 GraphRAG처럼 말뭉치 전체를 먼저 그래프로 만드는 방식과 달리, 이 방법은 질의가 만든 “문서 열기”를 계기로 저장소를 조금씩 채운다. 정확히 같은 질문의 답만 저장하는 semantic cache보다도 넓다. 예를 들어 득점을 물은 질문이 선수 페이지를 열면 리바운드 같은 가까운 속성도 함께 저장할 수 있다.</p>
+<div class="call ar"><div class="ct">핵심 정의</div><p>Context cracking은 <b>현재 질문이 이미 지불한 문서 읽기 비용을 미래 질문을 위한 구조화 자산으로 바꾸는 것</b>이다.</p></div>
+<div class="call arb"><div class="ct">초등학생도 이해하는 설명</div><p>도서관의 모든 책을 미리 카드로 만들면 일이 너무 많다. 그래서 누군가 실제로 빌린 책만 카드로 만들고, 그 사람이 찾던 내용 주변의 정보도 몇 개 더 적는다. 자주 보는 책은 카드가 풍부해지고, 한 번도 안 보는 책에는 일을 쓰지 않는다.</p></div>
+</section>
+
+
+<section class="ch" id="c3">
+<div class="ch-eyebrow"><span class="cnum">03</span><span class="clabel">System · KV cache를 두 번 활용</span></div>
+<h2 class="ch-title">답하는 길과 카드 쓰는 길을 같은 읽기 지점에서 갈라낸다</h2>
+<div class="tldr"><div class="h">한눈에 요약</div><p>문서가 이미 모델 문맥에 들어온 순간 분기해, 답변 에이전트와 cracking 에이전트가 같은 prefix를 공유한다.</p><p>질의 시에는 문서별 catalogue에서 가능한 주어–관계를 먼저 보고, 필요한 구조가 없으면 안전하게 원문을 연다.</p></div>
+<p class="lead">저자들은 두 종류의 locality를 이용한다. 관련 질문들이 같은 문서를 다시 찾는 <strong>semantic locality</strong>와, 이미 계산된 문서 prefix를 하위 에이전트가 재사용하는 <strong>inference locality</strong>다.</p>
+<p>쓰기 단계에서 cracking은 답변 경로 밖에서 병렬로 실행되므로 현재 답을 늦추지 않도록 설계됐다. 4K 출력 토큰 예산 안에서 schema-constrained JSON을 만들고, 후처리가 숫자·단위·날짜를 정규화하며 근거가 있는 항목만 넣는다. 읽기 단계에서는 catalogue가 문서마다 저장된 주어·관계·cardinality를 보여 준다. 이름이 정확히 맞지 않아 저장 항목을 놓치는 문제를 줄이기 위한 장치다.</p>
+<figure><div class="fig-top"><span class="fnum">FIG 2</span><span class="ftitle">구조화 쓰기와 다음 질의의 읽기 프로토콜</span></div><div class="imgbox"><img alt="context cracking의 쓰기와 읽기 동작" decoding="async" loading="lazy" src="/paper-assets/9432ef5bb6e766b18a45c01e81d6e3034d712b9bae57586a2f4e51e751896baf.png"/></div><figcaption>위쪽은 이미 읽은 마지막 문서의 KV cache를 공유해 cracking 분기를 만드는 과정이다. 아래쪽은 catalogue 확인 → 구조화 읽기 → 없으면 원문 열기 순서다. <b>원문 fallback</b>이 정확도 손실을 막는 핵심 안전망이다.</figcaption></figure>
+<div class="call arb"><div class="ct">초등학생도 이해하는 설명</div><p>선생님이 책 한 쪽을 칠판에 띄웠을 때, 한 학생은 지금 질문의 답을 찾고 다른 학생은 다음에 쓸 요약 카드를 만든다. 화면을 두 번 불러오지 않고 같이 보는 셈이다. 다음 질문에서 카드에 답이 없으면 책을 다시 펴므로, 카드를 잘못 준비해도 바로 추측하지 않는다.</p></div>
+</section>
+
+
+<section class="ch" id="c4">
+<div class="ch-eyebrow"><span class="cnum">04</span><span class="clabel">Evaluation · 재사용이 있을 때의 절감</span></div>
+<h2 class="ch-title">비용은 크게 줄었지만, 반복 질문을 인위적으로 만들어 준 실험이다</h2>
+<div class="tldr"><div class="h">한눈에 요약</div><p>FanOutQA에서는 평균 질문 비용이 0.26달러에서 0.12달러로, 영화 사례에서는 0.81달러에서 0.27달러로 줄었다.</p><p>정확도 차이는 통계적으로 유의하지 않았지만, 실험은 각 평가 질문 전에 관련 질문을 한 번 실행해 저장소를 데운 조건이다.</p></div>
+<p class="lead">평가는 Claude Haiku 4.5 기반 FanOutQA 에이전트와 히치콕 중심 사례 연구로 구성된다. FanOutQA 자체에는 문서 재방문성이 거의 없어, 저자들은 각 시험 질문마다 다른 속성을 묻는 관련 질문을 Claude Opus 5로 생성하고 사람이 확인했다.</p>
+<div class="stat-row"><div class="stat"><div class="v">53%</div><div class="l">FanOutQA 평균 비용 감소</div></div><div class="stat"><div class="v arb">43→42%</div><div class="l">LLM judge 정확도, p=0.39</div></div><div class="stat"><div class="v">3.4×</div><div class="l">비용 중앙값 비율</div></div></div>
+<p>FanOutQA prefill은 평균 189K에서 87K 토큰으로, 사례 연구는 565K에서 161K로 줄었다. 평균 비용은 각각 0.26→0.12달러, 0.81→0.27달러였다. FanOutQA LLM-judge 정확도는 43.0%에서 42.0%로 1%p 낮았고 <code>p=0.39</code>라 유의한 차이가 아니었다. 문자열 정확도는 76.1%에서 74.2%였다. 4K cracking decode는 질문당 12%의 추가 비용을 만들었고, 재사용이 없는 90번째 백분위 질문에서는 오히려 baseline보다 1.24배 비쌌다.</p>
+<figure><div class="fig-top"><span class="fnum">FIG 3</span><span class="ftitle">토큰·비용·정확도·질문별 비용 분포</span></div><div class="imgbox"><img alt="context cracking의 평가 결과 네 패널" decoding="async" loading="lazy" src="/paper-assets/9bc77e552fe1a5d3fa4bff1c4e904a722dbad528fa56fc48daa6179b7b49d6ea.png"/></div><figcaption>검은 막대가 기존 agentic reasoning, 초록 막대가 cracking을 더한 결과다. 비용 이득은 평균적으로 크지만 질문마다 균일하지 않다. CDF에서 일부 질문은 재사용이 없어 cracking 비용만 추가된다.</figcaption></figure>
+<div class="call arb"><div class="ct">초등학생도 이해하는 설명</div><p>카드를 한 번도 다시 쓰지 않으면 카드 만드는 시간이 낭비다. 이 실험은 시험 문제를 풀기 전에 비슷한 연습 문제를 하나 풀게 해서 카드가 쓰일 기회를 만들었다. 그러므로 “모든 실제 서비스에서 53% 절약”이 아니라, <b>관련 질문이 반복되는 서비스에서 얼마나 절약될 수 있는지</b>를 보여 준 결과다.</p></div>
+</section>
+
+
+<section class="ch" id="c5">
+<div class="ch-eyebrow"><span class="cnum">05</span><span class="clabel">Validity · 강점과 남은 질문</span></div>
+<h2 class="ch-title">아이디어는 강하지만 장기·기업 환경의 증거는 아직 없다</h2>
+<div class="tldr"><div class="h">한눈에 요약</div><p>질의가 구조 구축 우선순위를 정하고, 저장 결과가 모델 교체 뒤에도 남는다는 방향은 LLM-Wiki와 매우 가깝다.</p><p>다만 Wikipedia 기반 짧은 워크로드, 정적 말뭉치, 생성된 관련 질문으로 평가했으며 장기간의 실제 질의 로그와 저장 오류 누적은 시험하지 않았다.</p></div>
+<p class="lead">가장 중요한 기여는 “모두 미리 컴파일”과 “매번 원문 재독” 사이에 <strong>사용량에 따라 자라는 구조</strong>라는 세 번째 선택지를 선명하게 만든 것이다.</p>
+<p>현재 도구는 제한된 주어·관계 조회만 제공하며 SQL의 집계·조인·다단계 질의를 안전하게 노출하지 않는다. 문서 수정 시 오래된 cracked object를 어떻게 폐기하거나 갱신할지도 구현되지 않았다. 추출은 미래 필요를 추측하므로 틀린 카드나 쓸모없는 카드가 누적될 수 있고, 사적 기업 문서에서의 일반화도 검증되지 않았다. 저자 역시 실제 장기간 질의 이력을 담는 benchmark가 필요하다고 적는다.</p>
+<div class="versus"><div class="card ar"><h4><span class="tag">강한 점</span> 비용을 지식 자산으로 전환</h4><ul><li>원문 fallback으로 현재 정확도를 보호</li><li>근거 위치·단위·목록 완전성을 저장</li><li>KV cache와 영구 구조를 함께 활용</li></ul></div><div class="card arb"><h4><span class="tag">주의</span> 재사용 가정에 민감</h4><ul><li>생성된 관련 질문으로 저장소를 예열</li><li>실제 장기 로그·동적 문서 미평가</li><li>오류·중복·신선도 관리 미완성</li></ul></div></div>
+<div class="call arb"><div class="ct">초등학생도 이해하는 설명</div><p>자주 보는 책의 카드를 조금씩 쌓는 생각은 아주 실용적이다. 하지만 학교에서 만든 연습 카드가 회사의 계약서에서도 똑같이 잘 작동하는지는 아직 모른다. 카드가 오래돼 틀렸거나 같은 사람이 다른 이름으로 두 번 저장되는 문제도 앞으로 풀어야 한다.</p></div>
+</section>
+
+
+<section class="ch" id="class">
+<div class="ch-eyebrow"><span class="cnum">＋</span><span class="clabel">Retrieval Family · 검색 계열 1차 판별</span></div>
+<h2 class="ch-title">그래프를 저장하지만 Microsoft GraphRAG나 HippoRAG는 아니다</h2>
+<div class="tldr"><div class="h">한눈에 요약</div><p>extended RDF-style edge를 저장하지만 community report·global/local/DRIFT도, PPR도 없다.</p><p>따라서 <strong>질의 주도 구조화 저장소를 쓰는 agentic retrieval</strong>로 분류하는 것이 정확하다.</p></div>
+<p>노드는 개체와 값, 간선은 관계이며 지식 표현에 가깝다. 하지만 질의 시 그래프 경로나 PageRank를 따라가는 것이 아니라 catalogue와 주어·관계 lookup을 사용한다. Microsoft GraphRAG의 말뭉치 선구축·커뮤니티 요약과 달리 질의 중 문서를 열 때만 자라고, HippoRAG의 Personalized PageRank 확산과도 다르다.</p>
+<div class="call arb"><div class="ct">초등학생도 이해하는 설명</div><p>관계 카드를 저장한다는 점에서는 그래프와 닮았지만, 선을 따라 산책하며 답을 찾지는 않는다. “선수–리바운드–7.2”라고 적힌 카드를 서랍에서 바로 꺼내는 방식에 더 가깝다.</p></div>
+</section>
+
+
+<section class="ch" id="gloss"><div class="ch-eyebrow"><span class="cnum">＋</span><span class="clabel">Glossary · 핵심 용어</span></div><h2 class="ch-title">핵심 용어 정리</h2><div class="gloss">
+<div class="gitem"><div class="term">Prefill<span class="en">입력 읽기</span></div><p>모델이 질문과 긴 문서를 처음 읽어 내부 계산을 만드는 단계다.</p></div>
+<div class="gitem"><div class="term">KV cache<span class="en">Key-Value Cache</span></div><p>이미 읽은 토큰의 중간 계산을 저장해 같은 prefix를 다시 계산하지 않게 하는 메모리다.</p></div>
+<div class="gitem"><div class="term">Cracked object<span class="en">구조화된 사실</span></div><p>주어·관계·값·단위·완전성·원문 근거를 묶어 저장한 재사용 항목이다.</p></div>
+<div class="gitem"><div class="term">Semantic locality<span class="en">의미적 지역성</span></div><p>관련된 질문들이 같은 문서와 비슷한 개체를 반복해서 찾는 현상이다.</p></div>
+<div class="gitem"><div class="term">Fallback<span class="en">원문 복귀</span></div><p>저장소에 필요한 사실이 없으면 원래 문서를 열어 답을 찾는 안전장치다.</p></div>
+</div></section>
+
+
+<section class="ch" id="take"><div class="ch-eyebrow"><span class="cnum">＋</span><span class="clabel">One-page Summary · 한 장 정리</span></div><h2 class="ch-title">이 논문을 한 장으로</h2><div class="takeaways">
+<div class="take"><div class="n">01</div><div class="body">에이전트가 이미 연 문서에서 <b>미래에 쓸 구조도 함께 추출</b>한다.</div></div>
+<div class="take"><div class="n">02</div><div class="body">FanOutQA 평균 비용은 0.26달러에서 0.12달러로 줄었고 정확도 차이는 유의하지 않았다.</div></div>
+<div class="take"><div class="n">03</div><div class="body">절감은 관련 질문의 문서·개체 재사용이 있을 때 생긴다.</div></div>
+<div class="take"><div class="n">04</div><div class="body">평가는 관련 질문으로 저장소를 미리 데운 조건이며 실제 장기 로그는 아니다.</div></div>
+<div class="take"><div class="n">05</div><div class="body"><b>정말 쉽게:</b> 한 번 펼친 책에서 다음에 물을 법한 답도 카드로 적어 두는 시스템이다.</div></div>
+</div></section>

@@ -1,0 +1,5848 @@
+[
+  {
+    "id": "2609.26779",
+    "topic": "agents",
+    "title": "CliffCompaction: 긴 코딩 에이전트의 비용을 낮추는 절벽형 문맥 압축",
+    "originalTitle": "CliffCompaction: Cost-Efficient Compaction for Long-Horizon Coding Agents",
+    "summary": "임계 토큰에서 도구 결과를 버리고 최근 구간을 원문으로 유지하는 CliffCompaction은 회상 범위를 줄이는 대신 압축 정밀도와 KV-cache 재사용을 높여 코딩 에이전트의 비용을 낮춘다.",
+    "intro": "문맥을 계속 요약해서 요약의 요약을 만드는 대신, 임계 토큰에 도달할 때만 오래된 도구 결과를 버리고 최근 구간을 그대로 보존합니다. 이전 압축 블록은 재귀적으로 합치지 않습니다. 그 결과 전체 문맥의 회상 범위는 줄지만 보존 구간의 정확도와 KV-cache 재사용을 높여 SWE-bench·Terminal-Bench·KernelBench에서 비용과 성능을 함께 개선합니다.",
+    "authors": "Trang Nguyen · Eulrang Cho · Bingqing Chen · Tim Dettmers",
+    "venue": "arXiv preprint",
+    "sourceUrl": "https://arxiv.org/abs/2609.26779v1",
+    "pdfUrl": "https://arxiv.org/pdf/2609.26779v1",
+    "collectedOn": "2026-09-23",
+    "tags": [
+      "coding agents",
+      "context management",
+      "KV-cache",
+      "test-time scaling",
+      "continual learning"
+    ],
+    "practical": "에이전트 runtime에 scaffold-agnostic proxy로 붙일 수 있지만, 과거 정보 회수율·provider 가격·selector 누수와 재호출 비용을 별도 관찰해야 한다.",
+    "keyPoints": [
+      "압축은 임계점에서만 하고, 이전 압축을 다시 요약하지 않는다.",
+      "CliffCompaction은 비용을 낮추면서 SWE-bench·Terminal-Bench 성능을 유지하거나 높였다.",
+      "KernelBench에서 400 step·128K 압축은 L40S 3.58×, RTX Pro 6000 2.48×를 기록했다.",
+      "실무에서는 회상 손실, provider 가격, cache hit, selector 누수를 별도로 관찰해야 한다."
+    ],
+    "headings": [
+      {
+        "id": "c1",
+        "text": "긴 궤적에서 모든 기록을 보존하면 비싸고, 계속 요약하면 의미가 흐려진다"
+      },
+      {
+        "id": "c2",
+        "text": "임계점에서만 절벽처럼 줄이고, 과거 압축을 절대 다시 압축하지 않는다"
+      },
+      {
+        "id": "c3",
+        "text": "짧은 코드 수정부터 백만 토큰 커널 최적화까지 성능을 유지한다"
+      },
+      {
+        "id": "c4",
+        "text": "압축으로 여러 번 시도하는 비용을 감당하고, 커널 탐색을 더 오래 지속한다"
+      },
+      {
+        "id": "c5",
+        "text": "회상 손실과 선택기 의존성을 숨기지 않고 도입해야 한다"
+      },
+      {
+        "id": "gloss",
+        "text": "핵심 용어"
+      },
+      {
+        "id": "take",
+        "text": "정말 쉽게 한 문장"
+      }
+    ]
+  },
+  {
+    "id": "2609.26749",
+    "topic": "evaluation",
+    "title": "LLM 취약점 복구 평가의 지표 실패",
+    "originalTitle": "Metrics Failure in LLM-Based Code Vulnerability Repair: An Empirical Study and a Change-Aware Screen",
+    "summary": "격리 함수의 compile rate와 whole-function CodeBLEU는 모델의 취약점 복구 품질보다 하니스·데이터셋·컴파일러 설정을 측정하거나 no-op·삭제를 보상할 수 있다.",
+    "intro": "컴파일률과 함수 전체 CodeBLEU가 취약점 복구 품질을 제대로 측정하지 못하는 다섯 가지 실패 모드를 203개 C/C++ 함수와 3개 오픈소스 코드 모델로 재현합니다. 누락된 프로젝트 문맥·데이터셋 전처리·컴파일러 플래그가 결과를 좌우하고, no-op과 코드 삭제가 점수를 높일 수 있음을 보입니다.",
+    "authors": "Om Nepal · Sushant Aryal · Oluseyi Olukola · Nick Rahimi",
+    "venue": "arXiv preprint",
+    "sourceUrl": "https://arxiv.org/abs/2609.26749v1",
+    "pdfUrl": "https://arxiv.org/pdf/2609.26749v1",
+    "collectedOn": "2026-09-23",
+    "tags": [
+      "software engineering",
+      "vulnerability repair",
+      "evaluation",
+      "CodeBLEU",
+      "compile rate"
+    ],
+    "practical": "정확한 toolchain과 no-op·degenerate baseline을 공개하고, diff_F1은 실행·exploit 검증을 보조하는 screen으로만 사용해야 한다.",
+    "keyPoints": [
+      "compile rate는 개선에 둔감하고 toolchain에 민감하며, 최적화하면 삭제를 보상할 수 있다.",
+      "203개 함수에서 실패의 약 64%는 모델 외 원인이었다.",
+      "whole-function CodeBLEU는 no-op을 0.775로 높게 평가했다.",
+      "diff_F1은 no-op 탐지에 유용하지만 repair-quality metric이 아니므로 실행 oracle과 함께 써야 한다."
+    ],
+    "headings": [
+      {
+        "id": "c1",
+        "text": "함수 전체를 점수화하면 실제 수정과 주변 문맥을 구분하지 못한다"
+      },
+      {
+        "id": "c2",
+        "text": "컴파일 여부를 측정하되 프로젝트 문맥과 전처리 아티팩트를 분리한다"
+      },
+      {
+        "id": "c3",
+        "text": "컴파일률은 개선에 둔감하고 환경에 민감하며 최적화하면 게임된다"
+      },
+      {
+        "id": "c4",
+        "text": "whole-function CodeBLEU는 no-op을, compile feedback은 삭제를 보상한다"
+      },
+      {
+        "id": "c5",
+        "text": "실행 oracle이 우선이고, proxy는 하니스와 degenerate baseline을 함께 공개해야 한다"
+      },
+      {
+        "id": "gloss",
+        "text": "핵심 용어"
+      },
+      {
+        "id": "take",
+        "text": "정말 쉽게 한 문장"
+      }
+    ]
+  },
+  {
+    "id": "2609.26654",
+    "topic": "systems",
+    "title": "Proof-of-Retention: 조직 간 데이터 공유를 감사 가능하게 만들기",
+    "originalTitle": "Proof-of-Retention: A Framework for Auditable Cross-Organization Data Sharing",
+    "summary": "공유 시점의 query witness와 암호화 challenge를 보존하면 full replication 없이도 source가 감사 근거를 보유하는지 높은 확률로 확인할 수 있다.",
+    "intro": "서로 다른 조직의 데이터베이스가 교환 뒤 독립적으로 변해 provenance가 낡는 문제를, query witness와 암호학적 보존 증명으로 다룹니다. 신뢰 브로커가 공유 시점에 nonce challenge를 만들고, 나중에 source가 원본 witness를 보유했음을 증명하게 합니다. 논문은 형식화와 AWS 참조 아키텍처를 제시하지만 구현 실험·baseline 비교는 하지 않습니다.",
+    "authors": "Kyle MacMillan · Sanjay Krishnan",
+    "venue": "arXiv preprint",
+    "sourceUrl": "https://arxiv.org/abs/2609.26654v1",
+    "pdfUrl": "https://arxiv.org/pdf/2609.26654v1",
+    "collectedOn": "2026-09-23",
+    "tags": [
+      "data sharing",
+      "provenance",
+      "auditability",
+      "witness",
+      "TEE"
+    ],
+    "practical": "데이터 계약에 witness·보존기간·challenge를 포함할 수 있지만, 논문은 baseline·성능 실험이 없고 trusted broker와 계약 의미 검증을 가정한다.",
+    "keyPoints": [
+      "조직 간 DB는 독립 변경으로 provenance가 낡으므로 witness 재현 가능성을 보존해야 한다.",
+      "nonce hash challenge는 full replication 없이 retention failure를 탐지한다.",
+      "AWS Nitro Enclave·Parquet·DuckDB 구성은 실행 가능한 설계 예지만 성능 실험은 없다.",
+      "broker 신뢰·암호화·계약 의미 검증은 도입 전 별도로 검증해야 한다."
+    ],
+    "headings": [
+      {
+        "id": "c1",
+        "text": "데이터를 보냈다는 기록만으로는 나중에 같은 근거를 재현할 수 없다"
+      },
+      {
+        "id": "c2",
+        "text": "계약·쿼리·witness를 하나의 exchange event로 묶는다"
+      },
+      {
+        "id": "c3",
+        "text": "공유할 때 challenge를 미리 만들고, 나중에 nonce 응답으로 보유를 증명한다"
+      },
+      {
+        "id": "c4",
+        "text": "프로토콜이 잡는 것은 보존 위반이지 거짓 데이터의 의미적 진실이 아니다"
+      },
+      {
+        "id": "c5",
+        "text": "AWS enclave와 Parquet·DuckDB로 가능성을 구체화했지만 실험은 없다"
+      },
+      {
+        "id": "gloss",
+        "text": "핵심 용어"
+      },
+      {
+        "id": "take",
+        "text": "정말 쉽게 한 문장"
+      }
+    ]
+  },
+  {
+    "id": "2609.26476",
+    "topic": "systems",
+    "title": "Memoryless: 탄력적 메모리 지역성을 이용한 서버리스 배치",
+    "originalTitle": "Don’t let your Memory defy you: Fragmentation-Aware Serverless Allocation with Elastic Memory Locality",
+    "summary": "local:remote 메모리 비율을 control-plane 자원 축으로 노출해 latency-feasible variant를 선택·배치하면 node footprint와 stranded capacity를 줄일 수 있다.",
+    "intro": "고정 CPU-메모리 번들이 만드는 내부·외부 단편화를 줄이기 위해, 서버리스 제어 평면에 local:remote 메모리 비율을 새 자원 축으로 추가합니다. 함수별 latency·goodput·자원 footprint를 프로파일링해 Pareto variant를 만들고, runtime에 variant 선택·배치·라우팅을 함께 수행합니다. Knative prototype과 Huawei trace에서 node·CPU 낭비와 SLO 위반을 줄였습니다.",
+    "authors": "Achilleas Tzenetopoulos · Dimosthenis Masouros · Sotirios Xydis · Francky Catthoor · Dimitrios Soudris",
+    "venue": "arXiv preprint",
+    "sourceUrl": "https://arxiv.org/abs/2609.26476v1",
+    "pdfUrl": "https://arxiv.org/pdf/2609.26476v1",
+    "collectedOn": "2026-09-23",
+    "tags": [
+      "serverless",
+      "resource allocation",
+      "memory locality",
+      "fragmentation",
+      "scheduling"
+    ],
+    "practical": "최대 node 40–46% 감소와 goodput 향상이 보고됐지만 workload profiling, remote-memory 지연, variant churn과 SLO를 함께 검증해야 한다.",
+    "keyPoints": [
+      "고정 CPU-메모리 번들은 내부 낭비를, 독립 배치는 외부 단편화를 만든다.",
+      "EMR을 scheduler knob로 추가하면 local/remote 메모리와 CPU shape를 함께 최적화할 수 있다.",
+      "저자 측정에서 node 최대 40–46% 감소, SLO 위반 3% 이내, goodput 추가 18% 향상이 보고됐다.",
+      "실무에서는 profiling, remote latency, churn, cost를 한 세트로 검증해야 한다."
+    ],
+    "headings": [
+      {
+        "id": "c1",
+        "text": "CPU와 메모리를 고정 번들로 묶으면 남는 자원이 있어도 다음 함수를 넣지 못한다"
+      },
+      {
+        "id": "c2",
+        "text": "locality를 고정 속성이 아니라 scheduler가 조절하는 variant로 만든다"
+      },
+      {
+        "id": "c3",
+        "text": "SLO를 지키면서 variant 수와 위치를 함께 고른다"
+      },
+      {
+        "id": "c4",
+        "text": "node·CPU 낭비와 goodput을 줄이고, 온라인 결정 시간은 유지한다"
+      },
+      {
+        "id": "c5",
+        "text": "효율을 얻는 대신 profiling·remote latency·churn을 운영해야 한다"
+      },
+      {
+        "id": "gloss",
+        "text": "핵심 용어"
+      },
+      {
+        "id": "take",
+        "text": "정말 쉽게 한 문장"
+      }
+    ]
+  },
+  {
+    "id": "2609.26381",
+    "topic": "systems",
+    "title": "Layout-Guided Masking for GROBID: 과학 PDF 수집의 가벼운 구조 개선",
+    "originalTitle": "Layout-Guided Masking for GROBID: Lightweight Structural Gains in Large-Scale Scientific PDF Ingestion",
+    "summary": "전용 recognizer를 새로 학습하지 않고 layout 경계를 올바르게 주면 GROBID의 구조 precision과 표·그림 회수가 크게 좋아지며, Docling과는 목적·비용 trade-off가 있다.",
+    "intro": "CPU 기반 GROBID에 PP-DocLayout-L의 가벼운 layout detector를 붙여 figure·table·header/footer 영역을 typed mask로 표시합니다. 본문 token은 GROBID의 기존 sequence labeller가, 그림·표는 기존 전용 모델이 처리하도록 라우팅합니다. 4,521개 PMC 논문과 표·그림 benchmark에서 구조 정밀도와 비용을 개선했으며, Docling은 더 높은 일부 표 점수를 보이지만 GPU·CPU 비용과 paragraph precision에서 trade-off가 있습니다.",
+    "authors": "Luca Foppiano · Sana Khamassi · Vipul Gupta",
+    "venue": "arXiv preprint",
+    "sourceUrl": "https://arxiv.org/abs/2609.26381v1",
+    "pdfUrl": "https://arxiv.org/pdf/2609.26381v1",
+    "collectedOn": "2026-09-23",
+    "tags": [
+      "document ingestion",
+      "PDF parsing",
+      "GROBID",
+      "layout analysis",
+      "Docling"
+    ],
+    "practical": "대규모 born-digital PDF ingestion에서는 GROBID+PP를 CPU 기본선으로 검토하되, 화학식 word segmentation이나 최고 표 TEDS가 필요하면 GPU parser를 별도 비교한다.",
+    "keyPoints": [
+      "이 논문은 Docling을 대체한다기보다 GROBID의 token routing 경계를 개선하는 방식이다.",
+      "4,521개 PMC 문서에서 본문 구조와 표·그림 회수를 높였다.",
+      "Docling은 표·시각적 단어 경계에서 강하지만 GPU와 비용, paragraph precision trade-off가 있다.",
+      "대규모 데이터 레이크 ingestion에서는 목적별 metric과 CPU/GPU 비용을 함께 비교해야 한다."
+    ],
+    "headings": [
+      {
+        "id": "c1",
+        "text": "PDF에서 본문·그림·표·머리말을 같은 모델에 맡기면 구조가 깨진다"
+      },
+      {
+        "id": "c2",
+        "text": "JATS를 기준으로 텍스트·구조·표·그림을 분리해 비교한다"
+      },
+      {
+        "id": "c3",
+        "text": "masking은 특히 표 경계를 바로잡고 본문 precision을 높인다"
+      },
+      {
+        "id": "c4",
+        "text": "Docling은 표의 일부 점수와 시각적 단어 경계를 앞서지만 비용·구조 precision은 trade-off다"
+      },
+      {
+        "id": "c5",
+        "text": "CPU 대규모 수집에는 hybrid routing이 매력적이지만 입력·비용 범위를 먼저 확인한다"
+      },
+      {
+        "id": "gloss",
+        "text": "핵심 용어"
+      },
+      {
+        "id": "take",
+        "text": "정말 쉽게 한 문장"
+      }
+    ]
+  },
+  {
+    "id": "2609.25991",
+    "topic": "agents",
+    "title": "지식을 스킬처럼 읽게 하기",
+    "originalTitle": "Knowledge-as-Skill: A Structural Design for Autonomous Knowledge-Base Use by LLM Agents",
+    "summary": "지식 저장소를 읽기 절차와 provenance를 포함한 계층 구조로 만들면 에이전트의 자율 탐색을 돕지만, 예비 비교와 구축·유지 비용은 추가 검증이 필요하다.",
+    "intro": "이 논문은 일반 RAG의 고정된 “검색→붙이기→생성” 흐름을 넘어, LLM 에이전트가 지식 저장소의 구조를 발견하고 탐색하고 출처를 확인 하도록 설계하는 Knowledge-as-Skill을 제안한다.",
+    "authors": "Jiangxu Wu",
+    "venue": "arXiv · 2026-09-22",
+    "sourceUrl": "https://arxiv.org/abs/2609.25991",
+    "pdfUrl": "https://arxiv.org/pdf/2609.25991",
+    "collectedOn": "2026-09-23",
+    "tags": [
+      "LLM-Wiki",
+      "agent-native retrieval",
+      "knowledge base",
+      "provenance",
+      "RAG"
+    ],
+    "practical": "",
+    "keyPoints": [
+      "RAG의 검색 결과를 대신 결정하는 대신, 에이전트가 지식 구조를 따라 읽게 한다.",
+      "SKILL.md는 발견, index.md는 이동, 문서 frontmatter는 출처 확인을 담당한다.",
+      "WixQA 예비 평가에서 Factuality·Context Recall은 높았지만 모든 지표가 좋아진 것은 아니다.",
+      "구조화 비용·지연·갱신 문제는 아직 검증이 필요하다."
+    ],
+    "headings": [
+      {
+        "id": "c1",
+        "text": "RAG가 문서를 찾아 붙이는 데서, 에이전트가 지식을 읽는 방법을 배우는 데로"
+      },
+      {
+        "id": "c2",
+        "text": "세 층으로 나눈 지식: 발견, 이동, 내용"
+      },
+      {
+        "id": "c3",
+        "text": "문서를 넣는 순간부터 질문을 푸는 순간까지"
+      },
+      {
+        "id": "c4",
+        "text": "정확성은 좋아졌지만, 읽는 횟수와 답변 방식에는 대가가 있다"
+      },
+      {
+        "id": "c5",
+        "text": "LLM-Wiki의 핵심은 저장 방식보다 읽는 규칙이다"
+      },
+      {
+        "id": "appendix-a",
+        "text": "검색 계열 1차 판별 · LLM-Wiki/agent-native knowledge base"
+      },
+      {
+        "id": "gloss",
+        "text": "핵심 용어 정리"
+      },
+      {
+        "id": "take",
+        "text": "이 논문을 한 장으로"
+      }
+    ]
+  },
+  {
+    "id": "2609.25825",
+    "topic": "retrieval",
+    "title": "행동 신호가 사라져도 흔들리지 않는 개인화 검색",
+    "originalTitle": "Robust Fusion of Semantic and Behavioural Signals for LLM Reranking in Personalised Search",
+    "summary": "QSS 포함/제거 쌍을 함께 학습하면 행동 로그가 없는 조건의 성능 저하를 줄일 수 있지만, head·tail 구간별 절충은 남는다.",
+    "intro": "이 논문은 개인화 검색용 LLM reranker가 행동 통계에 과적합되지 않도록 QSS가 있는 입력과 없는 입력을 함께 학습 하는 dual-sample objective를 제안하고, 오프라인·온라인 실험에서 신호가 희소한 구간의 견고성을 점검한다.",
+    "authors": "Aleksandr V. Petrov · Nathan Stein · Erik Lybecker · Emma Schüldt · Daniel Lazarovski · Hugues Bouchard · Mounia Lalmas",
+    "venue": "arXiv · 2026-09-22 · Spotify Research",
+    "sourceUrl": "https://arxiv.org/abs/2609.25825",
+    "pdfUrl": "https://arxiv.org/pdf/2609.25825",
+    "collectedOn": "2026-09-23",
+    "tags": [
+      "personalized search",
+      "LLM reranking",
+      "behavioral signals",
+      "cold-start",
+      "retrieval evaluation"
+    ],
+    "practical": "",
+    "keyPoints": [
+      "행동 로그는 개인화에 유용하지만, 새 질문·새 항목에서는 비어 있을 수 있다.",
+      "QSS를 포함한 입력과 제거한 입력을 함께 학습하면 shortcut 의존을 줄인다.",
+      "α=0.5는 이 실험에서 전체와 No-QSS 성능의 균형점이었다.",
+      "평균 개선만 보지 말고 cold-start·tail·head 구간을 분리해 평가해야 한다."
+    ],
+    "headings": [
+      {
+        "id": "c1",
+        "text": "의미만 아는 검색 모델은 긴 꼬리와 새 항목에서 흔들린다"
+      },
+      {
+        "id": "c2",
+        "text": "QSS를 보여 준 예와 숨긴 예를 한 쌍으로 학습한다"
+      },
+      {
+        "id": "c3",
+        "text": "QSS를 반쯤 가린 학습이 전체와 QSS-없음 조건을 함께 지켰다"
+      },
+      {
+        "id": "c4",
+        "text": "실서비스에서도 평균 개선은 있었지만, 모든 이용자 구간이 같지는 않았다"
+      },
+      {
+        "id": "c5",
+        "text": "행동 신호를 버리는 것이 아니라, 없어도 무너지지 않게 만든다"
+      },
+      {
+        "id": "appendix-a",
+        "text": "검색 계열 1차 판별 · LLM/neural reranking"
+      },
+      {
+        "id": "gloss",
+        "text": "핵심 용어 정리"
+      },
+      {
+        "id": "take",
+        "text": "이 논문을 한 장으로"
+      }
+    ]
+  },
+  {
+    "id": "2609.24090",
+    "topic": "agents",
+    "title": "자율 지능 시스템의 증분 일관성 실행",
+    "originalTitle": "Incremental Consistency Execution for Autonomous Intelligent Systems",
+    "summary": "세 사례에서 expensive calls와 지연을 줄였지만, 불변 영역은 계약 버전·샌드박스 검증·커밋 재검증을 전제로 한다.",
+    "intro": "Task fact 계약, 필드 수준 의존성 마스크, 상태 변동 불변 영역을 사용해 외부 데이터가 바뀌어도 전체 워크플로를 다시 돌리지 않는 런타임 방법입니다. 산업 고장 진단·기업 분석·다중 도구 보조자에서 비싼 호출을 줄이면서도 부작용 커밋 시점에는 별도 버전 검사를 유지합니다.",
+    "authors": "Cheng Li · Jiexiong Liu · Yixuan Chen · Ziheng Huang",
+    "venue": "arXiv 프리프린트 · 2026",
+    "sourceUrl": "https://arxiv.org/abs/2609.24090v1",
+    "pdfUrl": "https://arxiv.org/pdf/2609.24090v1",
+    "collectedOn": "2026-09-22",
+    "tags": [],
+    "practical": "데이터/도구 파이프라인에 필드 수준 변경 전파와 구조화 동등성 검사를 도입하되, 결제·권한·불가역 쓰기는 항상 커밋 직전 재검증한다.",
+    "keyPoints": [
+      "값이 바뀌었다고 전체 파이프라인을 다시 돌릴 필요는 없다.",
+      "필드 의존성과 계약 동등성으로 최소 재실행 범위를 만든다.",
+      "결제·권한·장치 제어는 계산 재사용과 분리해 커밋 직전에 재검증한다.",
+      "저자 측정에서는 비싼 호출 0.18배, 지연 65ms, 잘못된 전파 0.4%를 보고했지만 세 사례 기반이다."
+    ],
+    "headings": [
+      {
+        "id": "c1",
+        "text": "입력 값이 바뀌어도 결론이 그대로면 다시 계산하지 않는다"
+      },
+      {
+        "id": "c2",
+        "text": "불변 영역, 필드 의존성, 동등성 장벽으로 가장 작은 부분만 갱신한다"
+      },
+      {
+        "id": "c3",
+        "text": "계산 결과 재사용과 돈·권한·장치 제어 커밋을 분리한다"
+      },
+      {
+        "id": "c4",
+        "text": "세 사례에서 호출·지연을 줄였지만 검증 환경과 계약 정의가 필요하다"
+      },
+      {
+        "id": "c5",
+        "text": "검증 샌드박스와 기계적 동등성 규칙이 없으면 이득이 사라진다"
+      },
+      {
+        "id": "gloss",
+        "text": "핵심 용어"
+      },
+      {
+        "id": "take",
+        "text": "정말 쉽게 한 문장"
+      }
+    ]
+  },
+  {
+    "id": "2609.24036",
+    "topic": "evaluation",
+    "title": "신뢰할 수 있는 LLM 접근 제어 정책 생성을 위한 구조적 분해",
+    "originalTitle": "Structured Decomposition for Reliable LLM-Generated Access Control Policies",
+    "summary": "ACRE 372개에서 effective correct coverage가 direct 15.3%에서 구조적 pipeline 50.3%로 상승했지만 의미적 동등성 전체의 증명은 아니다.",
+    "intro": "자연어 접근 요구를 Rego/OPA 정책으로 바꾸는 파이프라인에 DSARCP 구조화, 스키마 검증, lint·컴파일·positive/negative 테스트를 넣었습니다. ACRE 372개에서 “배포 가능한 correctness”가 direct prompt 15.3%에서 50.3%로 올랐지만, 의미적 동등성 전체가 아니라 실행·테스트 기준이라는 한계가 있습니다.",
+    "authors": "Vatsal Gupta · Darshan Sreenivasamurthy",
+    "venue": "arXiv 프리프린트 · 2026",
+    "sourceUrl": "https://arxiv.org/abs/2609.24036v1",
+    "pdfUrl": "https://arxiv.org/pdf/2609.24036v1",
+    "collectedOn": "2026-09-22",
+    "tags": [],
+    "practical": "policy-as-code 생성은 모델 출력보다 vocabulary·deny semantics·독립 fixture·OPA 검증 로그를 함께 보관하는 방식으로 운영한다.",
+    "keyPoints": [
+      "자연어 정책은 DSARCP 구조로 분해한 뒤 생성해야 누락을 줄인다.",
+      "배포 가능성은 compile·lint·positive·negative 네 문턱을 모두 통과하는지로 측정한다.",
+      "372개에서 effective correct coverage가 15.3%→50.3%로 올랐지만, 의미적 완전성의 증명은 아니다.",
+      "deny·ownership·status 조건은 보안 특성별 fixture로 따로 검사해야 한다."
+    ],
+    "headings": [
+      {
+        "id": "c1",
+        "text": "자연어 문장을 바로 코드로 쓰면 조건을 빠뜨린다"
+      },
+      {
+        "id": "c2",
+        "text": "생성기보다 앞뒤의 결정론적 문턱을 늘린다"
+      },
+      {
+        "id": "c3",
+        "text": "positive와 negative를 모두 통과해야 배포 가능한 정책으로 센다"
+      },
+      {
+        "id": "c4",
+        "text": "구조적 파이프라인이 coverage와 보안 조건을 함께 높였다"
+      },
+      {
+        "id": "c5",
+        "text": "테스트 기준의 correctness는 의미적 동등성의 증명이 아니다"
+      },
+      {
+        "id": "gloss",
+        "text": "핵심 용어"
+      },
+      {
+        "id": "take",
+        "text": "정말 쉽게 한 문장"
+      }
+    ]
+  },
+  {
+    "id": "2609.24018",
+    "topic": "systems",
+    "title": "상수 크기 메시지 메타데이터를 쓰는 Byzantine 인과 신뢰 브로드캐스트",
+    "originalTitle": "Byzantine Causal Reliable Broadcast (BCRB) with Constant-Size Message Metadata",
+    "summary": "기본 변형은 상수 메타데이터·O(n²) 통신과 확률적 safety를, 강화 변형은 O(n³) 통신과 100% weak safety를 교환한다.",
+    "intro": "비동기 Byzantine 환경에서 메시지의 인과 순서를 유지하면서 payload에 붙는 메타데이터를 O(1)로 줄이는 두 프로토콜을 제안합니다. BRB 데이터 plane과 ACK·sequence gating control plane을 분리해 O(n²) 통신을 얻지만, 강한 안전성은 확률적이며 100% 약한 안전성을 원하면 O(n³) 변형을 선택합니다.",
+    "authors": "Purv Patel · Ajay D. Kshemkalyani",
+    "venue": "arXiv 프리프린트 · 2026",
+    "sourceUrl": "https://arxiv.org/abs/2609.24018v1",
+    "pdfUrl": "https://arxiv.org/pdf/2609.24018v1",
+    "collectedOn": "2026-09-22",
+    "tags": [],
+    "practical": "분산 데이터 plane에 적용할 때 f<n/3, 지연 독립성, front-running 위험, strong/weak safety 요구를 먼저 검증한다.",
+    "keyPoints": [
+      "BRB와 causal control plane을 분리해 메시지 메타데이터를 O(1)로 줄인다.",
+      "기본 변형은 O(n²) 통신과 확률적 safety, 강화 변형은 O(n³) 통신과 100% weak safety를 교환한다.",
+      "암호 버전은 front-running을 막지만 threshold decryption·ACK가 필요하다.",
+      "지연 독립성과 f"
+    ],
+    "headings": [
+      {
+        "id": "c1",
+        "text": "인과 순서를 payload에 벡터로 싣지 않고 별도 제어 plane에서 추적한다"
+      },
+      {
+        "id": "c2",
+        "text": "payload는 BRB로, 의존성은 ACK와 sequence gate로 보낸다"
+      },
+      {
+        "id": "c3",
+        "text": "FIFO·quorum·DAG 조건이 전달 가능성을 만든다"
+      },
+      {
+        "id": "c4",
+        "text": "메타데이터는 줄지만 안전성은 확률과 메시지 비용 사이에서 선택한다"
+      },
+      {
+        "id": "c5",
+        "text": "분산 데이터 plane에 적용하기 전 장애·지연 모델을 맞춰야 한다"
+      },
+      {
+        "id": "gloss",
+        "text": "핵심 용어"
+      },
+      {
+        "id": "take",
+        "text": "정말 쉽게 한 문장"
+      }
+    ]
+  },
+  {
+    "id": "2609.21940",
+    "topic": "agents",
+    "title": "AutoViewMem: 대화 장기 기억을 위한 자동 구성 의미 관점",
+    "originalTitle": "AutoViewMem: Self-Configuring Orthogonal Views for Conversational Long-Term Memory",
+    "summary": "질의 때 복잡한 라우팅을 추가하기보다 색인 전에 의미 표현을 분리하면 같은 top-K로 더 집중된 근거를 찾을 수 있다.",
+    "intro": "검색할 때마다 복잡한 라우터를 붙이기보다, 대화에서 선호·사건·제약 같은 서로 다른 의미 관점을 미리 분리해 저장하면 같은 top-K 검색으로도 관련 근거를 더 잘 찾을 수 있다.",
+    "authors": "Zijie Cao · Xijun Qu · Zhicheng Gu · Xiaoshu Chen · Duanyang Yuan · Yanning Hou · Sihang Zhou · Jianxing Gong · Jian Huang · Yang Mei",
+    "venue": "arXiv 프리프린트 · Conversational memory",
+    "sourceUrl": "https://arxiv.org/abs/2609.21940",
+    "pdfUrl": "https://arxiv.org/pdf/2609.21940v1",
+    "collectedOn": "2026-09-22",
+    "tags": [
+      "semantic retrieval",
+      "long-term memory",
+      "write-time organization"
+    ],
+    "practical": "",
+    "keyPoints": [
+      "검색할 때마다 복잡한 라우터를 붙이기보다, 대화에서 선호·사건·제약 같은 서로 다른 의미 관점을 미리 분리해 저장하면 같은 top-K 검색으로도 관련 근거를 더 잘 찾을 수 있다.",
+      "실험 숫자는 데이터셋·검색기·하드웨어·평가 정의와 함께 읽어야 합니다.",
+      "오늘의 핵심 선택지는 깊이와 폭, 쓰기 전 구조화와 검색 시 복잡성 사이의 절충입니다.",
+      "정말 쉽게 한 문장: AutoViewMem: 대화 장기 기억을 위한 자동 구성 의미 관점는 필요한 정보를 더 잘 찾거나 실험을 더 믿을 수 있게 만들기 위한 설계입니다."
+    ],
+    "headings": [
+      {
+        "id": "c1",
+        "text": "한 대화 조각에 여러 의미를 섞어 저장하면 검색이 시끄러워진다"
+      },
+      {
+        "id": "c2",
+        "text": "DPP로 겹치지 않으면서 서로 보완하는 관점을 고른다"
+      },
+      {
+        "id": "c3",
+        "text": "쓰기 단계에서 정리한 메모리가 같은 top-K 예산에서 더 강했다"
+      },
+      {
+        "id": "c4",
+        "text": "검색기를 더 복잡하게 만들기 전에 저장 표현을 정리하라"
+      },
+      {
+        "id": "appendix-classification",
+        "text": "검색 계열 1차 판별: semantic retrieval·write-time memory organization 계열"
+      },
+      {
+        "id": "appendix-assets",
+        "text": "논문에 실린 그림과 표를 모두 확인하기"
+      },
+      {
+        "id": "gloss",
+        "text": "핵심 용어 사전"
+      },
+      {
+        "id": "take",
+        "text": "이 논문을 한 장으로"
+      }
+    ]
+  },
+  {
+    "id": "2609.21533",
+    "topic": "agents",
+    "title": "MACE: 적응형 메모리 그래프를 이용한 메모리–에이전트 공동 진화",
+    "originalTitle": "MACE: Memory-Agent Co-Evolution with Adaptive Memory Graphs for Multi-Agent Systems",
+    "summary": "함께 필요한 조건·행동·결과를 그래프 기능 단위로 묶고 사용 결과로 다시 학습하면 메모리 검색이 좋아진다.",
+    "intro": "에이전트 경험을 낱개 메모리로 흩어 놓지 않고 조건–행동–결과가 함께 필요한 기능 단위와 관계로 묶은 뒤, 사용 결과로 검색·표현 방식을 함께 업데이트하면 정확도가 높아진다.",
+    "authors": "Kairui Yang · Minghao An · Xunkai Li · Ziheng Yi · Zekai Chen · Guangyuan He · Rong-Hua Li",
+    "venue": "arXiv 프리프린트 · Multi-agent memory",
+    "sourceUrl": "https://arxiv.org/abs/2609.21533",
+    "pdfUrl": "https://arxiv.org/pdf/2609.21533v1",
+    "collectedOn": "2026-09-22",
+    "tags": [
+      "graph memory",
+      "agent retrieval",
+      "multi-agent systems"
+    ],
+    "practical": "",
+    "keyPoints": [
+      "에이전트 경험을 낱개 메모리로 흩어 놓지 않고 조건–행동–결과가 함께 필요한 기능 단위와 관계로 묶은 뒤, 사용 결과로 검색·표현 방식을 함께 업데이트하면 정확도가 높아진다.",
+      "실험 숫자는 데이터셋·검색기·하드웨어·평가 정의와 함께 읽어야 합니다.",
+      "오늘의 핵심 선택지는 깊이와 폭, 쓰기 전 구조화와 검색 시 복잡성 사이의 절충입니다.",
+      "정말 쉽게 한 문장: MACE: 적응형 메모리 그래프를 이용한 메모리–에이전트 공동 진화는 필요한 정보를 더 잘 찾거나 실험을 더 믿을 수 있게 만들기 위한 설계입니다."
+    ],
+    "headings": [
+      {
+        "id": "c1",
+        "text": "에이전트 경험은 낱개 문장보다 함께 필요한 기능 묶음으로 남겨야 한다"
+      },
+      {
+        "id": "c2",
+        "text": "그래프를 만들고, 고르고, 에이전트별로 보여 주고, 결과로 다시 고친다"
+      },
+      {
+        "id": "c3",
+        "text": "정확도는 올랐지만 네 번의 LLM 호출과 더 긴 입력을 지불한다"
+      },
+      {
+        "id": "c4",
+        "text": "그래프 메모리는 “더 많이 저장”보다 “함께 필요한 것을 함께 검색”하는 장치다"
+      },
+      {
+        "id": "appendix-classification",
+        "text": "검색 계열 1차 판별: 기타 graph-memory / agent retrieval 계열"
+      },
+      {
+        "id": "appendix-assets",
+        "text": "논문에 실린 그림과 표를 모두 확인하기"
+      },
+      {
+        "id": "gloss",
+        "text": "핵심 용어 사전"
+      },
+      {
+        "id": "take",
+        "text": "이 논문을 한 장으로"
+      }
+    ]
+  },
+  {
+    "id": "2609.21281",
+    "topic": "retrieval",
+    "title": "초대형 개인화 검색을 위한 GPU–CPU 하이브리드 검색",
+    "originalTitle": "Hybrid GPU–CPU Retrieval for Personalized Search at Ultra-Large Scale",
+    "summary": "GPU는 깊이, CPU는 폭을 담당하게 나누면 검색 품질·범위·비용을 함께 다룰 수 있다.",
+    "intro": "GPU는 깊은 개인화 점수를 좁은 후보 집합에 적용하고 CPU는 훨씬 넓은 문서 재고를 훑게 나누면, 하나의 장비에 모든 품질과 규모를 억지로 넣지 않고 검색 품질·범위·비용을 함께 개선할 수 있다.",
+    "authors": "Hao Fu · Jichao Sun · Baiting Zhu · Qiaoling Liu · Yan Shi · Cheng Lu · Liu Liu · Yubo Wang · Xin Yao · Xiangyu Niu · Xu Dong · Wenhan Lyu · Chiyao Shen · Yinjie Huang · Minglei Chen · Shuai Ding · Li Fan · Xiao Kong",
+    "venue": "KDD 2027 제출 프리프린트 · Information Retrieval",
+    "sourceUrl": "https://arxiv.org/abs/2609.21281",
+    "pdfUrl": "https://arxiv.org/pdf/2609.21281v1",
+    "collectedOn": "2026-09-22",
+    "tags": [
+      "dense retrieval",
+      "vector search",
+      "GPU-CPU co-serving",
+      "personalized search"
+    ],
+    "practical": "",
+    "keyPoints": [
+      "GPU는 깊은 개인화 점수를 좁은 후보 집합에 적용하고 CPU는 훨씬 넓은 문서 재고를 훑게 나누면, 하나의 장비에 모든 품질과 규모를 억지로 넣지 않고 검색 품질·범위·비용을 함께 개선할 수 있다.",
+      "실험 숫자는 데이터셋·검색기·하드웨어·평가 정의와 함께 읽어야 합니다.",
+      "오늘의 핵심 선택지는 깊이와 폭, 쓰기 전 구조화와 검색 시 복잡성 사이의 절충입니다.",
+      "정말 쉽게 한 문장: 초대형 개인화 검색을 위한 GPU–CPU 하이브리드 검색는 필요한 정보를 더 잘 찾거나 실험을 더 믿을 수 있게 만들기 위한 설계입니다."
+    ],
+    "headings": [
+      {
+        "id": "c1",
+        "text": "깊게 이해하는 모델과 넓게 훑는 재고는 서로 다른 자원을 쓴다"
+      },
+      {
+        "id": "c2",
+        "text": "GPU는 깊이, CPU는 폭을 담당한다"
+      },
+      {
+        "id": "c3",
+        "text": "온라인 A/B에서 두 경로가 함께 좋아지고 서로 다른 후보를 가져왔다"
+      },
+      {
+        "id": "c4",
+        "text": "검색 시스템은 “정확도 하나”가 아니라 깊이·폭·지연·비용의 묶음이다"
+      },
+      {
+        "id": "appendix-classification",
+        "text": "검색 계열 1차 판별: ANN/vector search 내부 가속 그래프·하이브리드 검색"
+      },
+      {
+        "id": "appendix-assets",
+        "text": "논문에 실린 그림과 표를 모두 확인하기"
+      },
+      {
+        "id": "gloss",
+        "text": "핵심 용어 사전"
+      },
+      {
+        "id": "take",
+        "text": "이 논문을 한 장으로"
+      }
+    ]
+  },
+  {
+    "id": "2609.21257",
+    "topic": "retrieval",
+    "title": "검증 없이 믿지 않기: 대규모 동영상 검색을 위한 에이전트형 모델 개발",
+    "originalTitle": "Verify, Don't Trust: Agentic Model Development for Video Discovery Retrieval at Scale",
+    "summary": "검색 개선보다 먼저 control/treatment 비교가 같은 조건인지 실행 가능한 검사로 확인해야 한다.",
+    "intro": "검색 모델을 고치는 에이전트보다 더 중요한 것은 실험 비교가 정말 같은 조건인지 실행 가능한 검사로 확인하는 것이며, 사람 승인과 durable evidence가 잘못된 개선 결론을 막는다.",
+    "authors": "Hao Fu · Baiting Zhu · Minglei Chen · Yinjie Huang · Shuai Ding",
+    "venue": "KDD 2027 제출 프리프린트 · Information Retrieval",
+    "sourceUrl": "https://arxiv.org/abs/2609.21257",
+    "pdfUrl": "https://arxiv.org/pdf/2609.21257v1",
+    "collectedOn": "2026-09-22",
+    "tags": [
+      "agentic retrieval",
+      "experiment verification",
+      "provenance",
+      "evaluation"
+    ],
+    "practical": "",
+    "keyPoints": [
+      "검색 모델을 고치는 에이전트보다 더 중요한 것은 실험 비교가 정말 같은 조건인지 실행 가능한 검사로 확인하는 것이며, 사람 승인과 durable evidence가 잘못된 개선 결론을 막는다.",
+      "실험 숫자는 데이터셋·검색기·하드웨어·평가 정의와 함께 읽어야 합니다.",
+      "오늘의 핵심 선택지는 깊이와 폭, 쓰기 전 구조화와 검색 시 복잡성 사이의 절충입니다.",
+      "정말 쉽게 한 문장: 검증 없이 믿지 않기: 대규모 동영상 검색을 위한 에이전트형 모델 개발는 필요한 정보를 더 잘 찾거나 실험을 더 믿을 수 있게 만들기 위한 설계입니다."
+    ],
+    "headings": [
+      {
+        "id": "c1",
+        "text": "검색 모델을 고쳐도 비교가 틀리면 결론도 틀린다"
+      },
+      {
+        "id": "c2",
+        "text": "기억된 규칙은 조언이고, verifier의 검사는 제동장치다"
+      },
+      {
+        "id": "c3",
+        "text": "검증을 넣은 뒤에야 작은 온라인 개선을 믿을 수 있었다"
+      },
+      {
+        "id": "c4",
+        "text": "검색 인사이트도 출처·조건·평가 버전을 함께 저장해야 한다"
+      },
+      {
+        "id": "appendix-classification",
+        "text": "검색 계열 1차 판별: 일반 dense retrieval 위의 agentic experiment-control 계열"
+      },
+      {
+        "id": "appendix-assets",
+        "text": "논문에 실린 그림과 표를 모두 확인하기"
+      },
+      {
+        "id": "gloss",
+        "text": "핵심 용어 사전"
+      },
+      {
+        "id": "take",
+        "text": "이 논문을 한 장으로"
+      }
+    ]
+  },
+  {
+    "id": "2604.23783",
+    "topic": "retrieval",
+    "title": "반복 검색을 구조화하는 S2G-RAG",
+    "originalTitle": "S2G-RAG: Structured Sufficiency and Gap Judging for Iterative Retrieval-Augmented QA",
+    "summary": "S2G-Judge가 현재 근거의 충분성·빠진 정보 항목을 구조화하고, 문장 포인터로 문맥 잡음을 줄이면 멀티홉 RAG의 검색 궤적을 더 감사 가능하게 만들 수 있지만, retriever recall과 추가 호출 비용은 남는다.",
+    "intro": "S2G-RAG는 multi-hop RAG가 매 차례 현재 근거가 충분한지 와 다음에 무엇이 빠졌는지 를 구조화해 판단하도록 만들고, 검색된 문서에서 원문 문장만 골라 작은 Evidence Context를 유지합니다.",
+    "authors": "Minghan Li · Junjie Zou · Xinxuan Lv · Chao Zhang · Guodong Zhou",
+    "venue": "ACL 2026 Main Conference (accepted; arXiv preprint)",
+    "sourceUrl": "https://arxiv.org/abs/2604.23783v1",
+    "pdfUrl": "https://arxiv.org/pdf/2604.23783v1",
+    "collectedOn": "2026-09-22",
+    "tags": [],
+    "practical": "GraphRAG나 ANN 그래프가 아닌 iterative RAG 제어 계층으로 분류한다. 제품에서는 gap 기반 재검색과 provenance-preserving evidence memory를 confidence/latency 예산과 함께 A/B 검증한다.",
+    "keyPoints": [
+      "S2G-RAG의 핵심: 충분한지와 무엇이 빠졌는지를 구조화해 다음 검색을 조종합니다.",
+      "증거 관리: 문서 전체를 계속 붙이지 않고 원문 문장 포인터만 Evidence Context에 남깁니다.",
+      "실험 해석: BM25와 E5 모두에서 multi-hop 이득을 보였지만 반복 검색은 Standard RAG보다 느리고, retrieval recall 한계는 남습니다.",
+      "검색 연구 Wiki 시사점: GraphRAG나 ANN graph가 아니라 iterative/agentic RAG의 제어 계층을 추가하는 접근입니다.",
+      "정말 쉽게 한 문장: “아직 답에 필요한 조각이 무엇인지 찾아서, 그 조각만 다음에 검색하고, 확인된 문장만 모으자”는 RAG 설계입니다."
+    ],
+    "headings": [
+      {
+        "id": "c1",
+        "text": "왜 한 번 찾고 끝내면 안 되는 질문이 있는가"
+      },
+      {
+        "id": "c2",
+        "text": "“충분함”과 “빠진 조각”을 따로 출력한다"
+      },
+      {
+        "id": "c3",
+        "text": "문서 전체 대신 출처가 있는 문장만 기억한다"
+      },
+      {
+        "id": "c4",
+        "text": "BM25와 dense 검색 모두에서 multi-hop 이득을 보였지만, 반복 검색은 더 느리다"
+      },
+      {
+        "id": "c5",
+        "text": "그래프를 만드는 논문이 아니라, 검색 제어와 문맥 관리의 논문이다"
+      },
+      {
+        "id": "appendix-classification",
+        "text": "검색 계열 1차 판별: 기타 iterative/agentic RAG"
+      },
+      {
+        "id": "appendix-assets",
+        "text": "논문에 실린 그림과 표를 모두 확인하기"
+      },
+      {
+        "id": "gloss",
+        "text": "핵심 용어 사전"
+      },
+      {
+        "id": "take",
+        "text": "이 논문을 한 장으로"
+      }
+    ]
+  },
+  {
+    "id": "2609.22056",
+    "topic": "retrieval",
+    "title": "멀티홉 검색은 언제 실패할지 예측할 수 있다",
+    "originalTitle": "Predictable Failure in Multi-Hop Retrieval: Score-Distributional Confidence Scoring and Abstention",
+    "summary": "검색 점수의 모양을 이용하면 실패할 멀티홉 질문을 미리 골라낼 수 있지만 coverage와 안전성의 절충이 남는다.",
+    "intro": "이 논문은 여러 번 검색해야 하는 멀티홉 질문에서 검색 점수의 분포와 질문 길이 같은 신호를 이용해 ‘이번 검색이 완전한 근거를 모았는가’를 예측하고, 자신 없으면 답변을 보류하는 방법을 제안합니다. RegimeAbstain은 MuSiQue에서 50%만 답하는 조건의 실패율을 39.5%에서 20.6%로 줄였고, 데이터셋마다 좋은 신호가 달라 하나의 점수만 믿으면 안 된다고 보입니다.",
+    "authors": "Andre Bacellar",
+    "venue": "arXiv 프리프린트 · 2026 · Retrieval confidence",
+    "sourceUrl": "https://arxiv.org/abs/2609.22056",
+    "pdfUrl": "https://arxiv.org/pdf/2609.22056",
+    "collectedOn": "2026-09-21",
+    "tags": [
+      "multi-hop retrieval",
+      "retrieval evaluation",
+      "confidence",
+      "abstention",
+      "ANN"
+    ],
+    "practical": "",
+    "keyPoints": [
+      "멀티홉 RAG는 필요한 근거가 모두 top-k에 들어와야 성공한다.",
+      "검색 점수의 최고값 하나가 아니라 margin·top-3 평균·entropy·hop별 모양을 함께 본다.",
+      "MuSiQue에서 50% coverage로 CWAR 39.5%→20.6%를 보고했다.",
+      "abstain은 정확도를 위한 안전장치지만 답변 범위·지연·사람 검토 비용을 만든다.",
+      "정말 쉽게 한 문장: 검색 결과가 믿음직한지 먼저 점수 모양으로 확인하고, 자신 없으면 잠깐 멈추는 연구다."
+    ],
+    "headings": [
+      {
+        "id": "c1",
+        "text": "두세 개의 단서를 모두 찾아야 답이 완성된다"
+      },
+      {
+        "id": "c2",
+        "text": "한 점수 대신 검색 점수의 ‘모양’을 읽는다"
+      },
+      {
+        "id": "c3",
+        "text": "50%만 답하는 보수적 운영에서 실패율을 절반 가까이 줄였다"
+      },
+      {
+        "id": "c4",
+        "text": "실패를 줄이는 대신 답변 범위와 사용자 경험을 줄인다"
+      },
+      {
+        "id": "appendix-classification",
+        "text": "지식 그래프가 아니라 ANN 검색 점수의 신뢰도 계층이다"
+      },
+      {
+        "id": "gloss",
+        "text": "핵심 용어 정리"
+      },
+      {
+        "id": "take",
+        "text": "이 논문을 한 장으로"
+      }
+    ]
+  },
+  {
+    "id": "2609.22049",
+    "topic": "engineering",
+    "title": "연구자는 AI 코딩 보조를 어떻게 쓰고 검증하는가",
+    "originalTitle": "How Researchers Use and Verify AI Coding Assistants: Tasks and Validation Practices in Scientific Programming",
+    "summary": "연구자는 데이터 처리·시각화·디버깅을 AI에 맡기고, 실행 확인은 흔하지만 자동 테스트·동료 리뷰는 드물었다.",
+    "intro": "2025년 과학 프로그래밍 설문에서 얻은 527개 자유응답을 코딩해, 연구자들이 AI에게 맡기는 일과 결과 검증 방식을 분석합니다. 데이터 처리·시각화·디버깅이 대부분이고, 검증은 실행·출력 확인에 집중했으며 자동 테스트와 동료 리뷰는 드물었습니다.",
+    "authors": "Gabrielle O’Brien · Reed Milewicz · Nasir Eisty",
+    "venue": "arXiv 프리프린트 · 2026",
+    "sourceUrl": "https://arxiv.org/abs/2609.22049v1",
+    "pdfUrl": "https://arxiv.org/pdf/2609.22049v1",
+    "collectedOn": "2026-09-21",
+    "tags": [],
+    "practical": "코딩 보조 도구가 task별 작은 테스트 입력·회귀 사례·독립 reference를 코드와 함께 제안하도록 설계한다.",
+    "keyPoints": [
+      "연구자는 AI를 데이터 처리·시각화·디버깅에 가장 많이 쓴다.",
+      "가장 흔한 검증은 직접 실행(52.8%)이고 자동 테스트(2.8%)·동료 리뷰(2.0%)는 드물다.",
+      "경력은 solo confidence와 연결되지만 AI confidence와는 거의 연결되지 않는다.",
+      "도구는 코드와 함께 작은 입력·회귀 사례·reference 비교 같은 검증 증거를 제안해야 한다."
+    ],
+    "headings": [
+      {
+        "id": "c1",
+        "text": "한 사람의 실제 episode를 task와 validation 두 축으로 코딩한다"
+      },
+      {
+        "id": "c2",
+        "text": "데이터를 옮기고 그려 보고 고치는 일이 AI 사용의 중심이다"
+      },
+      {
+        "id": "c3",
+        "text": "“실행돼 보인다”가 가장 흔한 검사이고 독립 증거는 적다"
+      },
+      {
+        "id": "c4",
+        "text": "경험은 “나 혼자 할 자신”을 높이지만 AI 신뢰와는 별개다"
+      },
+      {
+        "id": "c5",
+        "text": "도구가 task에 맞는 검증 artifact를 함께 제안해야 한다"
+      },
+      {
+        "id": "gloss",
+        "text": "핵심 용어"
+      },
+      {
+        "id": "take",
+        "text": "정말 쉽게 한 문장"
+      }
+    ]
+  },
+  {
+    "id": "2609.22043",
+    "topic": "agents",
+    "title": "검색 결과를 믿을지 결정하는 세 신호 컨트롤러",
+    "originalTitle": "An Interpretable Memory Decision Controller for LLM Agents Based on Three-Signal Complementarity",
+    "summary": "검색된 기억을 바로 생성에 쓰지 않고 신뢰·일관성·위험을 검사하면 환각을 줄일 수 있지만 신호 보정이 필요하다.",
+    "intro": "MDL은 검색과 생성 사이에 놓여 검색 결과의 관련성·신뢰성·작업 위험도와 작업 메모리를 함께 보고, 그대로 생성할지 재검색·질문할지·거부할지를 정합니다. 저자들은 TruthfulQA와 여러 데이터셋에서 환각 감소와 0.14ms 의사결정 시간을 보고하지만, 실험은 특정 모델·프롬프트·합성 메모리 설정에 의존합니다.",
+    "authors": "Yiming Zhang · Jinghong Zhang · Haoran Zhao · Yiren Ma · Chunlei Zhao",
+    "venue": "arXiv 프리프린트 · 2026 · RAG 안전 게이트",
+    "sourceUrl": "https://arxiv.org/abs/2609.22043",
+    "pdfUrl": "https://arxiv.org/pdf/2609.22043",
+    "collectedOn": "2026-09-21",
+    "tags": [
+      "RAG",
+      "agent memory",
+      "abstention",
+      "hallucination",
+      "trust gate"
+    ],
+    "practical": "",
+    "keyPoints": [
+      "관련성 높은 검색 결과도 틀릴 수 있으므로 검색과 생성 사이에 trust gate를 둔다.",
+      "MDL은 C·R·A·M 신호를 분리해 진행·저장·재검색·거부 행동을 고른다.",
+      "저자 설정에서 일반 환각 약 56.04% 감소와 0.14ms 판단 비용을 보고했다.",
+      "0.14ms는 전체 RAG latency가 아니다. 신호 품질과 threshold 보정이 실제 도입의 핵심이다.",
+      "정말 쉽게 한 문장: 검색한 자료를 바로 믿지 말고, 답하기 전에 한 번 검사하는 작은 문지기를 둔 연구다."
+    ],
+    "headings": [
+      {
+        "id": "c1",
+        "text": "관련 있어 보이는 자료도 믿을 만하다는 뜻은 아니다"
+      },
+      {
+        "id": "c2",
+        "text": "서로 다른 신호를 섞되, ‘자신 있음’과 ‘일관됨’을 따로 본다"
+      },
+      {
+        "id": "c3",
+        "text": "고위험 상황에서 거부·안전 fallback이 환각을 줄였다는 결과"
+      },
+      {
+        "id": "c4",
+        "text": "가벼운 안전 게이트지만, 신호가 틀리면 틀린 결정을 빠르게 한다"
+      },
+      {
+        "id": "appendix-classification",
+        "text": "GraphRAG가 아니라, 검색 뒤에 붙는 신뢰·위험 판단 계층이다"
+      },
+      {
+        "id": "gloss",
+        "text": "핵심 용어 정리"
+      },
+      {
+        "id": "take",
+        "text": "이 논문을 한 장으로"
+      }
+    ]
+  },
+  {
+    "id": "2609.21843",
+    "topic": "engineering",
+    "title": "산업 테스트 실패 분석을 돕는 LLM 시스템",
+    "originalTitle": "Supporting Industrial Test-Failure Analysis with LLM-Based Systems: An Experience Report",
+    "summary": "다중 에이전트는 시나리오별 품질 우위가 일관되지 않았고, 이 현장 조건에서는 단일 에이전트가 약 3배 빠르고 저렴했다.",
+    "intro": "Westermo의 야간 테스트 실패를 대상으로, 같은 도구 접근권한을 가진 단일 에이전트와 오케스트레이션된 다중 에이전트를 비교한 탐색적 산업 사례 연구입니다. 다중 에이전트가 항상 더 정확하다는 증거는 없었고, 이 실험에서는 단일 에이전트가 약 3배 빠르고 비용도 낮았습니다.",
+    "authors": "Eric Jansson · Per Strandberg · Thomas Sörensen · Eduard Paul Enoiu · Wasif Afzal",
+    "venue": "arXiv 프리프린트 · 2026",
+    "sourceUrl": "https://arxiv.org/abs/2609.21843v1",
+    "pdfUrl": "https://arxiv.org/pdf/2609.21843v1",
+    "collectedOn": "2026-09-21",
+    "tags": [],
+    "practical": "RCA 자동화는 로그 근거 링크·사람 승인·CI 연계를 붙인 shadow 단계로 도입하고, correctness와 consistency를 분리해 검증한다.",
+    "keyPoints": [
+      "실패 로그가 여러 곳에 있어도 LLM은 증거를 묶어 RCA 초안을 만들 수 있다.",
+      "다중 에이전트는 복잡한 사례에 가능성이 있지만, 이번 현장 데이터에서는 일관된 품질 우위를 보이지 않았다.",
+      "단일 구성은 약 40초·0.75 SEK, 다중은 약 130초·1.5–1.75 SEK였다.",
+      "실무 도입의 전제는 로그 deep-link, 근거 검증, 사람 승인, CI/이슈 시스템 연계다."
+    ],
+    "headings": [
+      {
+        "id": "c1",
+        "text": "로그가 흩어진 산업 테스트 실패를 RCA 보고서로 묶는다"
+      },
+      {
+        "id": "c2",
+        "text": "같은 도구를 쓰되 추론을 한 명에게 맡길지 역할을 나눌지 비교한다"
+      },
+      {
+        "id": "c3",
+        "text": "정답률 하나가 아니라 실무자가 느끼는 품질과 반복 안정성을 함께 본다"
+      },
+      {
+        "id": "c4",
+        "text": "단일 에이전트는 빠르고 싸지만, 시나리오별 품질 우위는 엇갈렸다"
+      },
+      {
+        "id": "c5",
+        "text": "증거 링크와 작업 흐름 통합이 모델 수보다 먼저 해결해야 한다"
+      },
+      {
+        "id": "gloss",
+        "text": "핵심 용어"
+      },
+      {
+        "id": "take",
+        "text": "정말 쉽게 한 문장"
+      }
+    ]
+  },
+  {
+    "id": "2609.21616",
+    "topic": "engineering",
+    "title": "로컬 오픈웨이트 모델로 bug-fixing commit 라벨링하기",
+    "originalTitle": "Labelling Bug-Fixing Commits with Local Open-Weight Language Models",
+    "summary": "로컬 모델은 키워드보다 bug-fix recall/F1이 높았지만, negative가 없는 corpus는 precision-aware 비교를 지지하지 않는다.",
+    "intro": "커밋 메시지의 “fix” 키워드보다 diff 자체를 읽는 로컬 언어모델이 결함 수정 라벨을 더 잘 만들 수 있는지 검증합니다. Java·Python·JavaScript의 수작업 검증 corpus를 사용한 결과, 7개 모델이 키워드 baseline을 유의하게 앞섰지만 positives-only 데이터셋은 precision 비교에 부적합했습니다.",
+    "authors": "Philip König · Georg Goldenits · Caroline König · Sebastian Raubitzek · Fabian Obermann · Dennis Toth · David Schmidt · Edgar Weippl · Kevin Mallinger",
+    "venue": "arXiv 프리프린트 · 2026",
+    "sourceUrl": "https://arxiv.org/abs/2609.21616v1",
+    "pdfUrl": "https://arxiv.org/pdf/2609.21616v1",
+    "collectedOn": "2026-09-21",
+    "tags": [],
+    "practical": "SZZ seed와 결함 dataset 생성에 로컬 deterministic labeling을 활용하되 프로젝트별 human audit와 negative 표본을 유지한다.",
+    "keyPoints": [
+      "fix라는 단어보다 commit diff를 읽는 로컬 모델이 더 나은 bug-fix 라벨을 만든다.",
+      "SmartSHARK에서 mistral-small3.2:24b F1은 약 0.645, stemming은 약 0.399였다.",
+      "positive-only benchmark는 false positive를 벌하지 못해 precision 비교에 부적합하다.",
+      "현업 도입 전 프로젝트별 표본 검수·negative 설계·diff truncation 영향을 확인해야 한다."
+    ],
+    "headings": [
+      {
+        "id": "c1",
+        "text": "결함 예측은 bug-fix 라벨의 품질을 물려받는다"
+      },
+      {
+        "id": "c2",
+        "text": "7개 로컬 모델과 두 prompt를 같은 조건에서 비교한다"
+      },
+      {
+        "id": "c3",
+        "text": "negative 예시가 없으면 과하게 fix라 해도 높은 점수를 받는다"
+      },
+      {
+        "id": "c4",
+        "text": "큰 모델보다 prompt와 데이터 구성이 operating point를 좌우한다"
+      },
+      {
+        "id": "c5",
+        "text": "silver standard는 강한 baseline이지만 ground truth가 아니다"
+      },
+      {
+        "id": "gloss",
+        "text": "핵심 용어"
+      },
+      {
+        "id": "take",
+        "text": "정말 쉽게 한 문장"
+      }
+    ]
+  },
+  {
+    "id": "2609.21573",
+    "topic": "evaluation",
+    "title": "문서 하나가 아니라 여러 문서가 함께 RAG를 속일 때",
+    "originalTitle": "Micro-Collaborative Poisoning: A Distributed Attack on RAG Systems",
+    "summary": "RAG corpus는 보안 경계이며, 여러 출처의 반복 신호를 문서 단위 검사만으로는 놓칠 수 있다.",
+    "intro": "이 논문은 여러 데이터베이스에 나뉜 문서들이 각각은 그럴듯하지만 함께 검색되면 같은 잘못된 신호를 만드는 ‘micro-collaborative poisoning’을 분석합니다. 108개 RAG 설정을 평가해 top-k가 커지거나 오염 DB가 늘면 공격 영향이 커질 수 있고, 반대로 깨끗한 문서 다양성과 강한 retriever가 완화할 수 있음을 보고합니다. 핵심은 RAG corpus가 단순 저장소가 아니라 보안 경계라는 점입니다.",
+    "authors": "Pedro Pereira · Eva Maia · Isabel Praça",
+    "venue": "arXiv 프리프린트 · 2026 · RAG security",
+    "sourceUrl": "https://arxiv.org/abs/2609.21573",
+    "pdfUrl": "https://arxiv.org/pdf/2609.21573",
+    "collectedOn": "2026-09-21",
+    "tags": [
+      "RAG security",
+      "document poisoning",
+      "retrieval robustness",
+      "provenance"
+    ],
+    "practical": "",
+    "keyPoints": [
+      "문서 하나가 정상이어도 여러 문서가 함께 틀린 신호를 만들 수 있다.",
+      "108개 RAG 설정에서 top-k·오염 DB·retriever·다양성이 결과에 영향을 주었다.",
+      "top-k를 늘리는 것은 recall뿐 아니라 오염 노출도 늘릴 수 있다.",
+      "corpus provenance·중복·출처 다양성·고위험 abstention을 보안 계층으로 관리해야 한다.",
+      "정말 쉽게 한 문장: 여러 개의 약한 거짓말이 모이면 검색형 AI도 속을 수 있으니, 자료의 출처와 반복을 함께 검사해야 한다."
+    ],
+    "headings": [
+      {
+        "id": "c1",
+        "text": "문서 하나를 검사해도, 여러 문서의 약한 합의는 놓칠 수 있다"
+      },
+      {
+        "id": "c2",
+        "text": "RAG 파이프라인·검색기·top-k를 바꾸며 108개 구성을 비교했다"
+      },
+      {
+        "id": "c3",
+        "text": "top-k와 오염 DB가 늘면 위험 신호가 누적될 수 있다"
+      },
+      {
+        "id": "c4",
+        "text": "RAG의 안전성은 검색 정확도만으로 평가할 수 없다"
+      },
+      {
+        "id": "appendix-classification",
+        "text": "GraphRAG나 ANN graph가 아니라, 표준 RAG의 보안 연구다"
+      },
+      {
+        "id": "gloss",
+        "text": "핵심 용어 정리"
+      },
+      {
+        "id": "take",
+        "text": "이 논문을 한 장으로"
+      }
+    ]
+  },
+  {
+    "id": "2609.21564",
+    "topic": "retrieval",
+    "title": "분산 지식 그래프를 만들고 재현하며 유지하는 kgsteward",
+    "originalTitle": "kgsteward: a tool for building, reproducing and maintaining distributed knowledge graphs",
+    "summary": "named graph·SPARQL·checksum을 결합하면 분산 지식 그래프의 장기 재현성과 선택적 갱신을 관리할 수 있다.",
+    "intro": "kgsteward는 Git으로 버전 관리되는 YAML 하나를 실행 계획으로 삼아 RDF 데이터 소스를 선택적으로 재구축하고, SPARQL UPDATE로 변환하며, 같은 쿼리를 검증 테스트와 사용자·AI 문서로 재사용하는 Python CLI입니다.",
+    "authors": "Marco Pagni · Robin Engler · Frédéric Burdet · Sébastien Moretti · Loïc Le Gregam · Luis Quiros-Guerrero · Jahn Nitschke · Pierre-Marie Allard · Louis-Félix Nothias · Jack McGoldrick · Ronan M.T. Fleming · Alan Bridge · Vincent Emonet · Tarcisio Mendes de Farias · Ana-Claudia Sima · Mark Ibberson · Jean-Luc Wolfender · Florence Mehl",
+    "venue": "arXiv 프리프린트 · 2026",
+    "sourceUrl": "https://arxiv.org/abs/2609.21564v1",
+    "pdfUrl": "https://arxiv.org/pdf/2609.21564v1",
+    "collectedOn": "2026-09-21",
+    "tags": [],
+    "practical": "데이터 파이프라인에 소스·변환·검증을 함께 버전 관리하되 원격 헤더 신뢰성과 cascade rebuild 비용을 별도 계측한다.",
+    "keyPoints": [
+      "Git의 YAML 하나가 RDF 데이터 파이프라인의 소스·변환·검증을 선언한다.",
+      "SHA-256과 부모 순서로 바뀐 부분만 다시 만든다.",
+      "검증 쿼리는 테스트이면서 사람과 AI가 쓸 수 있는 예시다.",
+      "대규모 실제 graph 사례는 유망하지만, remote header와 순차 rebuild 조건을 먼저 검증해야 한다."
+    ],
+    "headings": [
+      {
+        "id": "c1",
+        "text": "데이터와 변환을 하나의 버전 관리 가능한 그래프로 만든다"
+      },
+      {
+        "id": "c2",
+        "text": "SHA-256과 부모 순서로 필요한 dataset만 다시 만든다"
+      },
+      {
+        "id": "c3",
+        "text": "검증 쿼리가 테스트이면서 사용 설명서가 된다"
+      },
+      {
+        "id": "c4",
+        "text": "분산 데이터의 장기 진화와 의미 조정을 지원한다"
+      },
+      {
+        "id": "c5",
+        "text": "재현 가능한 데이터 파이프라인이지만, 원격 헤더와 순차 실행을 믿어야 한다"
+      },
+      {
+        "id": "gloss",
+        "text": "핵심 용어"
+      },
+      {
+        "id": "take",
+        "text": "정말 쉽게 한 문장"
+      }
+    ]
+  },
+  {
+    "id": "2609.21341",
+    "topic": "agents",
+    "title": "작은 언어모델이 데이터베이스 에이전트를 막히게 하는 것",
+    "originalTitle": "What Stops a Small Language Model From Driving a Database Agent",
+    "summary": "agent-mode 손실의 최대 클래스는 capability가 아니라 transport였고, 서버 계약 수정만으로 일부 모델 점수가 크게 올랐다.",
+    "intro": "LibreDB Studio의 production agent를 11일 동안 39개 로컬 open-weight 모델과 hosted control로 실행해, 8,199회 run의 실패 원인을 분해합니다. 모델 능력 부족보다 tool transport·검증 계약·서버의 argument 처리 결함이 큰 비중을 차지했고, 모델·prompt를 바꾸지 않은 다섯 서버 수정만으로 일부 모델을 6–21 cells 개선했습니다.",
+    "authors": "Cevheri Bozoğlan · Yusuf Gündoğdu · Abdullah Kaya · Koray Şirin",
+    "venue": "arXiv 프리프린트 · 2026",
+    "sourceUrl": "https://arxiv.org/abs/2609.21341v1",
+    "pdfUrl": "https://arxiv.org/pdf/2609.21341v1",
+    "collectedOn": "2026-09-21",
+    "tags": [],
+    "practical": "모델 교체 전 argument capture·tolerant parser·refusal telemetry·context/memory 통제를 운영 기본값으로 둔다.",
+    "keyPoints": [
+      "실패의 다수는 모델이 아무것도 못 해서가 아니라 tool 경계에서 답을 잃어서 생겼다.",
+      "transport가 agent-mode loss의 36.2%로 가장 컸고, tool을 호출한 loss가 75.7%였다.",
+      "서버 parser·verifier를 고치는 것이 모델 교체보다 먼저 시험할 실무 레버다.",
+      "context cap·메모리·swap·한 sitting score를 고정하지 않으면 benchmark를 오해한다."
+    ],
+    "headings": [
+      {
+        "id": "c1",
+        "text": "“성공적으로 종료”와 “검증을 통과”를 분리한다"
+      },
+      {
+        "id": "c2",
+        "text": "tool을 호출한 뒤 전달에 실패한 run이 가장 큰 손실 클래스다"
+      },
+      {
+        "id": "c3",
+        "text": "정답에 가까운 값이 schema의 다른 칸에 들어가거나 text channel에 남는다"
+      },
+      {
+        "id": "c4",
+        "text": "모델을 바꾸지 않고 서버의 tolerant parser를 고쳤다"
+      },
+      {
+        "id": "c5",
+        "text": "context 길이·swap 압력도 모델 실패처럼 보인다"
+      },
+      {
+        "id": "gloss",
+        "text": "핵심 용어"
+      },
+      {
+        "id": "take",
+        "text": "정말 쉽게 한 문장"
+      }
+    ]
+  },
+  {
+    "id": "2609.21299",
+    "topic": "systems",
+    "title": "Brain API: 의도 인식 정책 거버넌스 제어면",
+    "originalTitle": "Brain API: An Intent-Aware Control Plane for Policy-Governed Agentic Systems",
+    "summary": "decision artifact는 admission log보다 대안과 재현성까지 감사할 수 있지만, ranking·context·부하 latency는 미검증이다.",
+    "intro": "Brain API는 “어떤 리소스를 실행할까”보다 먼저 사용자의 intent를 정책·capability·context에 따라 결정하고, 선택·거절·근거를 durable decision artifact로 남기자는 제안입니다. 외부 OPA/Cedar 정책으로 검증했지만 ranking·context 신호와 부하 지연은 아직 미측정입니다.",
+    "authors": "Alexander Chernov",
+    "venue": "arXiv 프리프린트 · 2026",
+    "sourceUrl": "https://arxiv.org/abs/2609.21299v1",
+    "pdfUrl": "https://arxiv.org/pdf/2609.21299v1",
+    "collectedOn": "2026-09-21",
+    "tags": [],
+    "practical": "정책 제어면을 도입할 때 artifact schema, policy coverage, default polarity, latency budget을 먼저 계측한다.",
+    "keyPoints": [
+      "Brain API는 “무엇을 실행했나”에 “왜 그 경로를 골랐나”를 더한다.",
+      "OPA 42/42 encodable case와 20/20 compliant 선택은 구조의 실행 가능성을 보였다.",
+      "Cedar는 default polarity와 entity 관계가 정책 언어의 큰 경계임을 드러냈다.",
+      "실무 도입 전에는 latency, policy coverage, artifact 보존비용, 재평가 규칙을 계측해야 한다."
+    ],
+    "headings": [
+      {
+        "id": "c1",
+        "text": "실행 결과가 아니라 “왜 이 경로를 골랐는가”를 보존한다"
+      },
+      {
+        "id": "c2",
+        "text": "Ingress–Policy–Capability–Decision–Adapter를 관찰·감사 plane과 연결한다"
+      },
+      {
+        "id": "c3",
+        "text": "정책 통과 후 ranking과 plan synthesis를 수행하되 결정은 재현 가능해야 한다"
+      },
+      {
+        "id": "c4",
+        "text": "OPA에서는 42/42, Cedar에서는 언어 경계가 드러났다"
+      },
+      {
+        "id": "c5",
+        "text": "감사 가능성을 얻는 대신 정책 복잡성과 지연을 감수해야 한다"
+      },
+      {
+        "id": "gloss",
+        "text": "핵심 용어"
+      },
+      {
+        "id": "take",
+        "text": "정말 쉽게 한 문장"
+      }
+    ]
+  },
+  {
+    "id": "2609.18317",
+    "topic": "retrieval",
+    "title": "문화 질문에서 지식 그래프와 일반 RAG를 비교하다",
+    "originalTitle": "Knowledge-Graph Based Augmentation versus Retrieval Augmented Generation for Cultural-Related Question Answering",
+    "summary": "이 설정에서는 일반 RAG가 더 정확했지만 Graph-RAG가 문맥을 크게 압축했으며, 그래프 추출 품질이 핵심 병목이었다.",
+    "intro": "이 논문은 스페인어 라틴아메리카 문화 객관식 질문에서 일반 RAG와 지식 그래프 기반 Graph-RAG를 같은 검색 인코더와 작은 판독 모델로 비교합니다. 이 실험에서는 일반 RAG 정확도 93.38%가 G-Retriever 89.71%보다 높았지만, 그래프는 LLM에 넣는 문맥을 평균 2,814 토큰에서 875 토큰으로 줄였습니다. 따라서 “그래프가 항상 더 정확하다”가 아니라, 그래프의 추출 품질·질문 난이도·문맥 비용을 함께 봐야 한다 는 결과입니다.",
+    "authors": "Pablo Poulenard · Yannis Karmim · Valentin Barrière",
+    "venue": "arXiv 프리프린트 · 2026 · GraphRAG 비교",
+    "sourceUrl": "https://arxiv.org/abs/2609.18317v2",
+    "pdfUrl": "https://arxiv.org/pdf/2609.18317v2",
+    "collectedOn": "2026-09-21",
+    "tags": [
+      "GraphRAG",
+      "knowledge graph",
+      "RAG",
+      "cultural QA"
+    ],
+    "practical": "",
+    "keyPoints": [
+      "일반 RAG는 문서 조각, Graph-RAG는 의미 관계가 연결된 subgraph를 LLM에 준다.",
+      "LatamQA에서 RAG 93.38%가 G-Retriever 89.71%보다 높았다. 그래프가 자동으로 정확도를 올린다는 증거는 아니다.",
+      "Graph-RAG 문맥은 평균 875토큰으로 RAG 2,814토큰보다 짧았다. 그래프의 강점은 압축과 관계 보존이다.",
+      "병목은 그래프 메시지 전달보다 자동 KG 추출 품질일 수 있다.",
+      "정말 쉽게 한 문장: 그래프는 답을 더 잘 찾는 마법이라기보다, 서로 이어진 근거만 작게 챙겨 주는 정리 방법이다."
+    ],
+    "headings": [
+      {
+        "id": "c1",
+        "text": "문서 조각을 그대로 읽힐까, 관계가 이어진 그래프를 읽힐까"
+      },
+      {
+        "id": "c2",
+        "text": "그래프를 만든 뒤, 연결된 사실만 골라 LLM의 짧은 입력으로 바꾼다"
+      },
+      {
+        "id": "c3",
+        "text": "같은 검색 인코더와 작은 독해 모델로 네 가지 방법을 비교했다"
+      },
+      {
+        "id": "c4",
+        "text": "이 실험에서는 RAG가 더 정확했고, 그래프는 더 짧고 가벼웠다"
+      },
+      {
+        "id": "appendix-classification",
+        "text": "이것은 Microsoft GraphRAG가 아니라, 지식 그래프를 쓰는 기타 Graph-RAG다"
+      },
+      {
+        "id": "gloss",
+        "text": "핵심 용어 정리"
+      },
+      {
+        "id": "take",
+        "text": "이 논문을 한 장으로"
+      }
+    ]
+  },
+  {
+    "id": "2609.20497",
+    "topic": "systems",
+    "title": "컴퓨팅 연속체의 품질 인지형 Kubernetes 요청 라우터",
+    "originalTitle": "A Kubernetes-Native Request Router for Quality-Aware Inference Serving in the Computing Continuum",
+    "summary": "운영자가 준 latency·quality 가중치로 요청을 분산하고 관측비를 낮추지만, quality metadata와 정책 우선순위는 외부에서 주어져야 한다.",
+    "intro": "ASRB는 edge부터 cloud까지 흩어진 inference pod 중 어디로 요청을 보낼지, 최근 지연시간·모델 정확도·노드 부하를 합친 점수로 고릅니다. 요청 경로는 가볍게 유지하면서, 성능이 중요하거나 불확실한 노드를 더 자주 관측해 monitoring traffic을 줄이려 합니다. 평가는 소규모 k3s testbed의 1,200개 요청으로 이루어졌습니다.",
+    "authors": "Ignjat Karanovic · Pantelis A. Frangoudis · Ivan Čilić · Ivana Podnar Žarko · Schahram Dustdar",
+    "venue": "arXiv 프리프린트 · 2026",
+    "sourceUrl": "https://arxiv.org/abs/2609.20497v1",
+    "pdfUrl": "https://arxiv.org/pdf/2609.20497v1",
+    "collectedOn": "2026-09-18",
+    "tags": [],
+    "practical": "quality metadata의 출처·갱신, λ의 정책 소유자, RTT cache 신선도, Kubernetes API label update 부하를 규모별로 시험한다.",
+    "keyPoints": [
+      "Edge/cloud inference는 낮은 네트워크 지연과 높은 모델 품질 사이 trade-off가 있다.",
+      "ASRB는 λ로 latency·accuracy 점수를 합치고 fit node 우선, overload/unfit fallback으로 요청을 보낸다.",
+      "node-local proxy, cached score, passive RTT, 필요할 때만 하는 /echo probe로 Kubernetes 환경의 monitoring 부담을 줄인다.",
+      "1,200-request testbed에서 λ=1은 QEP 대비 평균 18.64ms 낮았고, 관측 설정에 따라 QEP보다 monitoring traffic을 29–73% 줄였다.",
+      "accuracy metadata는 사전 입력이고 λ는 provider가 선택한다. small simulated testbed 결과를 대규모 production으로 바로 일반화하지 않는다."
+    ],
+    "headings": [
+      {
+        "id": "c1",
+        "text": "가장 가까운 pod가 항상 가장 적합한 pod는 아니다"
+      },
+      {
+        "id": "c2",
+        "text": "한 개 가중치 λ로 latency와 accuracy의 우선순위를 바꾼다"
+      },
+      {
+        "id": "c3",
+        "text": "늘 같은 주기로 모두 재지 말고, 중요하거나 흔들리는 노드를 더 본다"
+      },
+      {
+        "id": "c4",
+        "text": "혼잡·재부팅·노드 추가 상황에서 품질 우선순위와 관측비를 비교했다"
+      },
+      {
+        "id": "c5",
+        "text": "정책을 구성 가능한 라우터이지, λ까지 자동으로 정하는 시스템은 아니다"
+      },
+      {
+        "id": "gloss",
+        "text": "핵심 용어 정리"
+      },
+      {
+        "id": "take",
+        "text": "이 논문을 한 장으로"
+      }
+    ]
+  },
+  {
+    "id": "2609.19936",
+    "topic": "systems",
+    "title": "쿠버네티스 HPC 작업의 동적 메모리 할당을 위한 강화학습",
+    "originalTitle": "VERA: Reinforcement Learning for Dynamic Memory Scaling of HPC Workloads in Kubernetes",
+    "summary": "관측 기반 PPO 추천은 benchmark trace에서 VPA보다 메모리 headroom을 효율적으로 쓰지만, 권고 한도는 실제 pod에 적용되지 않았다.",
+    "intro": "VERA는 과거 사용량의 백분위수로 메모리를 정하는 VPA와 달리, 실행 중인 HPC 작업의 메모리 흐름을 관찰해 메모리 한도를 조금씩 조정하는 PPO 기반 추천기입니다. GKE에서 수집한 3,353개 학습 trace와 네 종류 workload를 평가한 결과를 제시하지만, 추천 한도를 실제 pod에 적용하지 않은 shadow-mode 실험이라는 점이 결과를 읽을 때 중요합니다.",
+    "authors": "Ade Pramono · Jie Ren · Ivy Peng",
+    "venue": "arXiv 프리프린트 · 2026",
+    "sourceUrl": "https://arxiv.org/abs/2609.19936v1",
+    "pdfUrl": "https://arxiv.org/pdf/2609.19936v1",
+    "collectedOn": "2026-09-18",
+    "tags": [],
+    "practical": "자동 limit 조정은 phase 변화·OOM guard를 포함하고, shadow/counterfactual 위험 수와 실제 closed-loop 배포 결과를 분리해 검증한다.",
+    "keyPoints": [
+      "기본 VPA는 과거 P90 + 15% 여유 를 추천하지만 first-run·phase-changing HPC 작업의 peak를 놓칠 수 있다.",
+      "VERA는 14개 Prometheus 기반 상태와 연속 ±10% limit action, OOM 우선 보상 으로 동적 추천을 만든다.",
+      "100개 shadow trace에서 선택 모델은 VPA 대비 낭비 절감 31.6%와 추천 limit 초과 1건, VPA는 −7.9%와 30건을 보고했다.",
+      "30건은 실제 OOM이 아니다. 추천 limit을 동일 trace에 대입해 peak보다 낮았던 사례다. 실제 pod limit은 변경하지 않았다.",
+      "운영 배포 전 shadow 검증, cooldown, 안전 bound, 실제 K8s in-place limit update, MPI job-level rollback을 별도로 확인해야 한다."
+    ],
+    "headings": [
+      {
+        "id": "c1",
+        "text": "기록된 과거의 평균으로는 다음 메모리 급증을 막기 어렵다"
+      },
+      {
+        "id": "c2",
+        "text": "안전 여유를 지키면서, 필요할 때만 limit을 줄이도록 학습한다"
+      },
+      {
+        "id": "c3",
+        "text": "실제 GKE trace로 학습하고, 같은 workload 실행에 두 추천을 대입했다"
+      },
+      {
+        "id": "c4",
+        "text": "추천 한도 기준 OOM 초과 사례는 줄고, 평균 여유 메모리는 더 많이 회수했다"
+      },
+      {
+        "id": "c5",
+        "text": "좋은 추천 결과는 보였지만, 자동 조정의 실운영 안전성까지 입증한 것은 아니다"
+      },
+      {
+        "id": "gloss",
+        "text": "핵심 용어 정리"
+      },
+      {
+        "id": "take",
+        "text": "이 논문을 한 장으로"
+      }
+    ]
+  },
+  {
+    "id": "2609.19825",
+    "topic": "systems",
+    "title": "근거 추출과 추론을 분리한 마이크로서비스 장애 원인 분석",
+    "originalTitle": "EviRCA: Decoupling Evidence Extraction from Reasoning for Microservice Root-Cause Analysis",
+    "summary": "근거 수집과 원인 판단을 분리하면 세 OpenRCA 시스템에서 비교 방법보다 정확하고 저렴했지만, 누락 신호와 benchmark 범위가 적용 한계다.",
+    "intro": "EviRCA는 원시 메트릭·분산 추적·로그를 LLM에게 통째로 맡기지 않습니다. 먼저 결정적 신호 처리로 근거 카드를 만들고, LLM은 제한된 읽기 전용 도구로 그 카드들 사이에서 원인과 증상을 구분합니다. OpenRCA 335건에서 정답률과 비용 개선을 보였지만, 특정 벤치마크의 후보·토폴로지·주입 고장에 의존하는 결과이며 Market 네트워크 장애는 추출 단계에서 놓치는 경우가 남습니다.",
+    "authors": "Yuhao Wang · Zhen Qin · Xingliang Wang · Guochang Li · Weize Li · Shuiguang Deng",
+    "venue": "arXiv 프리프린트 · 2026",
+    "sourceUrl": "https://arxiv.org/abs/2609.19825v1",
+    "pdfUrl": "https://arxiv.org/pdf/2609.19825v1",
+    "collectedOn": "2026-09-18",
+    "tags": [],
+    "practical": "evidence extraction recall과 root-cause selection 정확도를 분리 측정하고, 새 시스템에선 adapter·timestamp·topology·network fault coverage를 자체 검증한다.",
+    "keyPoints": [
+      "문제는 하나의 LLM에게 대량 telemetry 검색·이상 감지·원인 해석 을 한 번에 맡기는 비용과 불안정성이다.",
+      "EviRCA는 metric/trace/log에서 결정적으로 evidence를 만들고, LLM은 읽기 전용 도구로 root cause를 고르는 2단계 구조다.",
+      "OpenRCA 335건에서 두 LLM의 overall Correct가 40.6–43.9%였고 matched baseline 최고 15.2%를 넘었으며, 토큰은 15–25.7배 적고 시간은 3.2–19.6배 짧았다.",
+      "성능은 시스템별로 달랐다. Telecom은 trace와 co-location이 중요했고, Market network fault는 정답 component가 evidence에 노출되지 않는 coverage 한계가 컸다.",
+      "핵심 적용 원칙은 adapter와 근거 출처를 명시하고 “후보를 놓침”과 “후보를 잘못 고름”을 따로 측정하는 것. benchmark 성능을 production 정확도로 바로 읽지 않는다."
+    ],
+    "headings": [
+      {
+        "id": "c1",
+        "text": "증거를 찾는 일과 증거를 해석하는 일을 한 LLM 루프에 섞지 않는다"
+      },
+      {
+        "id": "c2",
+        "text": "높은 재현성의 신호 처리와 읽기 전용 진단을 adapter로 연결한다"
+      },
+      {
+        "id": "c3",
+        "text": "335개 OpenRCA 사례에서 두 기존 방식보다 strict 정답률이 높았다"
+      },
+      {
+        "id": "c4",
+        "text": "토큰·시간은 크게 줄었지만, 어떤 신호가 중요하고 어떤 한계가 남는지는 시스템마다 다르다"
+      },
+      {
+        "id": "c5",
+        "text": "좋은 설계 원칙은 분업과 출처 추적이며, 성능 수치를 그대로 일반화하는 것은 아니다"
+      },
+      {
+        "id": "gloss",
+        "text": "핵심 용어 정리"
+      },
+      {
+        "id": "take",
+        "text": "이 논문을 한 장으로"
+      }
+    ]
+  },
+  {
+    "id": "2609.19622",
+    "topic": "retrieval",
+    "title": "유사도만 넘어서: 다중 홉 RAG를 위한 토큰 없는 기하학적 그래프",
+    "originalTitle": "Beyond Similarity through Zero-Token Geometric Graphs for Multi-Hop RAG",
+    "summary": "문서 임베딩끼리 만든 그래프에서 비슷함과 새로움을 함께 고려해 한 번 확장하면, 다중 홉 질문의 답 문서를 더 잘 찾을 수 있다는 결과를 보였다.",
+    "intro": "문서 임베딩끼리 만든 그래프에서 비슷함과 새로움을 함께 고려해 한 번 확장하면, 다중 홉 질문의 답 문서를 더 잘 찾을 수 있다는 결과를 보였다. 이 문서는 먼저 원 논문 내용을 설명하고, 각 장 끝에는 초등학생도 이해할 쉬운 설명을 덧붙입니다.",
+    "authors": "Zeliang Li · Xiaofen Xing · Kailing Guo · Xiangmin Xu",
+    "venue": "arXiv 프리프린트 · 2026 · cs.IR",
+    "sourceUrl": "https://arxiv.org/abs/2609.19622v1",
+    "pdfUrl": "https://arxiv.org/pdf/2609.19622v1",
+    "collectedOn": "2026-09-18",
+    "tags": [],
+    "practical": "그래프는 Wiki 지식 자체가 아니라 후보를 넓히는 검색 어댑터로 취급하고, 인덱스 구축비뿐 아니라 질의 시 필터·생성 비용과 정확도를 함께 측정한다.",
+    "keyPoints": [
+      "G³RAG의 “graph”는 문서 임베딩을 노드로 잇는 검색 그래프이지, 개체·사실을 저장하는 지식 그래프가 아니다.",
+      "문서 쌍 점수는 방향 유사도와 직교 성분을 곱해 관련성과 새로움의 균형을 겨냥한다.",
+      "검색은 dense 후보와 FilterLLM으로 출발점을 고른 뒤 그래프에서 제어된 1단계 확장을 한다.",
+      "세 데이터셋에서 그래프 baseline보다 높은 평균 F1을 보고했고, Qwen embedding 평균 차이는 4.26점이었다.",
+      "Zero-token은 오프라인 그래프 생성 LLM 토큰에 한정된다. 임베딩·질의 필터·생성·지연 비용은 남는다."
+    ],
+    "headings": [
+      {
+        "id": "c1",
+        "text": "다중 홉 질문은 “비슷한 다음 문서”만으로 풀리지 않는다"
+      },
+      {
+        "id": "c2",
+        "text": "두 문서가 “비슷하면서도 새롭다”면 연결 점수를 준다"
+      },
+      {
+        "id": "c3",
+        "text": "믿을 만한 시작 문서에서 한 번만 주변 길로 나아간다"
+      },
+      {
+        "id": "c4",
+        "text": "세 벤치마크에서 답 문서 발견과 F1이 좋아졌지만 범위는 제한적이다"
+      },
+      {
+        "id": "c5",
+        "text": "인덱스 토큰을 줄이는 대신 검색 때 드는 비용은 남아 있다"
+      },
+      {
+        "id": "c6",
+        "text": "그래프의 다리는 유용하지만, 각도 가정과 데이터셋 튜닝이 남는다"
+      },
+      {
+        "id": "gloss",
+        "text": "핵심 용어 정리"
+      },
+      {
+        "id": "take",
+        "text": "이 논문을 한 장으로"
+      }
+    ]
+  },
+  {
+    "id": "2609.19601",
+    "topic": "retrieval",
+    "title": "FootprintRAG: 과학 논문 탐색에서 RAG 근거를 눈으로 확인하고 고치는 방법",
+    "originalTitle": "FootprintRAG: Visual Analytics for Evidence Context Refinement in RAG-based Scientific Literature Exploration",
+    "summary": "RAG가 고른 근거를 답을 쓰기 전에 사람이 직접 확인하고 고치게 만들면, 문헌 종합의 근거 범위와 출처를 더 잘 통제할 수 있다.",
+    "intro": "RAG가 고른 근거를 답을 쓰기 전에 사람이 직접 확인하고 고치게 만들면, 문헌 종합의 근거 범위와 출처를 더 잘 통제할 수 있다. 이 문서는 먼저 원 논문 내용을 설명하고, 각 장 끝에는 초등학생도 이해할 쉬운 설명을 덧붙입니다.",
+    "authors": "Xingyu Liu · Yu Dong · Qizhen Yu · Shiyu Cheng · Zhe Wang · Guan Li · Guihua Shan · Dong Tian · Christy Jie Liang · Quang Vinh Nguyen",
+    "venue": "arXiv 프리프린트 · 2026 · cs.GR",
+    "sourceUrl": "https://arxiv.org/abs/2609.19601v1",
+    "pdfUrl": "https://arxiv.org/pdf/2609.19601v1",
+    "collectedOn": "2026-09-18",
+    "tags": [],
+    "practical": "LLM-Wiki로 승격하기 전 단계에 후보 근거·제외 이유·출처·사용자 승인 기록을 두면, 자동 검색 결과와 검증된 지식 페이지를 분리할 수 있다.",
+    "keyPoints": [
+      "RAG의 답만 보여주지 말고, 답을 만들기 전에 고른 근거 묶음도 확인 가능하게 한다.",
+      "병렬 질의, 제외된 후보, 보완 후보를 나눠 보여줘 검색 범위와 빠진 근거를 살펴본다.",
+      "사람의 수정은 답변 생성 전에 이뤄지며, 선택된 근거의 원문 출처를 계속 보존한다.",
+      "사용자 연구에서 근거 수정과 생성 전 확인은 평균 4.9/5였지만 표본은 10명이다.",
+      "대규모 효과·사실성 검증·전체 시스템 비용은 이 연구만으로 결론내릴 수 없다."
+    ],
+    "headings": [
+      {
+        "id": "c1",
+        "text": "답보다 먼저 만들어지는 “근거 바구니”를 살펴보자"
+      },
+      {
+        "id": "c2",
+        "text": "좋은 검색 결과와 좋은 근거는 같은 말이 아니다"
+      },
+      {
+        "id": "c3",
+        "text": "논문을 잘라 근거 카드로 만들고, 검색의 발자국을 남긴다"
+      },
+      {
+        "id": "c4",
+        "text": "작은 문헌 탐색에서 사용자가 실제로 근거를 손봤다"
+      },
+      {
+        "id": "c5",
+        "text": "근거를 고칠 수 있다고 근거가 자동으로 참이 되는 것은 아니다"
+      },
+      {
+        "id": "gloss",
+        "text": "핵심 용어 정리"
+      },
+      {
+        "id": "take",
+        "text": "이 논문을 한 장으로"
+      }
+    ]
+  },
+  {
+    "id": "2609.18703",
+    "topic": "systems",
+    "title": "계보를 보존하는 다중 단위 데이터 파이프라인 실행",
+    "originalTitle": "RayOrch: Programming and Executing Lineage-Controlled Multi-Grain Dataflows for Foundation-Model Data Preparation",
+    "summary": "한 번 만든 구조 상태를 배치 경계·ordinal·failure scope까지 재사용한다.",
+    "intro": "RayOrch는 문서·영상이 페이지·클립처럼 가변 개수의 작업으로 나뉘는 데이터 준비 파이프라인에서, 부모-자식 계보와 순서 정보를 런타임의 구조 상태로 보존 합니다. 그 구조를 유지한 채 여러 부모의 준비된 작업을 한 배치로 처리하고, 부모별로 결과를 다시 모으므로 활용률과 독립적 진행을 함께 노립니다.",
+    "authors": "Xiaochen Ma · Zimo Meng · Junzhu Liang · Youhe Jiang · Yue Cheng · Hao Liang · Bohan Zeng · Dengchun Li · Lu Ma · Zhengyang Zhao · Zhen Hao Wong · Runming He · Meiyi Qiang · Jiangtao Guan · Binhang Yuan · Wentao Zhang",
+    "venue": "arXiv 기술 보고서 · 2026",
+    "sourceUrl": "https://arxiv.org/abs/2609.18703v1",
+    "pdfUrl": "https://arxiv.org/pdf/2609.18703v1",
+    "collectedOn": "2026-09-17",
+    "tags": [],
+    "practical": "parent·child ordinal을 payload convention이 아니라 runtime metadata로 둔다. 각 Call의 준비 큐를 독립시키고, retry generation과 parent-scoped failure 범위를 검증한다.",
+    "keyPoints": [
+      "부모-자식 멤버십과 ordinal을 payload 추측이 아니라 런타임 구조 상태 로 둔다.",
+      "물리 batch는 여러 부모의 작업을 섞어도 되지만 논리 reduce는 선언된 membership으로 부모별 복원한다.",
+      "Call별 FIFO는 준비된 작업을 계속 공급하고, 한 부모의 긴 꼬리가 다른 부모를 막지 않게 한다.",
+      "generation fence와 typed failure는 재시도 결과·실패 범위를 각각 Grain, Call×parent로 제한한다.",
+      "평가에서는 64 GPU scaling뿐 아니라 workload, hardware, ablation, 실패 주입 조건을 함께 읽는다."
+    ],
+    "headings": [
+      {
+        "id": "c1",
+        "text": "잘게 나눠 병렬화하되, 원래 부모와 순서를 잃지 않는다"
+      },
+      {
+        "id": "c2",
+        "text": "확장과 수집을 짝으로 선언하고, 컴파일러가 구조를 확인한다"
+      },
+      {
+        "id": "c3",
+        "text": "준비된 작업은 계속 진행하고, 완료 판정은 부모 단위로 한다"
+      },
+      {
+        "id": "c4",
+        "text": "64 GPU까지 확장되고, FIFO와 부모별 실패 억제가 추가 이득을 낸다"
+      },
+      {
+        "id": "gloss",
+        "text": "핵심 용어 정리"
+      },
+      {
+        "id": "take",
+        "text": "이 논문을 한 장으로"
+      }
+    ]
+  },
+  {
+    "id": "2609.18633",
+    "topic": "systems",
+    "title": "컨테이너 네트워크를 위한 Linux 패킷 전달 경로 특화",
+    "originalTitle": "Netkit: Specializing Linux Packet Delivery for Container Networks",
+    "summary": "빠른 경로가 우회하는 netfilter 책임과 잔여 queue를 명시한다.",
+    "intro": "Netkit은 network namespace 사이를 오가는 패킷에 중복 backlog queue 순회가 생기는 Linux 경로를 eBPF로 특화합니다. kernel의 netkit device pair와 BPF redirect 를 사용해 컨테이너 애플리케이션을 바꾸지 않고 그 경로를 줄였으며, Cilium 두 노드 실험에서 짧은 요청·연결 처리율을 높였습니다.",
+    "authors": "Daniel Borkmann · Paul Chaignon",
+    "venue": "eBPF’26 workshop paper · 2026 (행사 예정)",
+    "sourceUrl": "https://arxiv.org/abs/2609.18633v1",
+    "pdfUrl": "https://arxiv.org/pdf/2609.18633v1",
+    "collectedOn": "2026-09-17",
+    "tags": [],
+    "practical": "패킷 fast path 도입 전 security/QoS/NAT가 netfilter 대신 BPF에서 적용되는지, destination backlog와 XDP 요구가 남는지 확인한다.",
+    "keyPoints": [
+      "network namespace 전환은 논리 경계이지만 Linux receive path에서는 backlog 순회가 반복될 수 있다.",
+      "netkit은 host tc-BPF redirect와 새 device pair로 중복 경로를 줄이며, 모든 queue를 제거하지는 않는다.",
+      "2-node Cilium benchmark에서 TCP_RR +34%/+37%, TCP_CRR +32%/+26% 향상을 보고했다.",
+      "host netfilter bypass 전제 때문에 BPF로 정책·QoS·NAT를 구현하거나 옮겨야 한다.",
+      "단일 CPU hardware와 고정 kernel/Cilium 버전 결과를 다른 CNI·정책 구성에 그대로 일반화하면 안 된다."
+    ],
+    "headings": [
+      {
+        "id": "c1",
+        "text": "논리적인 namespace 전환도 packet path에서는 반복 비용을 만든다"
+      },
+      {
+        "id": "c2",
+        "text": "BPF가 정책을 적용한 뒤 namespace를 바꾸고 바로 전달한다"
+      },
+      {
+        "id": "c3",
+        "text": "Cilium 환경에서 container 성능을 process 간 통신 수준까지 끌어올린다"
+      },
+      {
+        "id": "c4",
+        "text": "빠른 경로는 netfilter·XDP·호환성 경계를 명시한다"
+      },
+      {
+        "id": "gloss",
+        "text": "핵심 용어 정리"
+      },
+      {
+        "id": "take",
+        "text": "이 논문을 한 장으로"
+      }
+    ]
+  },
+  {
+    "id": "2609.18501",
+    "topic": "systems",
+    "title": "분산 배치 정보를 고려한 분산 데이터베이스 테스트",
+    "originalTitle": "Distribution-Aware Distributed Database Testing (Extended Version)",
+    "summary": "SQL 수보다 분포 조건·실행률·실제 최적화 경로를 측정한다.",
+    "intro": "DAT는 중앙집중형 DB 테스트를 그대로 분산 DB에 적용할 때 빠지기 쉬운 샤드 배치와 분산 최적화 조건 을 테스트 생성의 중심에 둡니다. 서로 다른 데이터 분포를 가진 논리 스키마를 구성하고, 실행 이력으로 실행 가능성을 학습해 SQL을 변형합니다. DistRanger로 Citus·ShardingSphere·Vitess·ClickHouse를 검사해 31개 신규 버그를 보고했습니다.",
+    "authors": "Zhou Zhou · Si Liu · Hengfeng Wei · Min Zhang",
+    "venue": "arXiv 확장판 · PVLDB 형식 · 2026",
+    "sourceUrl": "https://arxiv.org/abs/2609.18501v1",
+    "pdfUrl": "https://arxiv.org/pdf/2609.18501v1",
+    "collectedOn": "2026-09-17",
+    "tags": [],
+    "practical": "분산 DB 테스트에서 schema, distribution matrix, optimization path, executability, product version을 함께 기록한다. feedback threshold의 false positive와 memory cost도 측정한다.",
+    "keyPoints": [
+      "DDBMS의 query behavior는 SQL semantics뿐 아니라 테이블 배치와 분포 전략 에도 좌우된다.",
+      "SDM으로 스키마·분포 조합을 만들고 mutation으로 shard routing·co-location 조건을 적극 탐색한다.",
+      "실행 가능성 history는 유효 query 비율을 높이지만 threshold가 높으면 합법 경로도 걸러낼 수 있다.",
+      "31개 신규 bug(28개 분산 관련)는 전체 캠페인, 16개 bug(13개 분산 관련)는 별도 24시간 비교의 수치다.",
+      "DistRanger는 Vitess에서 641MB 수준을 사용했으며 그 대부분은 feature path history였다."
+    ],
+    "headings": [
+      {
+        "id": "c1",
+        "text": "같은 SQL도 데이터 분포에 따라 전혀 다른 실행이 된다"
+      },
+      {
+        "id": "c2",
+        "text": "스키마×분포 행렬과 이력 피드백으로 유효한 분산 경로를 탐색한다"
+      },
+      {
+        "id": "c3",
+        "text": "31개 신규 버그를 보고하고, 24시간 비교에서도 가장 많이 찾았다"
+      },
+      {
+        "id": "c4",
+        "text": "31건의 상세 bug 목록과 시스템별 계측 지점"
+      },
+      {
+        "id": "gloss",
+        "text": "핵심 용어 정리"
+      },
+      {
+        "id": "take",
+        "text": "이 논문을 한 장으로"
+      }
+    ]
+  },
+  {
+    "id": "2609.16912",
+    "topic": "retrieval",
+    "title": "논문을 찾고, 연결된 논문까지 따라가는 검색 시스템",
+    "originalTitle": "Lit3R: Retrieve–Relate–Read for Evidence-Grounded Question Answering over Scientific Literature",
+    "summary": "논문 관계 확장은 다중 논문 질문의 recall@50을 0.647에서 0.940으로 높였지만, 공식 테스트의 근거 연결 F1은 0.737·표 셀 정확도는 0.309였다.",
+    "intro": "Lit3R은 BM25 희소 검색과 dense 임베딩 검색을 합친 뒤, 찾은 논문과 연결된 논문으로 후보를 확장하고, 원문 근거를 읽어 답을 만든다. 핵심은 질문만으로는 닿지 않는 관련 논문을 paper-to-paper 관계로 더 회수 하는 것이다.",
+    "authors": "Akira Ise · Kotaro Kumagai · Yuta Yamaguchi · Hisanori Ozaki · Yukio Uematsu · Ikuya Yamada",
+    "venue": "GroundLM 2026 Workshop",
+    "sourceUrl": "https://arxiv.org/abs/2609.16912",
+    "pdfUrl": "https://arxiv.org/pdf/2609.16912",
+    "collectedOn": "2026-09-17",
+    "tags": [
+      "hybrid retrieval",
+      "scientific search",
+      "paper graph",
+      "evidence grounding"
+    ],
+    "practical": "위키의 논문 간 인용·개념 링크를 2차 후보 확장 신호로 시험한다. 후보 회수율과 원문 근거·표 값 정확도를 별도 지표로 관리한다.",
+    "keyPoints": [
+      "Retrieve–Relate–Read: 질문으로 논문을 찾고, 관계로 넓히고, 근거를 읽는다.",
+      "BM25+sparse와 dense 검색, cross-encoder 재순위화, LLM 검증을 결합했다.",
+      "논문 관계 확장으로 다중 논문 질문의 recall@50이 .647에서 .940으로 증가했다.",
+      "공식 테스트에서 논문 검색 F1 .992, 근거 연결 F1 .737, 표 셀 정확도 .309였다.",
+      "이 논문은 Microsoft GraphRAG가 아니라 paper-to-paper ranking expansion을 쓴다.",
+      "55개 검증 질문에 의존한 단일 공유 과제 결과라 도메인 일반화는 미확인이다."
+    ],
+    "headings": [
+      {
+        "id": "c1",
+        "text": "과학 질문은 정답 근거가 여러 논문에 흩어져 있을 수 있다"
+      },
+      {
+        "id": "c2",
+        "text": "질문을 여러 하위 질문으로 쪼개 sparse와 dense 검색을 함께 쓴다"
+      },
+      {
+        "id": "c3",
+        "text": "처음 찾은 논문과 연결된 논문을 한 번 더 따라간다"
+      },
+      {
+        "id": "c4",
+        "text": "논문을 찾는 점수와 근거를 제대로 짚는 점수는 다르다"
+      },
+      {
+        "id": "c5",
+        "text": "높은 논문 recall이 완성된 연구 조수의 성능을 뜻하진 않는다"
+      },
+      {
+        "id": "gloss",
+        "text": "핵심 용어 정리"
+      },
+      {
+        "id": "take",
+        "text": "이 논문을 한 장으로"
+      }
+    ]
+  },
+  {
+    "id": "2609.16453",
+    "topic": "retrieval",
+    "title": "에이전트 RAG는 언제 검색을 멈춰야 할까?",
+    "originalTitle": "Predicting Partial Answer Quality and Utility in Agentic Retrieval-Augmented Generation",
+    "summary": "Search-R1 설정에서 평균 검색 반복을 10.89% 줄이고 자연 종료 답 품질의 97.60%를 유지했지만, probing 비용과 다른 작업으로의 일반화는 별도 검증이 필요하다.",
+    "intro": "이 논문은 agentic RAG의 검색-추론 반복마다 중간 답의 품질과 직전 반복의 기여도를 예측해 불필요한 검색을 줄이면서 답 품질을 지킬 수 있는 조기 종료 를 시험한다.",
+    "authors": "Fangzheng Tian · Debasis Ganguly · Craig Macdonald",
+    "venue": "CIKM 2026 full paper",
+    "sourceUrl": "https://arxiv.org/abs/2609.16453",
+    "pdfUrl": "https://arxiv.org/pdf/2609.16453",
+    "collectedOn": "2026-09-17",
+    "tags": [
+      "agentic RAG",
+      "retrieval efficiency",
+      "early stopping",
+      "answer quality"
+    ],
+    "practical": "반복별 중간 답 품질과 추가 검색이 준 이득을 로그로 남긴다. 조기 종료율만 보지 말고 생성·검색 호출 비용과 답 품질 보존율을 함께 평가한다.",
+    "keyPoints": [
+      "반복 검색이 길다고 답이 계속 좋아지는 것은 아니다.",
+      "답의 현재 품질 F1과 직전 반복의 변화량을 별도로 정의한다.",
+      "현재 검색, 반복 간 변화, 원 질문과의 정렬 신호를 결합해 품질·효용을 예측한다.",
+      "Search-R1에서 평균 반복 3.21→2.86(−10.89%), 자연 종료 품질의 97.60%를 보존했다.",
+      "답 품질은 효용보다 예측이 쉬웠고, 최고 Pearson r은 0.438이었다.",
+      "추가 probing 비용과 다른 도메인으로의 일반화는 아직 검증이 필요하다."
+    ],
+    "headings": [
+      {
+        "id": "c1",
+        "text": "에이전트는 검색을 오래 해도 매번 더 나아지는 것은 아니다"
+      },
+      {
+        "id": "c2",
+        "text": "답 품질과 검색 한 번의 기여는 다른 숫자다"
+      },
+      {
+        "id": "c3",
+        "text": "검색 품질, 반복 간 변화, 원 질문과의 거리를 함께 본다"
+      },
+      {
+        "id": "c4",
+        "text": "답이 충분히 좋고 다음 검색의 이득도 작으면 멈춘다"
+      },
+      {
+        "id": "c5",
+        "text": "10.89% 반복 절감은 두 시스템·세 QA 벤치마크에서의 결과다"
+      },
+      {
+        "id": "gloss",
+        "text": "핵심 용어 정리"
+      },
+      {
+        "id": "take",
+        "text": "이 논문을 한 장으로"
+      }
+    ]
+  },
+  {
+    "id": "2609.16053",
+    "topic": "agents",
+    "title": "검색해 쓴 기억을 다시 정리하는 LLM 에이전트",
+    "originalTitle": "Retrieval-Driven Memory Reconsolidation for Long-Term LLM Agents",
+    "summary": "REALM은 검색 피드백으로 장기 기억 그래프를 고쳐 두 벤치마크 평균 정확도를 높였지만, 운영 비용과 질문 유형별 약점은 남아 있다.",
+    "intro": "REALM은 장기 대화 기억을 의미 관계 그래프로 저장하고, 에이전트가 기억을 검색해 답한 뒤 그 결과를 피드백으로 삼아 그래프 연결을 다시 정리한다. 검색으로 새 정보를 더 많이 찾기보다, 이미 찾은 근거를 더 잘 쓰게 만드는 기억 진화 방식 이 핵심이다.",
+    "authors": "Yuanyi Song · Yukai Wang · Xinbei Ma · Zhihui Fu · Jianghao Lin · Weiwen Liu · Jun Wang · Huarong Deng · Yong Yu · Weinan Zhang",
+    "venue": "arXiv preprint",
+    "sourceUrl": "https://arxiv.org/abs/2609.16053",
+    "pdfUrl": "https://arxiv.org/pdf/2609.16053",
+    "collectedOn": "2026-09-17",
+    "tags": [
+      "agent memory",
+      "knowledge graph",
+      "retrieval",
+      "memory evolution"
+    ],
+    "practical": "검색 결과를 답에 사용한 뒤 관계를 갱신하는 별도 memory layer 후보로 평가한다. 정확도뿐 아니라 갱신 비용·관계 오류 누적·질문 유형별 성능을 함께 잰다.",
+    "keyPoints": [
+      "REALM의 graph는 벡터 검색 엔진의 길이 아니라 에이전트의 기억 지도다.",
+      "노드는 사람·사건·경험·사실, 연결은 논리·인과·계층·연상 관계다.",
+      "질문에 맞는 기억을 찾고, 관계를 따라 확장한 뒤 근거를 다시 정렬한다.",
+      "검색 후 활성화된 관계를 추가·강화·약화해 다음 검색의 길을 바꾼다.",
+      "평균 정확도는 LoCoMo 75.97%, LongMemEval 65.11%; 갱신만의 효과는 각각 +2.01·+2.13%p였다.",
+      "저장된 근거의 양보다 찾아낸 근거를 답에 잘 연결하는 과정이 핵심 기여다."
+    ],
+    "headings": [
+      {
+        "id": "c1",
+        "text": "에이전트가 오래 기억해도, 기억을 찾는 길은 낡을 수 있다"
+      },
+      {
+        "id": "c2",
+        "text": "기억을 네 종류의 조각과 네 종류의 연결로 나눈다"
+      },
+      {
+        "id": "c3",
+        "text": "정답 단서에서 시작해 필요한 관계만 따라간다"
+      },
+      {
+        "id": "c4",
+        "text": "답을 내고 난 뒤 연결을 더하거나 강화하거나 약하게 만든다"
+      },
+      {
+        "id": "c5",
+        "text": "두 벤치마크에서는 앞섰지만, 모든 기억 질문에서 이기는 것은 아니다"
+      },
+      {
+        "id": "gloss",
+        "text": "핵심 용어 정리"
+      },
+      {
+        "id": "take",
+        "text": "이 논문을 한 장으로"
+      }
+    ]
+  },
+  {
+    "id": "korean-spacing-syllable-morpheme-2021",
+    "topic": "korean",
+    "title": "음절과 형태소를 함께 쓴 한국어 자동 띄어쓰기",
+    "originalTitle": "Automatic Word Spacing of Korean Using Syllable and Morpheme",
+    "summary": "음절과 형태소 정보를 결합한 CNN–BiLSTM 모델이 단어 F1 96.06%로 가장 높았다.",
+    "intro": "띄어쓰기를 각 음절 뒤에 공백을 넣을지 말지 정하는 시퀀스 라벨링 으로 보고, 음절 정보와 형태소 정보를 각각 CNN·Bi-LSTM으로 학습한 뒤 합친다. 세종 말뭉치 평가에서 두 정보를 함께 쓴 모델이 단어 F1 96.06% 로 가장 높았다.",
+    "authors": "Jeong-Myeong Choi · Jong-Dae Kim · Chan-Young Park · Yu-Seop Kim",
+    "venue": "Applied Sciences 11(2), 626",
+    "sourceUrl": "https://doi.org/10.3390/app11020626",
+    "pdfUrl": "",
+    "collectedOn": "2026-09-16",
+    "tags": [
+      "한국어 띄어쓰기",
+      "음절",
+      "형태소",
+      "CNN",
+      "BiLSTM"
+    ],
+    "practical": "",
+    "keyPoints": [
+      "띄어쓰기는 한국어 문장의 의미와 구조 를 바꿀 수 있다.",
+      "음절 입력은 형태소 입력만 사용한 경우보다 강했고, 두 정보를 합치면 더 좋아졌다.",
+      "최종 단어 F1은 96.06% , 태그 정확도는 99.13%였다.",
+      "형태소 특징을 만들기 위해 분석기가 필요하므로 “분석기 없는 검색”에는 직접 적용하기 어렵다.",
+      "검색 실무에서는 교정기를 단독 관문으로 두기보다 문자 n-gram 보조 필드와 함께 쓰는 편이 견고하다."
+    ],
+    "headings": [
+      {
+        "id": "c1",
+        "text": "띄어쓰기는 보기 좋은 형식이 아니라 의미를 가르는 경계다"
+      },
+      {
+        "id": "c2",
+        "text": "가까운 패턴은 CNN이, 앞뒤 문맥은 Bi-LSTM이 읽는다"
+      },
+      {
+        "id": "c3",
+        "text": "음절만도 강하지만, 형태소 정보를 더하면 한 단계 더 오른다"
+      },
+      {
+        "id": "c4",
+        "text": "높은 점수의 바깥: 뉴스형 데이터와 형태소 분석 의존성"
+      },
+      {
+        "id": "gloss",
+        "text": "핵심 용어 정리"
+      },
+      {
+        "id": "take",
+        "text": "이 논문을 한 장으로"
+      }
+    ]
+  },
+  {
+    "id": "korean-noisy-tokenizer-2021",
+    "topic": "korean",
+    "title": "노이즈가 많은 사용자 생성 한국어를 위한 K-MT 토크나이저",
+    "originalTitle": "The Korean Morphologically Tight-Fitting Tokenizer for Noisy User-Generated Texts",
+    "summary": "간단한 접미사 규칙은 고유명사를 잘 보존하지만 공백 오류가 있는 입력에는 구조적으로 약하다.",
+    "intro": "K-MT는 완전한 형태소 분석기 대신 공백으로 나눈 어절 뒤쪽에서 조사·어미를 규칙으로 떼는 간단한 토크나이저 다. 고유명사·신조어를 통째로 보존하는 장점이 있지만, 애초에 띄어쓰기가 틀린 입력에는 약하다는 사실도 실험과 오류 분석으로 드러난다.",
+    "authors": "Sangah Lee · Hyopil Shin",
+    "venue": "W-NUT at EMNLP 2021",
+    "sourceUrl": "https://aclanthology.org/2021.wnut-1.45/",
+    "pdfUrl": "",
+    "collectedOn": "2026-09-16",
+    "tags": [
+      "한국어 토크나이저",
+      "노이즈 텍스트",
+      "고유명사",
+      "신조어",
+      "띄어쓰기 오류"
+    ],
+    "practical": "",
+    "keyPoints": [
+      "K-MT는 완전한 형태소 분석기보다 훨씬 단순한 접미사 규칙 기반 방식이다.",
+      "고유명사·신조어를 과분할하지 않는 장점이 있다.",
+      "무제한 어휘 NER에서 K-MT는 테스트 정확도 73.05 로 MeCab-ko를 앞섰다.",
+      "하지만 공백을 먼저 믿기 때문에 띄어쓰기 오류에 약하다 .",
+      "검색에서는 형태소 전용 색인보다 원문·문자 n-gram 보조 필드를 함께 두는 것이 안전하다."
+    ],
+    "headings": [
+      {
+        "id": "c1",
+        "text": "인터넷 한국어의 문제는 오타만이 아니다"
+      },
+      {
+        "id": "c2",
+        "text": "왼쪽부터 분석하지 않고, 어절 끝의 문법 형태를 뒤에서 맞춘다"
+      },
+      {
+        "id": "c3",
+        "text": "간단한 규칙만으로도 일부 노이즈 과제에서는 경쟁력이 있었지만, 항상 최고는 아니다"
+      },
+      {
+        "id": "c4",
+        "text": "고유명사에는 강하고, 잘못 붙여 쓴 문장에는 약하다"
+      },
+      {
+        "id": "gloss",
+        "text": "핵심 용어 정리"
+      },
+      {
+        "id": "take",
+        "text": "이 논문을 한 장으로"
+      }
+    ]
+  },
+  {
+    "id": "korean-ngram-retrieval-1996",
+    "topic": "korean",
+    "title": "n-그램을 이용한 한국어 문서 검색",
+    "originalTitle": "Using n-Grams for Korean Text Retrieval",
+    "summary": "WG-2는 두 한국어 테스트 컬렉션에서 단어 색인보다 높았고, 소규모 KT에서는 수작업 형태소 색인에 근접했다.",
+    "intro": "한국어 어절의 어간이 복합명사인 경우가 많아 단어 색인만으로는 같은 개념을 놓친다. 논문은 어간을 만든 뒤 다시 글자 n-그램으로 쪼개는 WG-n 색인 을 제안하고, 당시 실험에서 WG-2가 단어 색인보다 우수하고 형태소 색인에 근접 했다고 보고한다.",
+    "authors": "Joon Ho Lee · Jeong Soo Ahn",
+    "venue": "ACM SIGIR 1996",
+    "sourceUrl": "https://doi.org/10.1145/243199.243269",
+    "pdfUrl": "",
+    "collectedOn": "2026-09-16",
+    "tags": [
+      "한국어 검색",
+      "character n-gram",
+      "bigram",
+      "복합명사",
+      "형태소 분석기 없음"
+    ],
+    "practical": "",
+    "keyPoints": [
+      "형태소 분석기 없이도 복합명사 문제를 상당 부분 완화할 수 있다.",
+      "이 논문의 데이터에서는 음절 bigram 이 unigram·trigram 이상보다 안정적이었다.",
+      "KT에서 WG-2 0.5008은 단어 0.4024보다 높고 형태소 0.5174에 근접했다.",
+      "현대 구현에서는 원문 BM25와 공백 제거 bigram 필드를 병렬로 유지 하는 해석이 안전하다.",
+      "오래된 데이터와 수작업 형태소 조건 때문에 최신 서비스에 그대로 일반화해서는 안 된다."
+    ],
+    "headings": [
+      {
+        "id": "c1",
+        "text": "띄어쓰기가 같아도, 붙여 쓴 복합명사 때문에 검색이 빗나간다"
+      },
+      {
+        "id": "c2",
+        "text": "어절을 통째로 버리지 않고, 어간에서 겹치는 글자 조각을 만든다"
+      },
+      {
+        "id": "c3",
+        "text": "이 데이터에서는 bigram이 가장 안정적이었고, 단어 색인을 크게 앞섰다"
+      },
+      {
+        "id": "c4",
+        "text": "좋은 기본값이라는 증거이지, 모든 검색 문제의 최종 답은 아니다"
+      },
+      {
+        "id": "gloss",
+        "text": "핵심 용어 정리"
+      },
+      {
+        "id": "take",
+        "text": "이 논문을 한 장으로"
+      }
+    ]
+  },
+  {
+    "id": "korean-morpheme-tokenization-2026",
+    "topic": "korean",
+    "title": "형태소가 중요하다: 한국어 언어모델을 위한 형태소 기반 서브워드 토큰화",
+    "originalTitle": "Morpheme Matters: Morpheme-Based Subword Tokenization for Korean Language Models",
+    "summary": "MoB는 MoA보다 입력 토큰을 평균 19% 줄이고 다섯 과제 중 네 과제에서 개선했지만, 노이즈가 많은 NSMC에서는 하락했다.",
+    "intro": "빈도만 보는 BPE 대신 형태소를 기본형으로 복원하고 어절·형태소 경계를 토큰 접두표지에 담는 MoB 를 제안한다. BERT 사전학습 실험에서 기존 형태소 인지 방식 MoA보다 입력 토큰 수를 평균 19% 줄이면서 다섯 과제 중 네 과제에서 성능을 높였지만, 신조어·오타가 많은 NSMC에서는 오히려 낮았다.",
+    "authors": "DongHyeok Lee · Jeongyeon Park · Kyungbeen Cho · Jae Sung Lee",
+    "venue": "EACL 2026 Short Papers",
+    "sourceUrl": "https://aclanthology.org/2026.eacl-short.22/",
+    "pdfUrl": "",
+    "collectedOn": "2026-09-16",
+    "tags": [
+      "한국어 토큰화",
+      "형태소",
+      "BPE",
+      "BERT",
+      "MoB",
+      "EACL 2026"
+    ],
+    "practical": "",
+    "keyPoints": [
+      "형태소 경계를 무시한 빈도 기반 BPE는 한국어에서 무의미한 조각을 만들 수 있다.",
+      "MoB는 기본형과 경계 표지로 MoA보다 입력 토큰을 평균 19% 줄였다.",
+      "다섯 과제 중 네 과제에서 좋아졌고, 노이즈가 많은 NSMC에서는 0.34점 하락 했다.",
+      "형태소 분석 오류가 그대로 토큰화 오류로 전파되는 것이 핵심 약점이다.",
+      "검색에서는 형태소 기반 의미 처리와 문자 n-gram의 강건성을 하이브리드 로 결합하는 해석이 좋다."
+    ],
+    "headings": [
+      {
+        "id": "c1",
+        "text": "빈도가 높다고 좋은 토큰은 아니다"
+      },
+      {
+        "id": "c2",
+        "text": "기본형을 복원하고, 경계는 별도 토큰 대신 접두표지로 새긴다"
+      },
+      {
+        "id": "c3",
+        "text": "네 과제에서 좋아지고 토큰은 줄었지만, 온라인 리뷰에서는 예외가 생겼다"
+      },
+      {
+        "id": "c4",
+        "text": "형태소 복원의 약점은 분석기가 틀릴 때 함께 틀린다는 것이다"
+      },
+      {
+        "id": "c5",
+        "text": "문맥 모델에는 형태소, 실패 안전망에는 문자 n-gram"
+      },
+      {
+        "id": "gloss",
+        "text": "핵심 용어 정리"
+      },
+      {
+        "id": "take",
+        "text": "이 논문을 한 장으로"
+      }
+    ]
+  },
+  {
+    "id": "2609.17394",
+    "topic": "evaluation",
+    "title": "코딩 에이전트는 이미 수렴했다: SWE-bench 순위를 다시 측정하는 법",
+    "originalTitle": "Coding Agents Have Converged: Why the SWE-bench Leaderboard Can No Longer Order Its Top Entries, and What to Measure Instead",
+    "summary": "상위 점수의 작은 차이를 순위로 읽기 전에 서로 다른 답을 내는 문항 수부터 계산하라.",
+    "intro": "핵심 주장: SWE-bench 상위 에이전트의 작은 점수 차이는 실제 능력 순서를 충분히 분리하지 못하므로 공통 성공·유효 문항 수·모델–scaffold provenance와 paired 검정을 함께 공개해야 한다.",
+    "authors": "Fengshuo Liu · Ying Liu · Ruize Sun · Lie Luo · Siyuan Guo",
+    "venue": "arXiv preprint",
+    "sourceUrl": "https://arxiv.org/abs/2609.17394",
+    "pdfUrl": "https://arxiv.org/pdf/2609.17394",
+    "collectedOn": "2026-09-16",
+    "tags": [],
+    "practical": "문항별 verdict와 neff를 공개한다. 모델과 scaffold를 분리 기록하고 paired McNemar를 쓴다. 새 문항이 비교 정보를 추가하는지 예산화한다.",
+    "keyPoints": [
+      "상위 10개는 285문제를 함께 맞히고 51문제를 함께 틀린다.",
+      "상위 10개 비교의 유효 문항은 33%다.",
+      "모델–scaffold 조합은 점수와 순위를 바꾼다.",
+      "Verified 인접 29쌍은 분리되지 않았지만 Test에서는 14/23이 분리됐다.",
+      "실무 한 문장: 에이전트 평가의 단위는 점수 하나가 아니라 문항별 결과와 provenance다."
+    ],
+    "headings": [
+      {
+        "id": "c1",
+        "text": "벤치마크 감사의 질문"
+      },
+      {
+        "id": "c2",
+        "text": "공통 성공과 유효 표본"
+      },
+      {
+        "id": "c3",
+        "text": "모델과 scaffold"
+      },
+      {
+        "id": "c4",
+        "text": "순위 대신 tier와 설계 지침"
+      },
+      {
+        "id": "c5",
+        "text": "한계와 재현성"
+      },
+      {
+        "id": "gloss",
+        "text": "핵심 용어 정리"
+      },
+      {
+        "id": "take",
+        "text": "이 논문을 한 장으로"
+      }
+    ]
+  },
+  {
+    "id": "2609.16731",
+    "topic": "systems",
+    "title": "압축 데이터에서 랜덤 접근의 가격을 측정하다",
+    "originalTitle": "The Price of Random Access: Measuring Block Granularity Across Four Compressed Formats",
+    "summary": "랜덤 접근을 위한 블록 분할 비용은 전체 archive의 작은 비율일 수 있다.",
+    "intro": "핵심 주장: 압축 블록을 독립 주소 지정할 때의 저장 오버헤드는 작을 수 있으며, 블록 크기·seek latency·압축률을 측정 가능한 frontier로 함께 선택할 수 있다.",
+    "authors": "Yakiv Shavidze",
+    "venue": "arXiv preprint",
+    "sourceUrl": "https://arxiv.org/abs/2609.16731",
+    "pdfUrl": "https://arxiv.org/pdf/2609.16731",
+    "collectedOn": "2026-09-16",
+    "tags": [],
+    "practical": "block 단위 prefix sum과 offset을 저장한다. 4–16KiB seek latency와 index overhead를 실제 workload로 측정한다. 인코더 비용과 조회 이득을 분리한다.",
+    "keyPoints": [
+      "16KiB ACEAPEX 독립성 비용은 archive의 1.632%였다.",
+      "작은 block은 seek를 줄이지만 index·인코딩 비용을 키운다.",
+      "CPU·GPU가 같은 archive를 독립적으로 읽을 수 있다.",
+      "구조적 증명과 bit-perfect 검증이 포맷 계약을 뒷받침한다.",
+      "실무 한 문장: 압축률 하나가 아니라 block·seek·재현성 frontier를 workload별로 고르라."
+    ],
+    "headings": [
+      {
+        "id": "c1",
+        "text": "문제와 측정 계약"
+      },
+      {
+        "id": "c2",
+        "text": "ACEAPEX 포맷"
+      },
+      {
+        "id": "c3",
+        "text": "granularity frontier"
+      },
+      {
+        "id": "c4",
+        "text": "구조적 보장"
+      },
+      {
+        "id": "c5",
+        "text": "한계와 운영 조건"
+      },
+      {
+        "id": "gloss",
+        "text": "핵심 용어 정리"
+      },
+      {
+        "id": "take",
+        "text": "이 논문을 한 장으로"
+      }
+    ]
+  },
+  {
+    "id": "2609.16682",
+    "topic": "systems",
+    "title": "테넌트 보장도를 중심으로 GPU 작업을 스케줄링하는 DeepShare",
+    "originalTitle": "DeepShare: Assurance-Driven Deep Learning Job Scheduling for Multi-Tenant Clusters",
+    "summary": "유휴 GPU를 채우는 것보다 누구의 보장량이 부족한지 보며 빌린 자원을 되돌리는 것이 핵심이다.",
+    "intro": "핵심 주장: Quota Assurance Degree(QAD)를 공통 런타임 신호로 사용해 quota borrowing, queue ordering, preemption, GPU colocation을 함께 조정한다.",
+    "authors": "Jinghao Wang · Yihang Zhou · Xiao Zhou · Xinlei Zheng · Xiaoyang Sun · Tianyu Wo · Chunming Hu · Renyu Yang",
+    "venue": "arXiv preprint",
+    "sourceUrl": "https://arxiv.org/abs/2609.16682",
+    "pdfUrl": "https://arxiv.org/pdf/2609.16682",
+    "collectedOn": "2026-09-16",
+    "tags": [],
+    "practical": "QAD를 여러 정책의 공통 상태로 사용한다. best-effort borrowing은 reclaimable capacity와 함께 둔다. utilization과 QoS compliance를 분리 보고한다.",
+    "keyPoints": [
+      "QAD를 quota·queue·preemption·colocation의 공통 상태로 사용한다.",
+      "23,859 Venus와 3,200 internal trace에서 GPU util 70.58%를 기록했다.",
+      "Lucid 대비 queue 46%, physical JCT 34% 개선을 보고했다.",
+      "QAD 제거 시 utilization은 유지돼도 QoS가 약 66%가 된다.",
+      "실무 한 문장: GPU 스케줄러는 빈 자리보다 회수 가능한 fairness 신호가 먼저다."
+    ],
+    "headings": [
+      {
+        "id": "c1",
+        "text": "문제와 QAD"
+      },
+      {
+        "id": "c2",
+        "text": "DeepShare 공통 제어"
+      },
+      {
+        "id": "c3",
+        "text": "runtime 예측과 colocation"
+      },
+      {
+        "id": "c4",
+        "text": "trace에서 utilization과 queue 개선"
+      },
+      {
+        "id": "c5",
+        "text": "quota와 ablation"
+      },
+      {
+        "id": "c6",
+        "text": "물리 클러스터와 한계"
+      },
+      {
+        "id": "gloss",
+        "text": "핵심 용어 정리"
+      },
+      {
+        "id": "take",
+        "text": "이 논문을 한 장으로"
+      }
+    ]
+  },
+  {
+    "id": "2609.16605",
+    "topic": "engineering",
+    "title": "오픈소스 프로젝트는 Dependabot cooldown을 어떻게 쓰는가",
+    "originalTitle": "An Exploratory Study of Dependabot Cooldown Adoption in Open-Source GitHub Projects",
+    "summary": "일반 dependency에는 단순 delay를 쓰고 보안·CI 핵심 package는 예외로 남겨야 한다.",
+    "intro": "핵심 주장: 인기 GitHub 저장소의 Dependabot cooldown은 보안 경고에 반응해 늘지만 세밀한 규칙보다 ecosystem 전체에 적용하는 단순 delay를 선호한다.",
+    "authors": "Hidetake Tanaka · Rikuto Tsuchida · Kazumasa Shimari · Raula Gaikovina Kula · Kenichi Matsumoto",
+    "venue": "arXiv preprint",
+    "sourceUrl": "https://arxiv.org/abs/2609.16605",
+    "pdfUrl": "https://arxiv.org/pdf/2609.16605",
+    "collectedOn": "2026-09-16",
+    "tags": [],
+    "practical": "ecosystem 지원과 CI 동작을 먼저 검증한다. 일반 delay와 즉시 갱신 dependency를 분리한다. 7일은 최빈값이지 최적값이 아니다.",
+    "keyPoints": [
+      "1,462 저장소 중 135개가 도입했다.",
+      "known motivation 92건 중 83건이 security였다.",
+      "retained ecosystem의 97.2%가 일반 delay를 썼다.",
+      "7일은 최빈값이지 최적값이 아니다.",
+      "실무 한 문장: 단순 default delay와 예외 dependency를 함께 설계하라."
+    ],
+    "headings": [
+      {
+        "id": "c1",
+        "text": "공급망 위험과 연구 질문"
+      },
+      {
+        "id": "c2",
+        "text": "수집·분류 방법"
+      },
+      {
+        "id": "c3",
+        "text": "도입과 동기"
+      },
+      {
+        "id": "c4",
+        "text": "저장소 특성과 adoption"
+      },
+      {
+        "id": "c5",
+        "text": "설정과 한계"
+      },
+      {
+        "id": "gloss",
+        "text": "핵심 용어 정리"
+      },
+      {
+        "id": "take",
+        "text": "이 논문을 한 장으로"
+      }
+    ]
+  },
+  {
+    "id": "2609.16531",
+    "topic": "systems",
+    "title": "클라우드에서 MPI 프로세스를 협력적으로 옮기는 XMPIaaS",
+    "originalTitle": "XMPIaaS: Towards Cloud Native MPI via Cooperative Process Migration",
+    "summary": "전체 MPI job을 재시작하지 않고 문제가 생긴 노드의 rank만 새 노드에서 연결한다.",
+    "intro": "핵심 주장: preemptible cloud node에서 영향을 받은 MPI rank만 quiesce·checkpoint·proxy 교체·재연결해 전체 job 재시작을 피한다.",
+    "authors": "Shunyu Yao · Dimitrios S. Nikolopoulos · Ali R. Butt",
+    "venue": "arXiv preprint",
+    "sourceUrl": "https://arxiv.org/abs/2609.16531",
+    "pdfUrl": "https://arxiv.org/pdf/2609.16531",
+    "collectedOn": "2026-09-16",
+    "tags": [],
+    "practical": "iteration boundary에 XMPI_quiesce를 둔다. runtime과 process manager 상태를 분리한다. downtime을 rank 수·image transfer로 계측한다.",
+    "keyPoints": [
+      "영향 받은 rank만 선택적으로 이동한다.",
+      "MPI Sessions로 network state를 teardown 후 재구성한다.",
+      "quiesce는 전체 downtime의 1.4% 미만이다.",
+      "migration은 0.3–6.2초이며 transfer가 60–92%를 차지한다.",
+      "실무 한 문장: cloud HPC는 전체 재시작보다 application 경계와 process-manager 계약을 함께 설계해야 한다."
+    ],
+    "headings": [
+      {
+        "id": "c1",
+        "text": "클라우드 MPI의 문제"
+      },
+      {
+        "id": "c2",
+        "text": "Sessions와 migration 구조"
+      },
+      {
+        "id": "c3",
+        "text": "실행 오버헤드"
+      },
+      {
+        "id": "c4",
+        "text": "선택적 이동 비용"
+      },
+      {
+        "id": "c5",
+        "text": "범위와 한계"
+      },
+      {
+        "id": "gloss",
+        "text": "핵심 용어 정리"
+      },
+      {
+        "id": "take",
+        "text": "이 논문을 한 장으로"
+      }
+    ]
+  },
+  {
+    "id": "2609.15660",
+    "topic": "evaluation",
+    "title": "인용을 세탁하는 RAG 공격과 반사실 방어",
+    "originalTitle": "CiteShade: Citation Laundering in Multi-Source Retrieval-Augmented Generation and Its Counterfactual Defense",
+    "summary": "인용된 문서가 답을 지지하는지와 그 문서가 답을 실제로 유발했는지는 별도로 감사해야 한다.",
+    "intro": "CiteShade는 한 개의 검색 문서로 LLM의 답을 틀리게 만들면서도 인용은 신뢰할 만하지만 근거가 없는 문서를 가리키게 한다. 인용된 출처와 답을 실제로 만든 출처 를 분리해 측정하고, 출처 삭제 기반 방어를 제안한다.",
+    "authors": "Fuzheng Guo",
+    "venue": "arXiv 2026 · cs.CR",
+    "sourceUrl": "https://arxiv.org/abs/2609.15660",
+    "pdfUrl": "https://arxiv.org/pdf/2609.15660",
+    "collectedOn": "2026-09-16",
+    "tags": [
+      "RAG security",
+      "citation integrity",
+      "data poisoning",
+      "counterfactual verification"
+    ],
+    "practical": "citation correctness와 causal citation integrity를 분리 측정한다. 출처 삭제 검증은 오탐·적응형 공격 비용과 함께 배포한다.",
+    "keyPoints": [
+      "인용이 있다고 해서 그 인용 문서가 답의 원인은 아니다.",
+      "hybrid 공격은 wrong-answer rate .01→.68, 모델별 CLR 최대 .84를 기록했다.",
+      "공격 문서는 성공 사례 모두에서 답의 최대 영향 문서였지만, 인용은 다른 신뢰 문서를 가리켰다.",
+      "perplexity와 cited-source support 검사만으로는 자연스러운 악성 문서를 막을 수 없다.",
+      "반사실 출처 검증은 laundering을 줄였지만 오탐과 적응형 공격이라는 비용이 있다.",
+      "인용 정확도(citation correctness)와 인용 무결성(citation integrity)을 별도 지표로 운영해야 한다."
+    ],
+    "headings": [
+      {
+        "id": "c1",
+        "text": "RAG의 인용표시도 공격 표면이 된다"
+      },
+      {
+        "id": "c2",
+        "text": "검색·생성·인용 세 조건을 동시에 맞춘다"
+      },
+      {
+        "id": "c3",
+        "text": "답을 틀리게 하는 것보다 인용을 속이는 것이 더 어렵다"
+      },
+      {
+        "id": "c4",
+        "text": "perplexity와 인용 지지 검사만으로는 막히지 않는다"
+      },
+      {
+        "id": "c5",
+        "text": "인용 정확도와 인용 무결성은 별개의 품질이다"
+      },
+      {
+        "id": "gloss",
+        "text": "핵심 용어 정리"
+      },
+      {
+        "id": "take",
+        "text": "이 논문을 한 장으로"
+      }
+    ]
+  },
+  {
+    "id": "2609.15578",
+    "topic": "retrieval",
+    "title": "점수의 크기가 만드는 가짜 자신감",
+    "originalTitle": "The Magnitude Mirage: Rethinking Confidence for Reasoning-Intensive Retrieval",
+    "summary": "최고 유사도 점수 하나보다 상위 점수들의 간격과 분산이 추론형 검색의 실패 가능성을 더 잘 알려준다.",
+    "intro": "RAG가 검색 점수의 절대값만 보고 답변 여부를 정하면, 논리·시간 추론에서 의미는 비슷하지만 조건을 어긴 문서 를 자신 있게 믿을 수 있다. 상위 점수들의 간격과 분산(Score Gap, LSMV)을 보면 추가 추론 없이 더 나은 abstention 신호를 얻는다.",
+    "authors": "Jamie Holdcroft · Abdelrahman Abdallah · Adam Jatowt",
+    "venue": "arXiv 2026 · cs.IR",
+    "sourceUrl": "https://arxiv.org/abs/2609.15578",
+    "pdfUrl": "https://arxiv.org/pdf/2609.15578",
+    "collectedOn": "2026-09-16",
+    "tags": [
+      "retrieval confidence",
+      "QPP",
+      "score gap",
+      "RAG abstention"
+    ],
+    "practical": "MaxScore threshold를 Gap/LSMV 후보와 비교한다. 운영 도메인별 held-out calibration이 필요하다.",
+    "keyPoints": [
+      "높은 최고 점수만으로 검색 성공을 판단하면 안 된다.",
+      "논리·시간 제약에서는 의미 유사도와 조건 만족이 어긋날 수 있다.",
+      "Score Gap·LSMV는 추가 모델 호출·재학습·지연 없이 계산된다.",
+      "11개 검색기·28개 데이터셋에서 분포 기반 신호가 MaxScore보다 일관되게 좋았다.",
+      "BRIGHT 선택 답변에서 MaxScore 65.8% 대 Gap@25 74.1%(10% coverage)였다.",
+      "공개 벤치마크·단일 생성기 중심 결과이므로 운영 임계값은 자체 검증 세트로 보정해야 한다."
+    ],
+    "headings": [
+      {
+        "id": "c1",
+        "text": "높은 유사도 점수가 항상 자신감은 아니다"
+      },
+      {
+        "id": "c2",
+        "text": "점수 하나 대신 상위 k개 점수의 모양을 본다"
+      },
+      {
+        "id": "c3",
+        "text": "분포 기반 신호로 바꾸는 효과가 지표 선택보다 5–10배 크다"
+      },
+      {
+        "id": "c4",
+        "text": "유사도는 “닮음”, 분포는 “한 문서가 튀는가”를 말한다"
+      },
+      {
+        "id": "c5",
+        "text": "좋은 신호지만 자동 정답 판정기는 아니다"
+      },
+      {
+        "id": "gloss",
+        "text": "핵심 용어 정리"
+      },
+      {
+        "id": "take",
+        "text": "이 논문을 한 장으로"
+      }
+    ]
+  },
+  {
+    "id": "2609.14412",
+    "topic": "retrieval",
+    "title": "에이전트 검색은 첫 수가 좌우한다",
+    "originalTitle": "Question’s Gambit: The First Move Matters in Agentic Deep Search",
+    "summary": "에이전트의 검색 도구 수보다 첫 화면에 어떤 증거를 올려놓는지가 이후 증거 사용과 정답률을 좌우한다.",
+    "intro": "Question’s Gambit은 복잡한 질문을 단서로 나눠 각각 검색하고, 후보를 전체 질문 기준으로 재랭킹해 에이전트의 첫 관찰 을 준비한다. 같은 BM25와 후속 루프에서 GPT-5.5 정확도는 83.1%→90.5%로 올랐고, 오류의 대부분은 검색 후 증거를 실제로 사용하지 못한 단계에서 생겼다.",
+    "authors": "Radin Hamidi Rad · Amin Bigdeli · Negar Arabzadeh · Sajad Ebrahimi · Charles L. A. Clarke · Benjamin C. M. Fung · Ebrahim Bagheri",
+    "venue": "arXiv 2026 · cs.AI / cs.IR",
+    "sourceUrl": "https://arxiv.org/abs/2609.14412",
+    "pdfUrl": "https://arxiv.org/pdf/2609.14412",
+    "collectedOn": "2026-09-16",
+    "tags": [
+      "agentic search",
+      "deep research",
+      "clue decomposition",
+      "BM25"
+    ],
+    "practical": "첫 수를 warm start로 설계하되 후속 ReAct 루프는 유지한다. 첫 수 비용과 잘못된 초기 앵커 위험을 함께 모니터링한다.",
+    "keyPoints": [
+      "첫 검색 결과가 이후 에이전트 궤적을 만든다.",
+      "Question’s Gambit은 평균 9.6개 단서를 병렬 검색하고 top-5 opening context를 만든다.",
+      "BrowseComp-Plus GPT-5.5 정확도 83.1%→90.5%, gold behavior recall 56.1→75.9였다.",
+      "첫 수는 28.5초·$0.05이며, 검색된 증거를 실제로 쓰게 하는 비용이다.",
+      "오류 79건 중 67.1%는 정답 문서가 검색된 뒤 preview/read에서 탈락했다.",
+      "고정 말뭉치·BM25·세 모델 중심이므로 live web과 dense/hybrid 전이는 미확인이다."
+    ],
+    "headings": [
+      {
+        "id": "c1",
+        "text": "에이전트의 첫 검색이 이후 경로를 만든다"
+      },
+      {
+        "id": "c2",
+        "text": "단서를 따로 찾고, 전체 질문으로 다시 순서를 매긴다"
+      },
+      {
+        "id": "c3",
+        "text": "GPT-5.5 정확도가 83.1%에서 90.5%로 올랐다"
+      },
+      {
+        "id": "c4",
+        "text": "첫 수에 28.5초와 5센트를 쓰지만, 검색 낭비를 줄인다"
+      },
+      {
+        "id": "c5",
+        "text": "첫 화면이 틀리면 오히려 잘못된 길을 고정할 수 있다"
+      },
+      {
+        "id": "gloss",
+        "text": "핵심 용어 정리"
+      },
+      {
+        "id": "take",
+        "text": "이 논문을 한 장으로"
+      }
+    ]
+  },
+  {
+    "id": "2609.13489",
+    "topic": "retrieval",
+    "title": "질문 난이도에 맞춰 검색 문서 수를 조절하기",
+    "originalTitle": "Pre-retrieval Query Clustering for Adaptive Top-k Document Retrieval in RAG Systems",
+    "summary": "질문마다 필요한 문서 수를 다르게 주면 단순 질의 비용을 줄이면서 복잡 질의의 근거 누락을 줄일 수 있다.",
+    "intro": "QCAR는 검색 결과를 본 뒤 자르는 대신, 과거 질문을 의미 클러스터로 묶어 검색 전에 top-k를 정한다 . 전체 A/B에서 F1은 36.64% 개선됐지만, 복잡 질의의 증거를 늘리는 대가로 전체 토큰은 51.19% 증가했다.",
+    "authors": "Ye Xia · Emre Yamangil · Haixun Wang",
+    "venue": "CIKM 2026 · cs.IR",
+    "sourceUrl": "https://arxiv.org/abs/2609.13489",
+    "pdfUrl": "https://arxiv.org/pdf/2609.13489",
+    "collectedOn": "2026-09-16",
+    "tags": [
+      "adaptive RAG",
+      "pre-retrieval QPP",
+      "top-k",
+      "query clustering"
+    ],
+    "practical": "로그가 안정적인 업무형 RAG에서 초기 retrieval budget을 자동화한다. 복잡 질의 확장으로 전체 토큰이 늘 수 있어 비용 목표와 함께 평가해야 한다.",
+    "keyPoints": [
+      "질문마다 필요한 문서 수가 다르다.",
+      "QCAR는 과거 질문 임베딩·클러스터와 NDCG 포화점을 이용해 검색 전 k를 정한다.",
+      "전체 A/B F1은 +36.64%, 단순 질의는 최대 40.77% 토큰 감소였다.",
+      "복잡 질의에 문서를 더 주면서 전체 토큰은 +51.19% 증가했다.",
+      "로그가 안정적인 법률·의료·기업 RAG에 적합하고, 오픈 도메인 드리프트에는 fallback이 필요하다."
+    ],
+    "headings": [
+      {
+        "id": "c1",
+        "text": "모든 질문에 같은 문서 수를 주면 양쪽으로 틀린다"
+      },
+      {
+        "id": "c2",
+        "text": "질문을 비슷한 무리로 묶고, 각 무리에 검색 깊이를 붙인다"
+      },
+      {
+        "id": "c3",
+        "text": "단순 질문은 덜 찾고, 복잡 질문은 더 찾아 F1이 올랐다"
+      },
+      {
+        "id": "c4",
+        "text": "오프라인의 비싼 일을 온라인의 빠른 조회로 바꾼다"
+      },
+      {
+        "id": "c5",
+        "text": "질문이 반복되는 닫힌 도메인에서 가장 강하다"
+      },
+      {
+        "id": "gloss",
+        "text": "핵심 용어 정리"
+      },
+      {
+        "id": "take",
+        "text": "이 논문을 한 장으로"
+      }
+    ]
+  },
+  {
+    "id": "2609.13452",
+    "topic": "retrieval",
+    "title": "지식 그래프로 분산 벡터 검색의 길을 안내하기",
+    "originalTitle": "COMPASS: Steering Distributed Vector Search with Scientific Knowledge Graphs",
+    "summary": "그래프는 답을 직접 추론하기보다 관련 벡터를 같은 샤드에 두고 필요한 샤드만 여는 교통 지도가 될 수 있다.",
+    "intro": "COMPASS는 지식 그래프의 연결성을 이용해 벡터 사실을 분산 샤드에 함께 배치 하고, 질문과 연결된 샤드만 선택한다. 그래프가 답을 추론하는 GraphRAG가 아니라, 각 샤드의 HNSW 벡터 검색을 빠르게 만드는 배치·라우팅 층이다.",
+    "authors": "Song Young Oh · Amal Gueroudji · Seth Ockerman · Rob Latham · Orcun Yildiz · Ian Foster · Kyle Chard · Robert Ross",
+    "venue": "arXiv 2026 · cs.IR / cs.DC",
+    "sourceUrl": "https://arxiv.org/abs/2609.13452",
+    "pdfUrl": "https://arxiv.org/pdf/2609.13452",
+    "collectedOn": "2026-09-16",
+    "tags": [
+      "graph-based vector search",
+      "knowledge graph",
+      "PPR routing",
+      "distributed RAG"
+    ],
+    "practical": "GraphRAG와 달리 그래프가 저장 배치·라우팅 층에 있다. HNSW는 샤드 내부 순위화, COMPASS는 샤드 선택을 담당한다.",
+    "keyPoints": [
+      "그래프는 답 추론이 아니라 데이터 배치·샤드 라우팅에 쓰인다.",
+      "COMPASS는 질문과 연결된 두 샤드만 검색해도 여러 KG에서 k-means보다 높은 recall을 냈다.",
+      "PriKG 15노드에서 71.8k QPS·p95 1.03ms·Recall@10 .511을 기록했다.",
+      "다중 홉 이득은 임베딩이 놓치는 그래프 연결성을 같은 샤드에 보존한 데서 나온다.",
+      "바이오메디컬 KG·단일 인코더·Qdrant 실험이므로 대규모·타 도메인 일반화는 미확인이다."
+    ],
+    "headings": [
+      {
+        "id": "c1",
+        "text": "임베딩 검색의 도로를 그래프로 배치한다"
+      },
+      {
+        "id": "c2",
+        "text": "Louvain으로 공동체를 나누고, PPR로 길을 찾는다"
+      },
+      {
+        "id": "c3",
+        "text": "두 샤드만 보고도 다중 홉 근거를 더 많이 건진다"
+      },
+      {
+        "id": "c4",
+        "text": "검색은 빨라지지만 그래프 구축 비용과 범위가 있다"
+      },
+      {
+        "id": "c5",
+        "text": "그래프는 벡터 검색을 대체하지 않고, 배치·라우팅을 보조한다"
+      },
+      {
+        "id": "gloss",
+        "text": "핵심 용어 정리"
+      },
+      {
+        "id": "take",
+        "text": "이 논문을 한 장으로"
+      }
+    ]
+  },
+  {
+    "id": "2602.07150",
+    "topic": "evaluation",
+    "title": "에이전트 평가의 무작위성",
+    "originalTitle": "On Randomness in Agentic Evals",
+    "summary": "에이전트 평가에서 한 번의 pass@1 개선은 실행 잡음일 수 있으므로 여러 실행의 평균·분산·재시도 잠재력·일관성을 함께 보고해야 한다.",
+    "intro": "한 줄 결론: 에이전트의 한 번 실행 점수는 실제 능력과 우연한 실행 경로를 구분하지 못한다. 여러 번 실행해 평균·분산·재시도 잠재력·일관성을 함께 봐야 한다.",
+    "authors": "Bjarni Haukur Bjarnason · André Silva · Martin Monperrus",
+    "venue": "ICLR 2026 WORKSHOP · AGENTS IN THE WILD",
+    "sourceUrl": "https://arxiv.org/abs/2602.07150",
+    "pdfUrl": "https://arxiv.org/pdf/2602.07150",
+    "collectedOn": "2026-09-16",
+    "tags": [
+      "agentic evaluation",
+      "stochasticity",
+      "pass@k",
+      "reproducibility",
+      "SWE-Bench-Verified"
+    ],
+    "practical": "10회 반복은 약 2%p 이상의 개선을 감지하는 현실적 절충이며, 1%p 차이에는 더 많은 실행이 필요하다. 온도 0도 시스템 전체의 비결정성을 제거하지 않으므로 모델·스캐폴드·인프라 조합별로 분산을 다시 측정한다. pass@1과 함께 pass@k(재시도 잠재력), pass^k(일관성)를 보고한다.",
+    "keyPoints": [
+      "에이전트 평가의 단일 pass@1은 능력과 실행 운을 섞은 숫자다.",
+      "10회 반복에서도 2.2–6.0%p 흔들림이 있었고, 온도 0도 변동을 제거하지 못했다.",
+      "대부분의 궤적은 처음 1% 안에서 갈라지고, 작은 차이가 도구·검색·패치·성공 여부로 연쇄 확대된다.",
+      "재시도하면 성공할 잠재력(pass@k)과 매번 성공하는 일관성(pass^k)은 서로 다른 축이다.",
+      "표준편차 1.5%라면 2%p 개선에 약 9회, 1%p 개선에 약 36회가 필요하다(검정력 80%, p<0.05).",
+      "논문을 읽을 때 실행 횟수·분산·신뢰구간·통계 검정·재시도 지표를 함께 확인하자."
+    ],
+    "headings": [
+      {
+        "id": "c1",
+        "text": "한 번 돌린 점수만 보고 ‘모델이 좋아졌다’고 말하면 위험하다"
+      },
+      {
+        "id": "c2",
+        "text": "무엇을 어떻게 반복해서 측정했나"
+      },
+      {
+        "id": "c3",
+        "text": "온도 0이어도 완전히 똑같아지지 않았다"
+      },
+      {
+        "id": "c4",
+        "text": "갈라지는 시점은 생각보다 훨씬 앞이다"
+      },
+      {
+        "id": "c5",
+        "text": "작은 개선을 주장할수록 더 많이 반복해야 한다"
+      },
+      {
+        "id": "c6",
+        "text": "실행 변동은 알려져 있었고, 이 논문은 에이전트의 긴 경로에서 어떻게 커지는지 추적했다"
+      },
+      {
+        "id": "gloss",
+        "text": "핵심 용어 정리"
+      },
+      {
+        "id": "take",
+        "text": "이 논문을 한 장으로"
+      }
+    ]
+  },
+  {
+    "id": "2609.15096",
+    "topic": "engineering",
+    "title": "코드는 실행이고 연구는 세션이다: OpenAI4S의 지속형 과학 워크벤치",
+    "originalTitle": "OpenAl4S: Code as Action, Science as Sessions",
+    "summary": "좋은 agent는 결과만 내는 것이 아니라, 다음 사람이 다시 실행·검증할 수 있는 증거 패키지도 남긴다.",
+    "intro": "핵심 주장: 장기 과학 워크플로는 단순 tool-call 로그가 아니라 지속 커널·artifact 버전·환경·체크포인트가 연결된 research session으로 관리해야 검사·복구·재현할 수 있다.",
+    "authors": "Gongbo Zhang · Hao Li · Yu Wang · Mujie Lin · Liuzhenghao Lv · Yicheng Mao · Yimi Wang · Jun Zhu · Minhan Tang · Zhengxiang Jiang · Yusong Wang · Jiayu Yao · Kunpeng Ning · Dawei Pang · Yonghong Tian · OpenAI4S Community · Yuyang Liu · Li Yuan",
+    "venue": "arXiv preprint",
+    "sourceUrl": "https://arxiv.org/abs/2609.15096",
+    "pdfUrl": "https://arxiv.org/pdf/2609.15096",
+    "collectedOn": "2026-09-15",
+    "tags": [],
+    "practical": "세션마다 append-only ledger, artifact hash, 환경 manifest, checkpoint를 남긴다. 최종 보고서 전달을 upstream 계산 성공과 분리해 부분 실패도 정직하게 기록한다. 재현성 점수는 정확도와 별도로 측정하고, 누락된 lineage를 “모른다”로 표시한다.",
+    "keyPoints": [
+      "OpenAI4S는 control plane과 persistent Python/R science runtime을 분리한다.",
+      "ledger·artifact·environment·checkpoint가 세션 단위 provenance를 만든다.",
+      "36 scenario macro 7.83, paired lower tail 6.5% 미만 5점 사례를 보고했다.",
+      "보고서 전달과 artifact 증거가 성능 차이의 중요한 원인이었다.",
+      "실무 한 문장: 데이터 파이프라인은 결과 파일뿐 아니라 실행 이력·환경·복구 경계를 함께 저장해야 한다."
+    ],
+    "headings": [
+      {
+        "id": "c1",
+        "text": "장기 과학 작업은 관찰·복구·재현이 필요하다"
+      },
+      {
+        "id": "c2",
+        "text": "control plane과 persistent science runtime의 dual plane"
+      },
+      {
+        "id": "c3",
+        "text": "ledger·artifact·environment·checkpoint가 세션을 만든다"
+      },
+      {
+        "id": "c4",
+        "text": "36 시나리오에서 delivery와 lower tail을 비교한다"
+      },
+      {
+        "id": "c5",
+        "text": "sandbox·permission·screening의 경계"
+      },
+      {
+        "id": "c6",
+        "text": "환경 재구성과 과학적 진실성은 아직 미완성"
+      },
+      {
+        "id": "gloss",
+        "text": "핵심 용어 정리"
+      },
+      {
+        "id": "take",
+        "text": "이 논문을 한 장으로"
+      }
+    ]
+  },
+  {
+    "id": "2609.15058",
+    "topic": "retrieval",
+    "title": "라벨 필터를 품은 근사 최근접 검색을 계층화하는 LSSG",
+    "originalTitle": "Fast Label-Filtering Approximate Nearest Neighbor Search via Progressive Label Set Stratification",
+    "summary": "필터를 검색 뒤에 붙이지 말고, 라벨 유사도를 그래프 구조와 탐색 순서에 내장하라.",
+    "intro": "핵심 주장: 라벨 집합의 유사도에 따라 여러 tier를 둔 단일 그래프가 equality·containment·overlap 필터를 같은 인덱스에서 처리하면서, 라벨 분포 변화에도 검색 품질을 유지한다.",
+    "authors": "Ziqi Wang · Jingzhe Zhang · Shuo Shen · Wei Hu",
+    "venue": "arXiv preprint",
+    "sourceUrl": "https://arxiv.org/abs/2609.15058",
+    "pdfUrl": "https://arxiv.org/pdf/2609.15058",
+    "collectedOn": "2026-09-15",
+    "tags": [],
+    "practical": "필터 의미가 여러 개면 별도 인덱스를 복제하기보다 tier와 범용 scope를 설계한다. 라벨 공간이 커질수록 IVF와 MinHash의 인덱싱 비용·정확도 절충을 측정한다. 선택도가 높거나 분포가 바뀌는 운영 환경에서는 필터 유효 확장률을 모니터링한다.",
+    "keyPoints": [
+      "LSSG는 equality·containment·overlap을 하나의 다중 tier 그래프로 통합한다.",
+      "RNGPrune과 LabelPrune을 함께 써서 벡터·라벨 공간의 중복을 줄인다.",
+      "8개 데이터셋에서 최대 92.9배/84.1배의 QPS 개선을 보고했다.",
+      "라벨 규모와 분포가 변해도 계층화가 연결성을 보존한다.",
+      "실무 한 문장: 필터가 많은 검색 시스템은 “검색 후 필터”보다 “필터를 아는 그래프”가 안정적이다."
+    ],
+    "headings": [
+      {
+        "id": "c1",
+        "text": "필터가 붙은 ANN은 그래프가 쉽게 끊긴다"
+      },
+      {
+        "id": "c2",
+        "text": "LSSG는 라벨 거리별 tier와 이중 pruning을 둔다"
+      },
+      {
+        "id": "c3",
+        "text": "엄격한 tier가 유효한 다음 hop 확률을 높인다"
+      },
+      {
+        "id": "c4",
+        "text": "8개 데이터셋에서 공간·생성·검색을 비교한다"
+      },
+      {
+        "id": "c5",
+        "text": "선택도·라벨 규모·분포가 바뀌어도 한 번의 탐색을 유지한다"
+      },
+      {
+        "id": "c6",
+        "text": "MinHash와 tier 수는 정확도·비용의 절충이다"
+      },
+      {
+        "id": "gloss",
+        "text": "핵심 용어 정리"
+      },
+      {
+        "id": "take",
+        "text": "이 논문을 한 장으로"
+      }
+    ]
+  },
+  {
+    "id": "2609.15034",
+    "topic": "systems",
+    "title": "GPU에서 문자열 압축을 빠르게 푸는 FastPair",
+    "originalTitle": "FastPair: GPU-Optimized String Decoding",
+    "summary": "사전 조회의 병렬성만으로는 부족하고, GPU가 좋아하는 연속 쓰기·L1 파이프 용량까지 함께 설계해야 한다.",
+    "intro": "핵심 주장: 고정 폭 사전 코드를 GPU의 메모리 접근 패턴에 맞게 재배치하면, 하드웨어 Decompression Engine보다도 빠르게 문자열을 복호화할 수 있다.",
+    "authors": "Joseph Isaacs · Francesco Gargiulo · Peter Boncz · Robert Kruszewski · Nicholas Gates · Rossano Venturini · Will Manning · Martin Prammer",
+    "venue": "arXiv preprint",
+    "sourceUrl": "https://arxiv.org/abs/2609.15034",
+    "pdfUrl": "https://arxiv.org/pdf/2609.15034",
+    "collectedOn": "2026-09-15",
+    "tags": [],
+    "practical": "GPU 분석 엔진에서는 압축률과 복호화 속도를 별도 축으로 튜닝한다. 열별 토큰 길이 분포를 보고 OnPair-12/16과 split read를 선택한다. 공유 메모리 적재가 전역 읽기를 줄여도 L1 접근률·bank conflict를 악화시킬 수 있다.",
+    "keyPoints": [
+      "FastPair는 고정 폭 사전 코드를 GPU 친화적인 읽기·쓰기 순서로 재배치한다.",
+      "sidecar와 warp prefix sum으로 가변 길이 토큰의 출력 위치를 병렬 계산한다.",
+      "B300 실제 열에서 최대 1.6 TB/s, DE 대비 최대 4.2배의 처리량을 보였다.",
+      "짧은 토큰 비율에 따라 W=8 split read와 W=16 full read를 선택해야 한다.",
+      "실무 한 문장: GPU 압축 해제는 대역폭 숫자보다 메모리 요청의 모양을 먼저 최적화하라."
+    ],
+    "headings": [
+      {
+        "id": "c1",
+        "text": "CPU용 디코더를 GPU에 옮기면 메모리 시스템이 병목이 된다"
+      },
+      {
+        "id": "c2",
+        "text": "FastPair는 조회·위치 계산·쓰기 세 단계를 다시 배치한다"
+      },
+      {
+        "id": "c3",
+        "text": "토큰 수와 사전 읽기 폭이 데이터별로 달라진다"
+      },
+      {
+        "id": "c4",
+        "text": "B300에서 DE보다 2.4–4.2배 빠르다"
+      },
+      {
+        "id": "c5",
+        "text": "L1 파이프와 데이터 분포가 최종 상한을 정한다"
+      },
+      {
+        "id": "gloss",
+        "text": "핵심 용어 정리"
+      },
+      {
+        "id": "take",
+        "text": "이 논문을 한 장으로"
+      }
+    ]
+  },
+  {
+    "id": "2609.12791",
+    "topic": "retrieval",
+    "title": "Cognition on Graph: 생각의 순환으로 거대한 지식 공간을 탐색하기",
+    "originalTitle": "Cognition on Graph: Navigating Massive Knowledge Space via Cognitive Cycles and Bidirectional Graph-Text Synergy",
+    "summary": "global KG와 text를 plan–explore–reflect로 왕복하면 multi-hop QA를 개선할 수 있으나 반복 호출 비용이 커진다.",
+    "intro": "CoG는 Wikidata·Wikipedia 같은 전역 지식공간에서 plan→explore→synthesize→reflect 를 반복한다. KG의 관계와 텍스트 문서를 양방향으로 연결하고, 막힌 경로는 되돌아가며, 일곱 개 multi-hop QA에서 Qwen3-32B 기준으로 여러 baseline을 앞섰다고 보고한다.",
+    "authors": "Gengxian Zhou · Jian Xu · Zichen Tang · Shiming Xiang · Haihong E · Cheng-Lin Liu",
+    "venue": "arXiv preprint",
+    "sourceUrl": "https://arxiv.org/abs/2609.12791",
+    "pdfUrl": "https://arxiv.org/pdf/2609.12791",
+    "collectedOn": "2026-09-15",
+    "tags": [
+      "GraphRAG",
+      "knowledge graph",
+      "agentic retrieval",
+      "multi-hop QA"
+    ],
+    "practical": "대규모 GraphRAG는 KG와 텍스트를 왕복하되 계획·반성 루프의 정확도 이득과 반복 호출 비용을 함께 예산화한다.",
+    "keyPoints": [
+      "결론: CoG는 global KG와 text를 계획·탐색·반성 순환으로 연결해 multi-hop QA 성능을 높였다고 보고한다.",
+      "텍스트→그래프 안내와 반성·되돌아가기가 단순 hybrid보다 중요하다.",
+      "평균 문서 접근은 ToG-2보다 12.4배 적지만 LLM 호출 비용은 높다.",
+      "정말 쉽게 한 문장: 지도와 책을 번갈아 보며 막힌 길은 돌아가는 똑똑한 보물찾기 검색이다."
+    ],
+    "headings": [
+      {
+        "id": "c1",
+        "text": "전역 지식공간은 길이 많고 표지판이 틀릴 수 있다"
+      },
+      {
+        "id": "c2",
+        "text": "그래프와 텍스트가 서로를 안내한다"
+      },
+      {
+        "id": "c3",
+        "text": "전역·다중-hop에서 강한 결과를 보고하다"
+      },
+      {
+        "id": "c4",
+        "text": "정확도와 비용을 함께 읽기"
+      },
+      {
+        "id": "c5",
+        "text": "CoG는 강력하지만 값싼 검색은 아니다"
+      },
+      {
+        "id": "gloss",
+        "text": "핵심 용어 정리"
+      },
+      {
+        "id": "take",
+        "text": "이 논문을 한 장으로"
+      },
+      {
+        "id": "appendix",
+        "text": "부록 · 원문 그림·표 아카이브"
+      }
+    ]
+  },
+  {
+    "id": "2609.12464",
+    "topic": "retrieval",
+    "title": "벡터 유사도를 넘어서: 기업 코드 변환에서 계층형 Graph RAG와 일반 RAG 비교",
+    "originalTitle": "Beyond Vector Similarity: Hierarchical Context-Aware Graph RAG vs Standard RAG in Enterprise Code Migration",
+    "summary": "AST 관계와 parent-first context는 구조적 코드 변환 오류를 줄이지만 전역 문맥이 복잡도·주석 보존을 해칠 수 있다.",
+    "intro": "Google Cloud의 HCRG 파이프라인은 tree-sitter AST에서 INHERITS·CALLS·IMPORTS 관계를 뽑아 property graph에 저장하고, 전체 구조 skeleton을 Gemini Context Cache에 넣는다. Spring Petclinic Java→Python 변환에서 API hallucination은 56.4%→16.2%로 줄었지만, 복잡도 일관성과 docstring 보존은 악화됐다.",
+    "authors": "Nilesh Jaiswal · Arjit Shukla · Divya Malhotra · Aniket Agrawal · Saurabh Garg · Suddhasatwa Bhaumik · Suchit Puri",
+    "venue": "arXiv preprint",
+    "sourceUrl": "https://arxiv.org/abs/2609.12464",
+    "pdfUrl": "https://arxiv.org/pdf/2609.12464",
+    "collectedOn": "2026-09-15",
+    "tags": [
+      "Graph RAG",
+      "AST",
+      "code migration",
+      "hybrid retrieval"
+    ],
+    "practical": "코드 변환에서는 AST 관계를 조건부로 사용하고 단순 파일에는 벡터 RAG를 유지해 전역 문맥 과잉을 피한다.",
+    "keyPoints": [
+      "결론: 구조 의존성이 높은 코드 변환에서는 Graph RAG가 hallucination과 API 누락을 크게 줄였다.",
+      "단순 파일은 일반 vector RAG로 충분할 수 있다.",
+      "Graph RAG는 복잡도와 docstring 보존을 악화시킬 수 있어 선택적 hybrid가 합리적이다.",
+      "정말 쉽게 한 문장: 코드의 가족관계와 호출관계를 지도처럼 보여주면 번역 실수는 줄지만, 지도를 너무 크게 보여주면 다른 실수가 생긴다."
+    ],
+    "headings": [
+      {
+        "id": "c1",
+        "text": "코드에서 가까운 문장과 필요한 관계는 다르다"
+      },
+      {
+        "id": "c2",
+        "text": "그래프는 코드의 관계를 보존한다"
+      },
+      {
+        "id": "c3",
+        "text": "겉보기 문장 점수는 구조 오류를 숨길 수 있다"
+      },
+      {
+        "id": "c4",
+        "text": "관계가 복잡할 때만 비싼 구조를 쓴다"
+      },
+      {
+        "id": "c5",
+        "text": "Graph RAG를 기본값으로 만들기 전에 볼 것"
+      },
+      {
+        "id": "gloss",
+        "text": "핵심 용어 정리"
+      },
+      {
+        "id": "take",
+        "text": "이 논문을 한 장으로"
+      },
+      {
+        "id": "appendix",
+        "text": "부록 · 원문 그림·표 아카이브"
+      }
+    ]
+  },
+  {
+    "id": "2609.12437",
+    "topic": "retrieval",
+    "title": "질문만으로 충분한가: 검색 신호가 멀티모달 RAG의 다음 행동을 더 잘 고르는가",
+    "originalTitle": "Beyond the Query: Do Retrieval Signals Improve Adaptive Multimodal RAG Routing?",
+    "summary": "검색 신호의 예측 가능성은 질문만 본 기준선 대비 routing 이득을 보장하지 않는다.",
+    "intro": "이 논문은 첫 검색 뒤 얻은 점수·증거 통계가 질문 자체보다 다음 RAG 단계를 실행할지 말지 를 더 잘 결정하는지 통제 실험한다. 개발 세트에서는 이득이 보였지만, 720개 held-out 최종 세트에서는 +0.00288로 작고 95% 신뢰구간이 0을 포함했다.",
+    "authors": "Qiaomu Li · Qiuyuan Zhang · Nong Ming",
+    "venue": "arXiv preprint",
+    "sourceUrl": "https://arxiv.org/abs/2609.12437",
+    "pdfUrl": "https://arxiv.org/pdf/2609.12437",
+    "collectedOn": "2026-09-15",
+    "tags": [
+      "adaptive RAG",
+      "routing",
+      "retrieval evaluation"
+    ],
+    "practical": "adaptive RAG 라우팅은 retrieval signal 상관보다 query-only 통제 대비 held-out 증분 이득을 보고 판단한다.",
+    "keyPoints": [
+      "결론: retrieval 신호가 예측 가능해도 query-only보다 routing을 개선한다고 볼 수 없다.",
+      "최종 720질문 평균 추가 이득은 +0.00288, 95% CI가 0 포함이다.",
+      "다음 행동이 문맥을 지우거나 비용을 거의 줄이지 못하면 router 개선만으로 해결되지 않는다.",
+      "정말 쉽게 한 문장: 검색 점수를 더 본다고 다음 검색을 꼭 더 잘 고르는 것은 아니니, 질문만 본 기준선과 새 문제에서 비교해야 한다."
+    ],
+    "headings": [
+      {
+        "id": "c1",
+        "text": "“예측 가능”과 “실제로 더 좋은 선택”은 다르다"
+      },
+      {
+        "id": "c2",
+        "text": "held-out에서 추가 이득이 사라졌다"
+      },
+      {
+        "id": "c3",
+        "text": "다음 행동 자체가 나쁘면 router만 키워도 소용없다"
+      },
+      {
+        "id": "c4",
+        "text": "라우터를 더 크게 만들기 전에 기준선을 세워라"
+      },
+      {
+        "id": "gloss",
+        "text": "핵심 용어 정리"
+      },
+      {
+        "id": "take",
+        "text": "이 논문을 한 장으로"
+      },
+      {
+        "id": "appendix",
+        "text": "부록 · 원문 그림·표 아카이브"
+      }
+    ]
+  },
+  {
+    "id": "2609.12268",
+    "topic": "retrieval",
+    "title": "EAR: 질문 속 이름표를 기준으로 잘라 찾는 RAG 검색 단위",
+    "originalTitle": "EAR: Entity-Aware Partitioning Approach for Retrieval-Augmented Generation Development",
+    "summary": "anchor 주변의 짧은 검색 창은 문맥과 온라인 비용을 줄이지만 정확도 우위는 유의하지 않았다.",
+    "intro": "EAR는 고정 길이 chunk 대신 질문·보기와 말뭉치에서 찾은 표면 anchor(이름·연도·사건 표현) 주변의 짧은 창 을 검색 단위로 만든다. 153개 교과서 기반 MCQA에서 문맥을 37.5–40.2% 줄였지만, 정확도 향상은 모델마다 엇갈렸고 통계적으로 유의하지 않았다.",
+    "authors": "Cenab Batu Bora · Oylum Alatlı · Sebnem Bora · Oguz Dikenelli",
+    "venue": "arXiv preprint",
+    "sourceUrl": "https://arxiv.org/abs/2609.12268",
+    "pdfUrl": "https://arxiv.org/pdf/2609.12268",
+    "collectedOn": "2026-09-15",
+    "tags": [
+      "RAG",
+      "entity-aware chunking",
+      "lexical retrieval"
+    ],
+    "practical": "entity-aware window는 검색 문맥을 줄이는 후보지만 도메인별 anchor 검증과 정확도 유의성 확인이 필요하다.",
+    "keyPoints": [
+      "결론: EAR는 검색 문맥을 37.5–40.2% 줄였지만 정확도 우위는 유의하지 않았다.",
+      "큰 장점은 짧고 추적 가능한 검색 단위와 빠른 온라인 검색이다.",
+      "대신 규칙 기반 anchor index 구축 비용과 도메인 전이 위험이 있다.",
+      "정말 쉽게 한 문장: 질문에 나온 이름표 주변만 잘라서 빨리 보여주는 RAG 조각 방법이다."
+    ],
+    "headings": [
+      {
+        "id": "c1",
+        "text": "chunk 대신 질문에 반응하는 검색 단위"
+      },
+      {
+        "id": "c2",
+        "text": "anchor 주변 80단어와 parent 확장"
+      },
+      {
+        "id": "c3",
+        "text": "문맥은 줄었지만 정확도는 자동으로 오르지 않았다"
+      },
+      {
+        "id": "c4",
+        "text": "어디에서 유용하고 어디서 멈춰야 하나"
+      },
+      {
+        "id": "gloss",
+        "text": "핵심 용어 정리"
+      },
+      {
+        "id": "take",
+        "text": "이 논문을 한 장으로"
+      }
+    ]
+  },
+  {
+    "id": "2609.11951",
+    "topic": "agents",
+    "title": "MemRetriever: 장기 기억에서 찾고, 되돌아보고, 다시 찾는 검색기",
+    "originalTitle": "MemRetriever: Learning to Search, Reflect, and Retrieve from Long-Term Memory",
+    "summary": "필요한 단서를 찾을 때까지 검색·정제·종료를 스스로 고르는 중간 검색 정책이 정적 top-k보다 복합 질문에 강하다.",
+    "intro": "이 논문은 한 번에 top-k 기억을 붙이는 대신, 작은 검색 에이전트가 병렬 검색·연속 검색·반성/잡음 제거 를 번갈아 수행하고 충분한 근거가 모이면 멈추도록 학습한다. 장기 대화 기억과 다단계 QA에서 검색 품질과 답변 품질을 함께 높이려는 접근이다.",
+    "authors": "Ruiyang Jiang · Chunyu Li · Zhiyu Li",
+    "venue": "arXiv preprint",
+    "sourceUrl": "https://arxiv.org/abs/2609.11951",
+    "pdfUrl": "https://arxiv.org/pdf/2609.11951",
+    "collectedOn": "2026-09-15",
+    "tags": [
+      "agentic retrieval",
+      "long-term memory",
+      "multi-hop QA"
+    ],
+    "practical": "메모리 검색은 고정 top-k보다 질문에 맞춰 다단계로 탐색·정제·종료하고 호출 비용을 함께 기록한다.",
+    "keyPoints": [
+      "결론: MemRetriever는 임베딩 저장소를 버리지 않고, 그 위에 병렬·연속·반성 검색을 고르는 정책을 추가한다.",
+      "RL 버전은 LOCOMO·LongMemEval과 다단계 QA에서 SFT보다 검색·답변 품질이 높고 평균 token도 줄였다.",
+      "그래프 계열이 아니라 agentic retrieval 계열이다. GraphRAG나 HNSW 그래프와 혼동하지 않는다.",
+      "도입 시에는 검색 호출 비용과 gold evidence 정의, reader 모델 편향을 함께 검증한다.",
+      "정말 쉽게 한 문장: 필요한 단서를 찾을 때까지 여러 번 찾아보고, 쓸모없는 메모는 지운 뒤 답하는 검색 사서다."
+    ],
+    "headings": [
+      {
+        "id": "c1",
+        "text": "왜 한 번의 top-k 검색만으로는 부족한가"
+      },
+      {
+        "id": "c2",
+        "text": "검색을 “행동을 고르는 과정”으로 바꾸기"
+      },
+      {
+        "id": "c3",
+        "text": "새 근거를 찾으면서도 불필요한 검색은 멈춘다"
+      },
+      {
+        "id": "c4",
+        "text": "이 논문이 실제로 바꾸는 층"
+      },
+      {
+        "id": "c5",
+        "text": "잘 되는 이유와 아직 모르는 것"
+      },
+      {
+        "id": "gloss",
+        "text": "핵심 용어 정리"
+      },
+      {
+        "id": "take",
+        "text": "이 논문을 한 장으로"
+      }
+    ]
+  },
+  {
+    "id": "2609.05978",
+    "topic": "engineering",
+    "title": "실행만으로는 부족하다: AI가 만든 단위 테스트의 품질을 재는 VibeCheck",
+    "originalTitle": "VibeCheck: Assessing the Quality of LLM-Generated Unit Tests: A Multi-agent Empirical Study across Heterogeneous Repositories",
+    "summary": "통과한 테스트 수와 coverage는 좋은 테스트의 하한일 뿐, assertion·edge case·격리·유지보수성을 따로 봐야 한다.",
+    "intro": "핵심 주장: AI 코딩 도구가 만든 테스트는 실행되는 것과 실제 동작을 검증하는 것이 다르므로, 5차원 rubric과 교차 에이전트 평가로 품질을 분리해 측정해야 한다.",
+    "authors": "Anika Tabassum · Mushahid Intesum · Md. Fahim Arefin · Tarannum Shaila Zaman",
+    "venue": "arXiv preprint",
+    "sourceUrl": "https://arxiv.org/abs/2609.05978",
+    "pdfUrl": "https://arxiv.org/pdf/2609.05978",
+    "collectedOn": "2026-09-15",
+    "tags": [],
+    "practical": "AI가 생성한 테스트를 PR에 바로 신뢰하지 말고 behavioral obligation을 체크한다. 실행 성공·coverage·mutation score를 5차원 품질 점수와 함께 저장한다. 평가자 confidence를 품질의 대리 지표로 쓰지 말고 독립 검토와 인간 샘플링을 둔다.",
+    "keyPoints": [
+      "실행 성공과 행동 적합성은 별개의 품질 축이다.",
+      "15개 저장소에서 Kiro는 10회 최고 점수를 받았지만 Claude는 케이스 밀도가 높았다.",
+      "missing case·weak assertion이 blocking error보다 더 흔했다.",
+      "confidence–quality 상관은 r=0.21로 구조화된 rubric을 대체하지 못한다.",
+      "실무 한 문장: AI가 만든 테스트는 “돌아가는가?” 다음에 “무엇을 놓쳤는가?”를 리뷰하라."
+    ],
+    "headings": [
+      {
+        "id": "c1",
+        "text": "runnable test와 adequate test 사이의 간극"
+      },
+      {
+        "id": "c2",
+        "text": "15개 저장소·4개 생성기·5차원 rubric"
+      },
+      {
+        "id": "c3",
+        "text": "Kiro는 파일 범위, Claude는 테스트 밀도가 앞선다"
+      },
+      {
+        "id": "c4",
+        "text": "약한 assertion과 누락된 행동이 가장 흔하다"
+      },
+      {
+        "id": "c5",
+        "text": "학생 저장소·단일 모델·LLM peer judge의 범위"
+      },
+      {
+        "id": "gloss",
+        "text": "핵심 용어 정리"
+      },
+      {
+        "id": "take",
+        "text": "이 논문을 한 장으로"
+      }
+    ]
+  },
+  {
+    "id": "2609.03672",
+    "topic": "systems",
+    "title": "선형 결합을 1급 시민으로 다루는 합-곱 질의",
+    "originalTitle": "Convolution Sum-Product Queries",
+    "summary": "선형 식을 별도 predicate로 밀어내지 말고 질의 구조에 넣으면, 데이터 밀도에 맞춘 세 가지 width로 실행 계획을 고를 수 있다.",
+    "intro": "핵심 주장: 관계 원자 안의 X+Y 같은 선형 표현을 질의 언어의 1급 요소로 만들고, 선형대수·worst-case optimal join·트리 분해를 결합해 밀집·희소 데이터에 맞는 평가 복잡도를 제시한다.",
+    "authors": "Kyle Deeds · Timo Camillo Merkl · Dan Suciu",
+    "venue": "arXiv preprint",
+    "sourceUrl": "https://arxiv.org/abs/2609.03672",
+    "pdfUrl": "https://arxiv.org/pdf/2609.03672",
+    "collectedOn": "2026-09-15",
+    "tags": [],
+    "practical": "SQL/데이터 엔진에서 선형 표현의 span과 active space를 optimizer 메타데이터로 관리한다. dense·sparse·값 범위가 다른 workload에 ctw·atw·fcw를 나눠 적용한다. 전통적인 CQ로 축소되는 경우 기존 treewidth/fractional hypertree width와 호환된다.",
+    "keyPoints": [
+      "CSPQ는 X+Y 같은 선형식을 query atom의 1급 구성요소로 만든다.",
+      "active space quotient가 중복 valuation과 무한 합을 제거한다.",
+      "dense·sparse·factorized 실행을 각각 다른 width로 분석한다.",
+      "전통 CQ로 제한하면 기존 treewidth 계열 이론을 회수한다.",
+      "실무 한 문장: query optimizer는 표현식의 값만 보지 말고 그 표현식이 만드는 선형 공간과 데이터 밀도를 함께 봐야 한다."
+    ],
+    "headings": [
+      {
+        "id": "c1",
+        "text": "convolution sum-product query는 무엇인가"
+      },
+      {
+        "id": "c2",
+        "text": "무한히 세지 않도록 active space를 quotient한다"
+      },
+      {
+        "id": "c3",
+        "text": "dense·sparse·join·tree decomposition을 결합한다"
+      },
+      {
+        "id": "c4",
+        "text": "ctw·atw·fcw가 서로 다른 비용 축을 잡는다"
+      },
+      {
+        "id": "c5",
+        "text": "임의의 field와 향후 최적화"
+      },
+      {
+        "id": "gloss",
+        "text": "핵심 용어 정리"
+      },
+      {
+        "id": "take",
+        "text": "이 논문을 한 장으로"
+      }
+    ]
+  },
+  {
+    "id": "2609.12975",
+    "topic": "systems",
+    "title": "엣지 스트림 처리의 동적 수직 스케일링",
+    "originalTitle": "A Dynamic Vertical Scaling Strategy for Distributed Stream Processing Applications in Edge Computing",
+    "summary": "PPO는 네 조합에서 throughput을 보존하고 SLO 위반률을 0.03–0.30%로 낮췄지만 CPU 절감은 workload 의존적이었다.",
+    "intro": "핵심 주장: PPO는 네 조합에서 throughput을 보존하고 SLO 위반률을 0.03–0.30%로 낮췄지만 CPU 절감은 workload 의존적이었다.",
+    "authors": "Guilherme Hiago Costa dos Santos · Carlos Henrique Kayser · Tiago Coelho Ferreto",
+    "venue": "arXiv preprint",
+    "sourceUrl": "https://arxiv.org/abs/2609.12975",
+    "pdfUrl": "https://arxiv.org/pdf/2609.12975",
+    "collectedOn": "2026-09-14",
+    "tags": [],
+    "practical": "엣지 autoscaling은 평균 latency보다 tail SLO와 operator-level pressure를 함께 보고, 절감보다 복구를 우선하는 보상 구조를 둔다.",
+    "keyPoints": [
+      "PPO는 task·server·application 관측을 결합해 1초마다 CPU를 조절한다.",
+      "네 조합에서 throughput을 보존하고 p95 SLO 위반률을 크게 줄였다.",
+      "CPU 절감은 3/4 조합에서만 명확했고 SLO 압력이 높으면 더 썼다.",
+      "시뮬레이터·고정 placement·profile별 policy가 일반화 한계다.",
+      "정말 쉽게 한 문장: 먼저 늦지 않게 처리하고, 여유가 생겼을 때만 CPU를 줄이는 자동 조절이다."
+    ],
+    "headings": [
+      {
+        "id": "c1",
+        "text": "평균 처리량만 맞추면 queue가 쌓인다"
+      },
+      {
+        "id": "c2",
+        "text": "작은 행동을 자주 하되, 위반 중에는 절약하지 않는다"
+      },
+      {
+        "id": "c3",
+        "text": "시뮬레이터에서 topology·placement까지 짝지어 비교했다"
+      },
+      {
+        "id": "c4",
+        "text": "SLO와 CPU 절감 결과"
+      },
+      {
+        "id": "c5",
+        "text": "학습 policy는 환경 계약을 필요로 한다"
+      },
+      {
+        "id": "gloss",
+        "text": "핵심 용어 정리"
+      },
+      {
+        "id": "take",
+        "text": "이 논문을 한 장으로"
+      }
+    ]
+  },
+  {
+    "id": "2609.12770",
+    "topic": "engineering",
+    "title": "REST API의 HTTP 상태 코드 오용을 정적·동적 분석으로 찾기",
+    "originalTitle": "Detecting HTTP Status Code Misuses in REST APIs via Static and Dynamic Analysis",
+    "summary": "2,625개 OpenAPI 명세에서 상태 코드 오용이 흔했고, 정적·동적 검사를 결합하면 서로 다른 결함을 잡을 수 있다.",
+    "intro": "핵심 주장: 2,625개 OpenAPI 명세에서 상태 코드 오용이 흔했고, 정적·동적 검사를 결합하면 서로 다른 결함을 잡을 수 있다.",
+    "authors": "Alix Decrop · Andrea Arcuri · Mike Papadakis · Pierre-Yves Schobbens · Gilles Perrouin",
+    "venue": "arXiv preprint",
+    "sourceUrl": "https://arxiv.org/abs/2609.12770",
+    "pdfUrl": "https://arxiv.org/pdf/2609.12770",
+    "collectedOn": "2026-09-14",
+    "tags": [],
+    "practical": "API contract CI에 SCOAS를 넣고, fuzzing 단계에 실행 oracle을 추가해 문서와 실제 동작의 불일치를 조기에 찾는다.",
+    "keyPoints": [
+      "30개 HTTP 사용 규칙을 만들고 16개를 실행 oracle로 옮겼다.",
+      "2,625개 OAS에서 비표준·미할당 status code와 generic 오류가 반복됐다.",
+      "정적 분석은 문서 계약을, 동적 분석은 실제 반환 동작을 본다.",
+      "WFD 36개 API에서 8종 fault를 재현 가능한 테스트로 찾았다.",
+      "정말 쉽게 한 문장: API 숫자만 보지 말고 그 숫자가 약속한 의미와 실제 행동이 맞는지 검사하라."
+    ],
+    "headings": [
+      {
+        "id": "c1",
+        "text": "200·400·401이 있어도 API가 HTTP 의미를 지킨다는 보장은 없다"
+      },
+      {
+        "id": "c2",
+        "text": "정적 분석과 동적 분석은 서로 다른 빈틈을 채운다"
+      },
+      {
+        "id": "c3",
+        "text": "오용은 예외가 아니라 반복되는 패턴이다"
+      },
+      {
+        "id": "c4",
+        "text": "fuzzer가 만든 테스트는 규칙 위반을 재현 가능한 증거로 바꾼다"
+      },
+      {
+        "id": "c5",
+        "text": "정적·동적 검사는 oracle의 한계를 드러내야 한다"
+      },
+      {
+        "id": "gloss",
+        "text": "핵심 용어 정리"
+      },
+      {
+        "id": "take",
+        "text": "이 논문을 한 장으로"
+      }
+    ]
+  },
+  {
+    "id": "2609.12708",
+    "topic": "engineering",
+    "title": "사람 코드와 AI 코드의 품질 격차 측정",
+    "originalTitle": "What is the Difference Between Me and You? Benchmarking the Quality Gap Between Human-Written and AI-Generated Code",
+    "summary": "AI 코드는 짧고 템플릿화되지만 결함·취약점의 종류가 언어와 모델마다 달라 복잡도만으로 품질을 판단할 수 없다.",
+    "intro": "핵심 주장: AI 코드는 짧고 템플릿화되지만 결함·취약점의 종류가 언어와 모델마다 달라 복잡도만으로 품질을 판단할 수 없다.",
+    "authors": "Cristina Improta · Pietro Liguori · Domenico Cotroneo",
+    "venue": "arXiv preprint",
+    "sourceUrl": "https://arxiv.org/abs/2609.12708",
+    "pdfUrl": "https://arxiv.org/pdf/2609.12708",
+    "collectedOn": "2026-09-14",
+    "tags": [],
+    "practical": "AI 코드 리뷰는 복잡도보다 입력 검증·오류 처리·hardcoded 값·언어별 보안 위험을 우선 확인한다.",
+    "keyPoints": [
+      "787,562개 함수쌍을 Python·Java·C에서 비교했다.",
+      "AI 코드는 짧고 규칙적이지만 구조적 단순성이 유지보수성을 보장하지 않는다.",
+      "AI와 human의 결함·취약점은 종류가 다르며 언어·모델 의존적이다.",
+      "NLOC 통제 후 복잡도만으로 품질 차이를 설명하기 어렵다.",
+      "정말 쉽게 한 문장: AI 코드가 짧다고 안심하지 말고, 그 모델과 언어에서 반복되는 위험부터 검사하라."
+    ],
+    "headings": [
+      {
+        "id": "c1",
+        "text": "정답률만으로는 AI 코드의 품질을 설명할 수 없다"
+      },
+      {
+        "id": "c2",
+        "text": "짧고 단순한 코드가 곧 유지보수하기 좋은 코드는 아니다"
+      },
+      {
+        "id": "c3",
+        "text": "대규모 비교지만 하나의 생성 조건으로 일반화하지 않는다"
+      },
+      {
+        "id": "c4",
+        "text": "AI 코드는 더 압축되고 더 서로 비슷하다"
+      },
+      {
+        "id": "c5",
+        "text": "결함의 “양”보다 종류와 언어가 중요하다"
+      },
+      {
+        "id": "c6",
+        "text": "복잡도 하나로는 품질 격차를 설명하지 못한다"
+      },
+      {
+        "id": "c7",
+        "text": "AI 코드에는 다른 리뷰 순서가 필요하다"
+      },
+      {
+        "id": "gloss",
+        "text": "핵심 용어 정리"
+      },
+      {
+        "id": "take",
+        "text": "이 논문을 한 장으로"
+      }
+    ]
+  },
+  {
+    "id": "2609.12649",
+    "topic": "systems",
+    "title": "클라우드 네이티브 5G를 위한 하이브리드 조기 장애 탐지",
+    "originalTitle": "Hybrid Monitoring for Early Fault Detection in Cloud-Native 5G Systems",
+    "summary": "10ms latency와 5% packet loss를 탐지하고 6–20초 내 worker를 국소화했으며 pod당 3.4 millicores·4.5 MiB 오버헤드를 측정했다.",
+    "intro": "핵심 주장: 10ms latency와 5% packet loss를 탐지하고 6–20초 내 worker를 국소화했으며 pod당 3.4 millicores·4.5 MiB 오버헤드를 측정했다.",
+    "authors": "Anton Andersson · Sai Akshara Naineni · Mats Jansborg · Yixing Zhang · Romaric Duvignau",
+    "venue": "arXiv preprint",
+    "sourceUrl": "https://arxiv.org/abs/2609.12649",
+    "pdfUrl": "https://arxiv.org/pdf/2609.12649",
+    "collectedOn": "2026-09-14",
+    "tags": [],
+    "practical": "cloud-native observability는 passive metrics만이 아니라 idle path를 확인하는 active probe와 topology-aware correlation을 함께 둔다.",
+    "keyPoints": [
+      "NetMon은 active TCP probe·eBPF passive metrics·central correlation을 결합했다.",
+      "10ms latency·5% loss를 수 초 안에 탐지하고 worker를 6–20초에 국소화했다.",
+      "pod당 3.4 millicores·4.5 MiB로 측정됐지만 baseline noise가 많았다.",
+      "O(N²) probe, central SPOF, eBPF 권한, in-band starvation이 주요 한계다.",
+      "정말 쉽게 한 문장: 직접 물어보는 probe와 실제 흐름을 보는 센서를 같이 써야 조용한 부분 장애를 찾을 수 있다."
+    ],
+    "headings": [
+      {
+        "id": "c1",
+        "text": "살아 있지만 느린 연결을 보려면 직접 물어봐야 한다"
+      },
+      {
+        "id": "c2",
+        "text": "로컬 민감도와 중앙 국소화를 나눈다"
+      },
+      {
+        "id": "c3",
+        "text": "실제 Kubernetes에서 여섯 부류의 장애를 주입했다"
+      },
+      {
+        "id": "c4",
+        "text": "10ms 지연과 5% 손실도 수 초 안에 보였다"
+      },
+      {
+        "id": "c5",
+        "text": "모니터링 자체가 장애 경로에 놓인다"
+      },
+      {
+        "id": "gloss",
+        "text": "핵심 용어 정리"
+      },
+      {
+        "id": "take",
+        "text": "이 논문을 한 장으로"
+      }
+    ]
+  },
+  {
+    "id": "2609.11841",
+    "topic": "retrieval",
+    "title": "벡터 검색 결과를 위조하기 어렵게 만드는 HNSW 증명",
+    "originalTitle": "Atlas: Efficient Verifiable Semantic Search",
+    "summary": "SIFT1M에서 0.8초·16.5kB, BIGANN-100M에서 2.0초·16.5kB proof를 달성했으며 지식 그래프가 아닌 벡터 인덱스 그래프 연구다.",
+    "intro": "Atlas는 임베딩 벡터를 저장한 HNSW 검색 그래프를 zero-knowledge proof 와 결합해, 공급자가 고정된 인덱스에서 올바르게 검색했음을 검증하게 한다. SIFT1M은 0.8초·16.5kB, BIGANN-100M은 2.0초·16.5kB proof로 보고됐다.",
+    "authors": "Nikolay Avramov · Hidde Lycklama · Alexander Viand · Anwar Hithnawi",
+    "venue": "arXiv preprint",
+    "sourceUrl": "https://arxiv.org/abs/2609.11841",
+    "pdfUrl": "https://arxiv.org/pdf/2609.11841",
+    "collectedOn": "2026-09-14",
+    "tags": [],
+    "practical": "",
+    "keyPoints": [
+      "Atlas의 graph는 KG가 아니라 임베딩 벡터 사이의 HNSW ANN 인덱스다.",
+      "오프라인 lookup preprocessing으로 질의 증명에서 O(N) 전체 검사를 피한다.",
+      "SIFT1M 0.8초, BIGANN-100M 2.0초, proof 16.5kB를 보고했다.",
+      "증명 비용은 데이터베이스 크기보다 traversal 단계·beam 폭·차원에 더 민감하다.",
+      "end-to-end RAG의 검색 품질을 유지하면서 verifiable retrieval을 제공한다.",
+      "검색 결과가 의미적으로 좋은지, 지식 그래프 경로가 맞는지는 Atlas가 보장하는 범위 밖이다."
+    ],
+    "headings": [
+      {
+        "id": "c1",
+        "text": "벡터 검색이 제대로 했다는 증명까지 필요할 때"
+      },
+      {
+        "id": "c2",
+        "text": "HNSW의 길 찾기를 고정 길이 증명으로 바꾼다"
+      },
+      {
+        "id": "c3",
+        "text": "데이터베이스가 100배 커져도 증명 시간은 2.5배만 늘었다"
+      },
+      {
+        "id": "c4",
+        "text": "RAG 품질을 보존하지만 검색의 ‘정답’ 자체를 보장하지는 않는다"
+      },
+      {
+        "id": "gloss",
+        "text": "핵심 용어 정리"
+      },
+      {
+        "id": "take",
+        "text": "이 논문을 한 장으로"
+      }
+    ]
+  },
+  {
+    "id": "2609.11572",
+    "topic": "retrieval",
+    "title": "날짜가 바뀌면 정답 문서도 바뀐다",
+    "originalTitle": "TimelyRAG: Semantic-Temporal Hybrid Retrieval for Time-Critical Question Answering in Overlapping-Evolving Documents",
+    "summary": "BM25·dense 검색기 위에 시간 재랭킹을 얹어 최대 28.6% nDCG@10을 높였고 추가 비용은 2.15–2.64ms/query였다.",
+    "intro": "TimelyRAG는 의미가 비슷한 규정 버전들을 먼저 모은 뒤 질문 시점에 유효한 조항 을 시간 적합성으로 재랭킹한다. BM25·dense 검색기 모두에서 최대 28.6% nDCG@10 개선을 보였고, 추가 비용은 2.15–2.64ms/query였다.",
+    "authors": "Youngeun Nam · Joeun Kim · Hwanjun Song · Susik Yoon · Jae-Gil Lee · Byung Suk Lee",
+    "venue": "arXiv preprint",
+    "sourceUrl": "https://arxiv.org/abs/2609.11572",
+    "pdfUrl": "https://arxiv.org/pdf/2609.11572",
+    "collectedOn": "2026-09-14",
+    "tags": [],
+    "practical": "",
+    "keyPoints": [
+      "의미가 비슷한 버전들 사이에서는 날짜가 정답을 가른다.",
+      "BM25·BGE-M3·NV-Embed-V2·BGE-Gemma2 위에 그대로 붙일 수 있다.",
+      "최대 nDCG@10 개선은 28.6%였고 추가 비용은 약 2ms/query였다.",
+      "시간 정보가 없는 일반 FiQA에서는 기준선 성능을 보존했다.",
+      "1차 후보에 빠진 문서는 시간 재랭킹으로 복구할 수 없다.",
+      "합성 규정 중심 벤치마크이므로 실제 법률·기업 문서에서 날짜 추출 오류를 더 시험해야 한다."
+    ],
+    "headings": [
+      {
+        "id": "c1",
+        "text": "비슷한 문서가 여러 버전이면 ‘관련성’만으로는 부족하다"
+      },
+      {
+        "id": "c2",
+        "text": "의미 검색 뒤에 날짜 점수를 한 번 더 얹는다"
+      },
+      {
+        "id": "c3",
+        "text": "sparse와 dense 모두에서 시간 재랭킹이 이겼다"
+      },
+      {
+        "id": "c4",
+        "text": "첫 검색에 빠진 문서는 시간 점수만으로 되살릴 수 없다"
+      },
+      {
+        "id": "gloss",
+        "text": "핵심 용어 정리"
+      },
+      {
+        "id": "take",
+        "text": "이 논문을 한 장으로"
+      }
+    ]
+  },
+  {
+    "id": "2609.11569",
+    "topic": "retrieval",
+    "title": "그래프 사용 설명서를 검색해 SPARQL을 쓰게 하기",
+    "originalTitle": "Enabling Knowledge Graph Understanding at Scale with the EXplore Your Graphs ENgine (EXYGEN)",
+    "summary": "ShEx와 질의 예시를 결합한 DeepSeek 설정이 실행 결과 EMRelEx 0.419를 기록했고, GESIS·OCM metadata 생성은 샘플링으로 80배 이상 빨라졌다.",
+    "intro": "EXYGEN은 VoID·ShEx 같은 구조화된 그래프 설명 과 검색된 triple·질의 예시를 LLM에 제공해, fine-tuning 없이 자연어를 SPARQL로 바꾸게 한다. DeepSeek-V3.1의 실행 결과 EMRelEx는 0.419였고, 대규모 KG metadata 생성은 샘플링으로 80배 이상 빨라졌다.",
+    "authors": "Harshdeep Singh · Yurui Zhu · Giovanni Colavizza · Matteo Romanello",
+    "venue": "RAGE-KG 2026 · arXiv preprint",
+    "sourceUrl": "https://arxiv.org/abs/2609.11569",
+    "pdfUrl": "https://arxiv.org/pdf/2609.11569",
+    "collectedOn": "2026-09-14",
+    "tags": [],
+    "practical": "",
+    "keyPoints": [
+      "LLM에 그래프 전체 대신 schema·통계·triple·질의 예시를 검색해 준다.",
+      "ShEx는 실행 가능한 쿼리 구조를 잡는 데 특히 중요했다.",
+      "ShEx 단독으로 실행률은 높아도 정답 결과는 0일 수 있다.",
+      "DeepSeek-V3.1+전체 컨텍스트의 실행 결과 EMRelEx는 0.419였다.",
+      "GESIS metadata 생성은 19분 21초에서 13.77초로 줄었다.",
+      "ORKG는 세밀한 ontology 때문에 full generation이 불가능해 sampling이 유일했다.",
+      "curated QQP 의존과 SciQA 단일 벤치마크는 아직 남은 한계다."
+    ],
+    "headings": [
+      {
+        "id": "c1",
+        "text": "LLM에게 지식 그래프의 사용 설명서를 먼저 건넨다"
+      },
+      {
+        "id": "c2",
+        "text": "ShEx는 그래프의 문법책, QQP는 풀이 예시다"
+      },
+      {
+        "id": "c3",
+        "text": "실행 가능성과 정답은 다른 문제였다"
+      },
+      {
+        "id": "c4",
+        "text": "그래프가 커질수록 전체를 읽지 말고 대표 샘플을 읽는다"
+      },
+      {
+        "id": "c5",
+        "text": "예시가 없으면 schema만으로는 정답까지 못 간다"
+      },
+      {
+        "id": "gloss",
+        "text": "핵심 용어 정리"
+      },
+      {
+        "id": "take",
+        "text": "이 논문을 한 장으로"
+      }
+    ]
+  },
+  {
+    "id": "2609.11390",
+    "topic": "retrieval",
+    "title": "목차를 따라가며 필요한 근거만 더 찾는 RAG",
+    "originalTitle": "VikingRAG: Accurate and Token-efficient Retrieval-augmented Generation over Structured Documents",
+    "summary": "기본형이 SOTA 토큰의 11.6–51.9%를 사용하고 trace·escalation으로 5.1–32.5%까지 낮췄다.",
+    "intro": "VikingRAG는 문서의 장·절 계층을 검색 가능한 상태로 보존하고, LLM이 증거 공백을 진단해 필요한 부분만 여러 라운드로 읽게 한다. 기존 SOTA와 비슷한 정확도를 유지하면서 11.6–51.9%의 토큰만 사용하고, trace 재사용·선택적 escalation으로 5.1–32.5%까지 줄였다.",
+    "authors": "Peiyuan Gao · Gaoyuan Zhang · Haojie Qin · Yahui Sun · Qianyi Zhang · Yunhao Zhang · Zeyu Wang · Wei Lu",
+    "venue": "arXiv preprint",
+    "sourceUrl": "https://arxiv.org/abs/2609.11390",
+    "pdfUrl": "https://arxiv.org/pdf/2609.11390",
+    "collectedOn": "2026-09-14",
+    "tags": [],
+    "practical": "",
+    "keyPoints": [
+      "VikingRAG의 그래프는 entity KG보다 문서 목차 트리와 검색 trace다.",
+      "필요한 directory segment만 노출해 구조 컨텍스트 토큰을 줄인다.",
+      "중간 결과에서 evidence gap을 찾아 다음 검색 query를 바꾼다.",
+      "기본형 토큰은 SOTA의 11.6–51.9%였다.",
+      "trace 재사용·adaptive escalation으로 5.1–32.5%까지 낮췄다.",
+      "checker의 false-NoEscalation과 문서 변경 시 edge 신선도가 운영 경계다."
+    ],
+    "headings": [
+      {
+        "id": "c1",
+        "text": "책·규정·논문은 납작한 문장 목록이 아니다"
+      },
+      {
+        "id": "c2",
+        "text": "한 번 찾고 끝내지 말고, 남은 빈칸을 보고 다시 찾는다"
+      },
+      {
+        "id": "c3",
+        "text": "정확도를 크게 잃지 않고 토큰을 줄였다"
+      },
+      {
+        "id": "c4",
+        "text": "빠른 길을 미리 저장하려면 문서가 어느 정도 안정적이어야 한다"
+      },
+      {
+        "id": "c5",
+        "text": "이 그래프는 지식 그래프보다 ‘문서 목차 그래프’에 가깝다"
+      },
+      {
+        "id": "gloss",
+        "text": "핵심 용어 정리"
+      },
+      {
+        "id": "take",
+        "text": "이 논문을 한 장으로"
+      }
+    ]
+  },
+  {
+    "id": "2609.11209",
+    "topic": "retrieval",
+    "title": "예전에 중요했던 문장을 다시 쓰는 RAG 압축",
+    "originalTitle": "REVA: Reusable Evidence Views for Efficient Retrieval-Augmented Generation",
+    "summary": "네 QA 벤치마크에서 F1을 1.0–5.8점 높이고 압축 오버헤드를 5.3–15.6배 줄였으며 40ms 미만 지연을 보였다.",
+    "intro": "REVA는 과거 질의에서 생성 모델이 실제로 주목한 문서 단어를 저장해 두고, 다음 질의에서 재사용 가능한 문서별 evidence view 를 만든다. 네 QA 벤치마크에서 F1을 1.0–5.8점 높이면서 압축 온라인 오버헤드를 5.3–15.6배 줄이고 40ms 미만의 지연을 보였다.",
+    "authors": "Tuan Nguyen · Qiran Hu · Banruo Liu · Khoa D. Doan · Kok-Seng Wong · Fan Lai",
+    "venue": "arXiv preprint",
+    "sourceUrl": "https://arxiv.org/abs/2609.11209",
+    "pdfUrl": "https://arxiv.org/pdf/2609.11209",
+    "collectedOn": "2026-09-14",
+    "tags": [],
+    "practical": "",
+    "keyPoints": [
+      "RAG 문서 압축을 질의별 작업이 아닌 반복 접근 데이터 마이닝으로 바꾼다.",
+      "historical Q+A attention을 문서별 word-unit 점수로 누적한다.",
+      "점수가 없는 문서는 prefix truncation으로 fallback한다.",
+      "부분 coverage 네 데이터셋에서 truncation보다 F1·EM이 모두 올랐다.",
+      "REVA-local은 27.5ms, REVA-global은 40.6ms 수준의 온라인 비용이었다.",
+      "word unit과 원문 순서 보존이 품질에 유의미했다.",
+      "문서·generator가 바뀌면 score store 재구성이 필요하다."
+    ],
+    "headings": [
+      {
+        "id": "c1",
+        "text": "RAG 압축기를 매번 새로 돌리면 느리다"
+      },
+      {
+        "id": "c2",
+        "text": "attention을 읽기 쉬운 단어 점수로 바꾼다"
+      },
+      {
+        "id": "c3",
+        "text": "긴 문서를 줄이면서도 답변 품질은 올라갔다"
+      },
+      {
+        "id": "c4",
+        "text": "단어 단위와 원래 순서가 생각보다 중요하다"
+      },
+      {
+        "id": "gloss",
+        "text": "핵심 용어 정리"
+      },
+      {
+        "id": "take",
+        "text": "이 논문을 한 장으로"
+      }
+    ]
+  },
+  {
+    "id": "2608.00501",
+    "topic": "systems",
+    "title": "커밋 로그로 검증하는 이중 쓰기 복구",
+    "originalTitle": "Machine-Checked Dual-Write Recovery from a Commit Log",
+    "summary": "소스 쪽 체크포인트만으로는 중복과 누락을 동시에 피할 수 없으며, sink 수락 기록·fence·보존 기간이 함께 필요하다.",
+    "intro": "핵심 주장: 소스 쪽 체크포인트만으로는 중복과 누락을 동시에 피할 수 없으며, sink 수락 기록·fence·보존 기간이 함께 필요하다.",
+    "authors": "Andreas Andreakis",
+    "venue": "arXiv preprint",
+    "sourceUrl": "https://arxiv.org/abs/2608.00501",
+    "pdfUrl": "https://arxiv.org/pdf/2608.00501",
+    "collectedOn": "2026-09-14",
+    "tags": [],
+    "practical": "CDC/outbox relay를 설계할 때 sink의 수락 이벤트와 dedup·fencing·retention 계약을 명시한다.",
+    "keyPoints": [
+      "source-only recovery는 동일한 로컬 상태에서 중복과 누락을 구분할 수 없다.",
+      "sink-delta 복구는 authoritative·complete·current acceptance record가 있을 때만 안전하다.",
+      "straggler와 concurrent recoverer는 각각 arrival fence와 claim fence가 필요하다.",
+      "dedup·source history 보존 기간이 보장 기간을 결정한다.",
+      "정말 쉽게 한 문장: 다시 보내도 되는지 알려면 보낸 쪽 장부가 아니라 받은 쪽의 확정 기록이 필요하다."
+    ],
+    "headings": [
+      {
+        "id": "c1",
+        "text": "체크포인트는 sink가 무엇을 했는지 말해주지 않는다"
+      },
+      {
+        "id": "c2",
+        "text": "sink를 읽을 수 있으면 delta를 계산할 수 있다"
+      },
+      {
+        "id": "c3",
+        "text": "읽는 순간에도 오래된 요청과 다른 worker가 움직인다"
+      },
+      {
+        "id": "c4",
+        "text": "exactly-once는 시간 제한이 있는 계약이다"
+      },
+      {
+        "id": "c5",
+        "text": "증명은 제품 전체의 인증서가 아니라 경계의 지도다"
+      },
+      {
+        "id": "gloss",
+        "text": "핵심 용어 정리"
+      },
+      {
+        "id": "take",
+        "text": "이 논문을 한 장으로"
+      }
+    ]
+  },
+  {
+    "id": "2609.11264",
+    "topic": "systems",
+    "title": "GuardedAct: 폭발 반경을 고려한 샌드박스로 안전한 백엔드 장애 복구",
+    "originalTitle": "Can AI Remediate Backend Failures Safely? GuardedAct with Blast-Radius-Aware Sandboxing",
+    "summary": "LLM 복구 조치의 연쇄 피해를 게이트",
+    "intro": "핵심 주장: LLM 복구 조치를 digital twin에서 검증하고 저위험 조치만 자동 커밋해 collateral damage를 낮춘다.",
+    "authors": "Wanrong Cai 외 4명",
+    "venue": "AIOPS · 2026 · RELIABLE CLOUD OPERATIONS",
+    "sourceUrl": "https://arxiv.org/abs/2609.11264",
+    "pdfUrl": "https://arxiv.org/pdf/2609.11264",
+    "collectedOn": "2026-09-11",
+    "tags": [
+      "분산 시스템",
+      "SRE"
+    ],
+    "practical": "",
+    "keyPoints": [
+      "생성·검증·커밋을 분리해 자동화의 실행 경계를 만든다.",
+      "500회에서 회복 87.4%, 피해 5.2%지만 오버헤드가 있다.",
+      "단일 benchmark이므로 산업 일반화는 검증해야 한다.",
+      "정말 쉽게 한 문장: AI가 고친다고 바로 믿지 말고 모형에서 피해를 확인한 뒤 실행한다."
+    ],
+    "headings": [
+      {
+        "id": "c1",
+        "text": "생성된 복구 명령도 untrusted code다"
+      },
+      {
+        "id": "c2",
+        "text": "blast radius와 rollback confidence"
+      },
+      {
+        "id": "c3",
+        "text": "DeathStarBench 5종 장애"
+      },
+      {
+        "id": "c4",
+        "text": "안전성을 위해 평균 8.2초를 지불"
+      },
+      {
+        "id": "c5",
+        "text": "시뮬레이터는 안전 보증서가 아니다"
+      },
+      {
+        "id": "gloss",
+        "text": "핵심 용어 정리"
+      },
+      {
+        "id": "take",
+        "text": "이 논문을 한 장으로"
+      }
+    ]
+  },
+  {
+    "id": "2609.11251",
+    "topic": "systems",
+    "title": "BUD: 블록별 쓰기 로그로 과거 읽기를 인증하기",
+    "originalTitle": "You’ve Got a BUD in Me: Authenticated Reads from Per-Block Write Logs",
+    "summary": "블록별 커밋으로 과거 읽기를 조건부 인증",
+    "intro": "핵심 주장: 블록별 쓰기 커밋과 계층형 요약으로 과거 값과 부재를 조건부 인증한다.",
+    "authors": "Alejandro Ranchal-Pedrosa, Cody Littley, Ben Marsh",
+    "venue": "ARXIV · 2026 · DATABASE / DISTRIBUTED SYSTEMS",
+    "sourceUrl": "https://arxiv.org/abs/2609.11251",
+    "pdfUrl": "https://arxiv.org/pdf/2609.11251",
+    "collectedOn": "2026-09-11",
+    "tags": [
+      "인증 저장소",
+      "분산 시스템"
+    ],
+    "practical": "",
+    "keyPoints": [
+      "전역 상태 트리 대신 블록별 커밋과 predecessor 링크를 사용한다.",
+      "S3·S4·S5가 최신·중간·오래된 질의를 나눈다.",
+      "상태 50배에서 base-BUD 경로 1.24배, 검증 p99 146μs다.",
+      "정말 쉽게 한 문장: 움직인 상자 영수증만 이어 붙여 과거 창고 상태를 증명한다."
+    ],
+    "headings": [
+      {
+        "id": "c1",
+        "text": "전역 상태 트리 없이 과거 읽기 인증"
+      },
+      {
+        "id": "c2",
+        "text": "BUD·SuperBUD와 네 가지 인증서"
+      },
+      {
+        "id": "c3",
+        "text": "soundness와 조건부 completeness"
+      },
+      {
+        "id": "c4",
+        "text": "증명 크기·검증 시간·workload"
+      },
+      {
+        "id": "c5",
+        "text": "계층 스케줄의 trade-off와 한계"
+      },
+      {
+        "id": "gloss",
+        "text": "핵심 용어 정리"
+      },
+      {
+        "id": "take",
+        "text": "이 논문을 한 장으로"
+      }
+    ]
+  },
+  {
+    "id": "2609.11148",
+    "topic": "systems",
+    "title": "옴니테이블: 페타바이트급 LLM 데이터 큐레이션을 위한 통합 와이드 테이블 시스템",
+    "originalTitle": "OmniTable: A Unified Wide-Table System for Petabyte-Scale LLM Data Curation and Exploration",
+    "summary": "논리 통합으로 PB 큐레이션을 가속",
+    "intro": "핵심 주장: 논리적 와이드 테이블과 카탈로그 중심 실행으로 PB 규모 큐레이션의 조정 비용을 줄인다.",
+    "authors": "Yuzhuo Fu 외 18명",
+    "venue": "PVLDB · 2026 · DATA PLATFORM",
+    "sourceUrl": "https://arxiv.org/abs/2609.11148",
+    "pdfUrl": "https://arxiv.org/pdf/2609.11148",
+    "collectedOn": "2026-09-11",
+    "tags": [
+      "데이터 엔지니어링",
+      "데이터 플랫폼"
+    ],
+    "practical": "",
+    "keyPoints": [
+      "결론: PB 데이터 준비의 병목은 계산만 아니라 조정 비용이다.",
+      "기능 DAG·융합·장애 격리·자동 튜닝이 병목을 나눠 줄였다.",
+      "35PB의 14일→2.5일은 특정 배포의 측정이다.",
+      "정말 쉽게 한 문장: 흩어진 재료를 한 목록으로 관리하고 자주 쓰는 요리를 미리 준비하는 데이터 공장이다."
+    ],
+    "headings": [
+      {
+        "id": "c1",
+        "text": "“파이프라인 미로”가 만드는 운영 병목"
+      },
+      {
+        "id": "c2",
+        "text": "논리적 통합, 물리적 분리"
+      },
+      {
+        "id": "c3",
+        "text": "기능 생명주기와 자율 거버넌스"
+      },
+      {
+        "id": "c4",
+        "text": "35PB 운영 환경의 결과"
+      },
+      {
+        "id": "c5",
+        "text": "운영 습관과 적용 경계"
+      },
+      {
+        "id": "gloss",
+        "text": "핵심 용어 정리"
+      },
+      {
+        "id": "take",
+        "text": "이 논문을 한 장으로"
+      }
+    ]
+  },
+  {
+    "id": "2609.11000",
+    "topic": "engineering",
+    "title": "ShellVis: 셸 스크립트를 위한 샌드박스 라이브 프로그래밍",
+    "originalTitle": "ShellVis: Sandboxed Live Programming for Shell Scripts",
+    "summary": "셸 실행을 샌드박스와 trace로 안전하게 가시화",
+    "intro": "핵심 주장: overlay 파일시스템과 실행 추적 시각화로 셸 스크립트를 안전하게 반복 실행한다.",
+    "authors": "Joshua Horowitz · Jeffrey Heer",
+    "venue": "DEVELOPER TOOL · 2026 · LIVE PROGRAMMING",
+    "sourceUrl": "https://arxiv.org/abs/2609.11000",
+    "pdfUrl": "https://arxiv.org/pdf/2609.11000",
+    "collectedOn": "2026-09-11",
+    "tags": [
+      "개발 도구",
+      "라이브 프로그래밍"
+    ],
+    "practical": "",
+    "keyPoints": [
+      "셸은 강력하지만 부작용 때문에 라이브 실행이 위험하다.",
+      "ShellVis는 overlay와 line-by-line trace를 결합한다.",
+      "7명 평가는 긍정적이지만 작은 질적 연구다.",
+      "정말 쉽게 한 문장: 셸 명령을 복사본에서 실행하고 결과를 보여 주는 도구다."
+    ],
+    "headings": [
+      {
+        "id": "c1",
+        "text": "셸의 강력함과 위험"
+      },
+      {
+        "id": "c2",
+        "text": "편집→실행→추적→보기"
+      },
+      {
+        "id": "c3",
+        "text": "기존 셸 습관을 유지한 인터페이스"
+      },
+      {
+        "id": "c4",
+        "text": "7명의 참가자"
+      },
+      {
+        "id": "c5",
+        "text": "안전한 라이브 프로그래밍의 다음 단계"
+      },
+      {
+        "id": "gloss",
+        "text": "핵심 용어 정리"
+      },
+      {
+        "id": "take",
+        "text": "이 논문을 한 장으로"
+      }
+    ]
+  },
+  {
+    "id": "2609.10239",
+    "topic": "retrieval",
+    "title": "LiteRAG: 그래프 RAG를 가볍게 만드는 방법",
+    "originalTitle": "LiteRAG: Cost-Efficient Graph-Based Retrieval-Augmented Generation",
+    "summary": "알고리즘 그래프 탐색과 짧은 추론 체인은 특정 코퍼스에서 GraphRAG 비용을 크게 낮춘다.",
+    "intro": "LiteRAG는 Microsoft GraphRAG의 인덱싱 아이디어를 재사용하되, 질의 시 LLM이 그래프를 돌아다니며 요약하는 비용을 알고리즘 탐색 + 짧은 reasoning chain 으로 줄인다. DistComp에서 D1280 기준 품질 .798, 1.42초, 2,291토큰, $0.0003을 보고했다.",
+    "authors": "Daniel Alejandro Coll Tejeda · Pedro García López · Daniel Barcelona-Pons",
+    "venue": "arXiv preprint v1",
+    "sourceUrl": "https://arxiv.org/abs/2609.10239",
+    "pdfUrl": "https://arxiv.org/pdf/2609.10239",
+    "collectedOn": "2026-09-11",
+    "tags": [],
+    "practical": "",
+    "keyPoints": [
+      "LiteRAG는 GraphRAG 인덱스를 재사용하지만 검색 시점의 LLM 탐색을 줄인다.",
+      "D1280에서 .798·1.42초·2,291토큰·$0.0003을 기록했다.",
+      "동적 threshold와 hub penalty가 효율의 핵심 ablation이다.",
+      "특정 도메인·공유 모델·인덱싱 비용 제외라는 경계를 기억해야 한다.",
+      "정말 쉽게 한 문장: 같은 지도를 쓰되, 필요한 길만 컴퓨터 규칙으로 골라 짧게 보여준다."
+    ],
+    "headings": [
+      {
+        "id": "c1",
+        "text": "같은 그래프 인덱스, 다른 검색 순간"
+      },
+      {
+        "id": "c2",
+        "text": "먼저 가까운 곳을 찾고, 그 주변만 똑똑하게 넓힌다"
+      },
+      {
+        "id": "c3",
+        "text": "싸고 빠른데, 품질도 기준선 이상이었다"
+      },
+      {
+        "id": "c4",
+        "text": "이 숫자를 모든 도메인의 법칙으로 읽지는 말자"
+      },
+      {
+        "id": "gloss",
+        "text": "핵심 용어 정리"
+      },
+      {
+        "id": "take",
+        "text": "이 논문을 한 장으로"
+      }
+    ]
+  },
+  {
+    "id": "2609.10237",
+    "topic": "retrieval",
+    "title": "지식 그래프에서 정답으로 가는 길을 보여주는 법",
+    "originalTitle": "The Answer Path and the Grounding Instruction in LLM Question Answering over Knowledge Graphs",
+    "summary": "그래프 크기보다 정답 경로와 근거 지시가 LLM QA 성능을 좌우한다.",
+    "intro": "지식 그래프 RAG의 성능을 좌우하는 것은 그래프를 얼마나 크게 넣느냐보다 정답으로 이어지는 경로(answer path)를 실제로 넣었는지 와 LLM에게 근거를 어떻게 사용하라고 지시했는지다. 30,841회 통제 실험으로 검색기 자체가 아니라 그래프 문맥·프롬프트의 효과를 분리한다.",
+    "authors": "Arquimedes Canedo",
+    "venue": "arXiv preprint v1",
+    "sourceUrl": "https://arxiv.org/abs/2609.10237",
+    "pdfUrl": "https://arxiv.org/pdf/2609.10237",
+    "collectedOn": "2026-09-11",
+    "tags": [],
+    "practical": "",
+    "keyPoints": [
+      "정답 경로가 있느냐가 그래프 형식·순서·크기보다 큰 레버다.",
+      "strict no-context .035 대 correct-context .823(1-hop)은 “자료 부재” 효과를 보여준다.",
+      "gold subgraph라 실제 retriever·임베딩 검색 성능은 평가하지 않았다.",
+      "prompt·format·depth의 교란을 분리해야 공정한 RAG 비교가 된다.",
+      "정말 쉽게 한 문장: 큰 지도보다 정답으로 가는 길을 정확히 보여주는 것이 중요하다."
+    ],
+    "headings": [
+      {
+        "id": "c1",
+        "text": "이것은 “그래프를 쓰는 RAG”의 실험실 감사다"
+      },
+      {
+        "id": "c2",
+        "text": "그래프를 30,841번 다르게 보여줬다"
+      },
+      {
+        "id": "c3",
+        "text": "정답 경로는 거의 모든 것보다 중요했다"
+      },
+      {
+        "id": "c4",
+        "text": "검색기를 시험하지 않았으므로 검색 논문으로 과장하면 안 된다"
+      },
+      {
+        "id": "tables",
+        "text": "원문 표 I–XII를 빠짐없이 읽는 법"
+      },
+      {
+        "id": "gloss",
+        "text": "핵심 용어 정리"
+      },
+      {
+        "id": "take",
+        "text": "이 논문을 한 장으로"
+      }
+    ]
+  },
+  {
+    "id": "2609.09410",
+    "topic": "retrieval",
+    "title": "웹 검색과 SQL을 함께 쓰는 에이전트는 얼마나 잘할까?",
+    "originalTitle": "Benchmarking Hybrid Deep Research Across Database Querying and Web Search",
+    "summary": "웹과 SQL을 넘나들며 제약을 보존하는 것이 최신 에이전트의 큰 병목이다.",
+    "intro": "HybridDeepResearch는 웹 검색과 SQL 데이터베이스를 함께 써야 하는 380개 과제를 만들고, 에이전트가 두 출처의 제약을 보존하며 오가는 능력 을 측정한다. 최신 모델도 120개 균형 난제에서 Pass@8 약 50–54%에 머물렀고, 방향성 있는 웹↔SQL handoff가 병렬 검색보다 어렵다.",
+    "authors": "Ruofan Wu 외 10명",
+    "venue": "arXiv preprint v1",
+    "sourceUrl": "https://arxiv.org/abs/2609.09410",
+    "pdfUrl": "https://arxiv.org/pdf/2609.09410",
+    "collectedOn": "2026-09-11",
+    "tags": [],
+    "practical": "",
+    "keyPoints": [
+      "하이브리드 검색의 병목은 출처 간 handoff와 제약 보존이다.",
+      "균형 120개에서 최신 모델 Pass@8도 50–54% 수준이다.",
+      "Parallel이 방향성 SQL2S/S2SQL보다 훨씬 쉽다.",
+      "MiroFlow는 한 번 성공할 확률을 올리지만 호출·timeout 비용이 크다.",
+      "정말 쉽게 한 문장: 인터넷과 장부를 둘 다 봐야 하는 문제에서는, 앞에서 찾은 힌트를 끝까지 잊지 않는 것이 핵심이다."
+    ],
+    "headings": [
+      {
+        "id": "c1",
+        "text": "웹만도, 데이터베이스만도 아닌 질문"
+      },
+      {
+        "id": "c2",
+        "text": "에이전트가 오가는 길을 세 가지로 나눴다"
+      },
+      {
+        "id": "c3",
+        "text": "최신 모델도 방향성 handoff에서 크게 무너진다"
+      },
+      {
+        "id": "c4",
+        "text": "검색 실패보다 “조건을 잊는 것”이 더 치명적이다"
+      },
+      {
+        "id": "gloss",
+        "text": "핵심 용어 정리"
+      },
+      {
+        "id": "take",
+        "text": "이 논문을 한 장으로"
+      }
+    ]
+  },
+  {
+    "id": "2609.09243",
+    "topic": "evaluation",
+    "title": "RAG를 믿어도 될까? 문서 오염 앞에서 흔들리는 검색-생성",
+    "originalTitle": "In RAG We Trust? Measuring Robustness of Retrieval-Augmented Generation Under Document Poisoning",
+    "summary": "오염 문서가 다수가 되면 RAG가 오답으로 뒤집히며, 거부는 일부만 완충한다.",
+    "intro": "이 논문은 검색된 문서가 생성 직전에 몰래 바뀌면 표준 dense RAG도 쉽게 흔들릴 수 있다 는 사실을 작은 통제 실험으로 측정한다. 3개의 검색 문서 중 오염된 문서 수가 과반이 될 때 오답으로 뒤집히는 비율이 급증하지만, 모델은 상당 부분을 “정보 부족”이라고 거부했다.",
+    "authors": "Iliano Fasolino",
+    "venue": "arXiv preprint v1",
+    "sourceUrl": "https://arxiv.org/abs/2609.09243",
+    "pdfUrl": "https://arxiv.org/pdf/2609.09243",
+    "collectedOn": "2026-09-11",
+    "tags": [],
+    "practical": "",
+    "keyPoints": [
+      "RAG의 검색 결과는 답의 재료이자 공격 표면이다.",
+      "3개 중 2개가 오염되면 숫자 오답이 16.3pp 뛰었다.",
+      "거부 증가는 방어 신호지만, 모든 오답을 잡지는 못한다.",
+      "이 실험은 작은 모델·질의 집합의 초기 감사이며 일반 안전성 증명은 아니다.",
+      "정말 쉽게 한 문장: 틀린 종이가 여러 장이면 똑똑한 로봇도 속을 수 있으니 중요한 답은 다시 확인하자."
+    ],
+    "headings": [
+      {
+        "id": "c1",
+        "text": "RAG는 답을 찾는 순간에도 공격받을 수 있다"
+      },
+      {
+        "id": "c2",
+        "text": "세 가지 아주 단순한 장난을 반복했다"
+      },
+      {
+        "id": "c3",
+        "text": "오염 문서가 과반이 되면 숫자 오답이 급상승한다"
+      },
+      {
+        "id": "c4",
+        "text": "모델은 틀리기보다 먼저 멈췄다"
+      },
+      {
+        "id": "gloss",
+        "text": "핵심 용어 정리"
+      },
+      {
+        "id": "take",
+        "text": "이 논문을 한 장으로"
+      }
+    ]
+  },
+  {
+    "id": "2609.08887",
+    "topic": "retrieval",
+    "title": "에이전트가 실제로 던지는 검색어를 위한 초대형 검색 시험장",
+    "originalTitle": "Q2D-Web: A Large-Scale Benchmark for Retrieval in Agentic RAG Systems",
+    "summary": "agent가 만든 support query는 neural retriever의 사각지대이며, 평균 최하 BM25도 가장 많은 독점 정답을 찾아 hybrid 설계의 근거가 된다.",
+    "intro": "결론부터: 에이전트 RAG의 첫 검색기는 사람이 직접 쓴 짧은 질의가 아니라, 대화 문맥에서 기계가 만든 primary·support 질의를 상대한다. 약 1억 9천만 문서·6만 9,721개 질의 에서 neural retriever는 support 질의에 약했고, 가장 약한 BM25가 가장 많은 독점 정답을 찾았으므로 단일 평균 점수만으로 검색 조합을 고르면 안 된다.",
+    "authors": "Maximilian Schall · Sedigheh Eslami · Markus Krimmel · Antoine Chaffin · Louis Milliken · Bo Wang · Denis Bykov",
+    "venue": "arXiv 2026",
+    "sourceUrl": "https://arxiv.org/abs/2609.08887",
+    "pdfUrl": "https://arxiv.org/pdf/2609.08887",
+    "collectedOn": "2026-09-10",
+    "tags": [],
+    "practical": "",
+    "keyPoints": [
+      "agent가 실제로 쓰는 질의 분포로 검색기를 시험해야 한다.",
+      "69,721개 질의 중 82.3%가 support query였고 neural retriever는 여기서 약했다.",
+      "Combined Recall@1000 최고는 pplx-embed-v1-4b 69.11이었다.",
+      "BM25는 최저 평균 recall이지만 독점 양성 14,621개를 찾았다.",
+      "약 31.7% RRF corpus는 model 순위를 보존하지만 절대 recall을 부풀린다.",
+      "private benchmark라 독립 재현·감사에는 뚜렷한 한계가 있다."
+    ],
+    "headings": [
+      {
+        "id": "c1",
+        "text": "사람이 쓴 검색어 시험으로 agent 검색기를 평가하면 어긋난다"
+      },
+      {
+        "id": "c2",
+        "text": "큰 책장·많은 질문·깊은 채점표를 한 번에 갖춘 자료가 드물다"
+      },
+      {
+        "id": "c3",
+        "text": "23천 검색에서 69,721개의 기계 작성 질의를 뽑다"
+      },
+      {
+        "id": "c4",
+        "text": "세 개의 불완전한 정답표를 합치고 어려운 오답을 남긴다"
+      },
+      {
+        "id": "c5",
+        "text": "큰 dense model이 강하지만, 지표와 질의 종류가 바뀌면 답도 바뀐다"
+      },
+      {
+        "id": "c6",
+        "text": "약한 BM25가 다른 누구도 못 찾은 정답을 가장 많이 찾았다"
+      },
+      {
+        "id": "c7",
+        "text": "검색 설계는 평균 1등 한 개가 아니라 질의 분포와 독점 recall로 고른다"
+      },
+      {
+        "id": "gloss",
+        "text": "핵심 용어 정리"
+      },
+      {
+        "id": "take",
+        "text": "이 논문을 한 장으로"
+      }
+    ]
+  },
+  {
+    "id": "2609.05637",
+    "topic": "retrieval",
+    "title": "질의 재작성은 혼자보다 함께 쓸 때 강하다",
+    "originalTitle": "Better Together: Complementary Query Rewriting Under a Strong RAG Baseline",
+    "summary": "질의 재작성은 강한 검색기를 대체하기보다, 낮은 확신의 질문에서 서로 다른 실패를 보완하도록 선택적으로 합칠 때 값어치가 크다.",
+    "intro": "결론부터: 강한 dense retrieval·reranker·MMR 위에서는 질의 재작성 하나만 추가해도 이득이 작다. 하지만 서로 다른 방식이 서로 다른 실패를 구조해 주므로 , 검색 결과가 충분히 다양할 때 결합하고 낮은 확신의 질의에만 비용을 쓰는 것이 실용적이다.",
+    "authors": "Sara Shanian · Xiaoqin Yi · Pavlo Ruban · Kurt MacDonald",
+    "venue": "EMNLP 2026 채택",
+    "sourceUrl": "https://arxiv.org/abs/2609.05637",
+    "pdfUrl": "https://arxiv.org/pdf/2609.05637",
+    "collectedOn": "2026-09-10",
+    "tags": [],
+    "practical": "",
+    "keyPoints": [
+      "강한 기준선이 먼저다. 재작성 효과를 약한 검색기 위에서 재지 말아야 한다.",
+      "재작성은 단독 교체재보다 상보적 coverage source 다.",
+      "결과 중복이 높으면 결합이 해로울 수 있다.",
+      "기업형 실험에서 5-way는 S1보다 HIT@10이 13.76포인트 높았다.",
+      "τ=0.65 router는 39%만 확장해 HIT@10 +4.33, 답변 F1 +1.92를 얻었다.",
+      "HNSW는 지식 그래프가 아니라 ANN 검색 내부 도로다."
+    ],
+    "headings": [
+      {
+        "id": "c1",
+        "text": "“재작성하면 좋아진다”를 강한 기준선 위에서 다시 묻다"
+      },
+      {
+        "id": "c2",
+        "text": "원문을 그대로 쓰는 S1부터 가짜 문서를 만드는 Query2Doc까지"
+      },
+      {
+        "id": "c3",
+        "text": "검색기를 고정하고 질문 바꾸기만 비교하다"
+      },
+      {
+        "id": "c4",
+        "text": "혼자서는 작은 승리, 데이터셋마다 우승자가 바뀐다"
+      },
+      {
+        "id": "c5",
+        "text": "다양한 결과일 때 합치고, 낮은 확신일 때만 돈을 쓰다"
+      },
+      {
+        "id": "c6",
+        "text": "비슷한 결과만 합치면 오히려 망가진다"
+      },
+      {
+        "id": "c7",
+        "text": "먼저 강한 기준선, 그다음 상보성, 마지막으로 router"
+      },
+      {
+        "id": "gloss",
+        "text": "핵심 용어 정리"
+      },
+      {
+        "id": "take",
+        "text": "이 논문을 한 장으로"
+      }
+    ]
+  },
+  {
+    "id": "2609.05553",
+    "topic": "agents",
+    "title": "원문을 버리지 않는 LLM 없는 에이전트 메모리",
+    "originalTitle": "EdgeMem: LLM-Free Agent Memory Construction and Retrieval via Evidence-Preserving Multi-Anchor Hypergraph",
+    "summary": "대화 원문을 보존한 채 시간·공통 key·episode 주소를 붙이면 LLM 없이도 싸고 강한 agent memory retrieval이 가능하다.",
+    "intro": "결론부터: 대화 원문을 요약해 덮어쓰지 않고, 시간·공통 단어·세션이라는 세 종류의 하이퍼그래프 닻 으로 주소만 붙이면 메모리 구축·검색의 생성형 LLM 호출을 0으로 만들면서도 강한 답변 품질을 얻을 수 있다. 다만 이는 공개 benchmark 중심 결과이며, 원문 보존이 만드는 개인정보·보존정책 비용은 별도다.",
+    "authors": "Zeyang Cui · Jiannong Cao · Zhiyuan Wen · Bo Yuan · Junlan Feng · Shengyuan Chen",
+    "venue": "arXiv 2026",
+    "sourceUrl": "https://arxiv.org/abs/2609.05553",
+    "pdfUrl": "https://arxiv.org/pdf/2609.05553",
+    "collectedOn": "2026-09-10",
+    "tags": [],
+    "practical": "",
+    "keyPoints": [
+      "기억은 다시 쓰기보다 원문과 주소를 보존하는 것이 먼저다.",
+      "세 anchor 중 가장 큰 효과는 episode context(+8.44포인트)였다.",
+      "LoCoMo 동일 prompt에서 strict judge 61.01, 구축 생성 token 0이었다.",
+      "LongMemEval-S Recall@3 81.49로 작은 evidence budget에서도 강했다.",
+      "이는 Microsoft GraphRAG나 HippoRAG PPR가 아닌 agent-memory hypergraph 다.",
+      "실서비스에서는 개인정보 보존·삭제·접근통제가 필수다."
+    ],
+    "headings": [
+      {
+        "id": "c1",
+        "text": "미래 질문을 모르는데 지금 원문을 줄여 버리는 위험"
+      },
+      {
+        "id": "c2",
+        "text": "생성된 기억을 검색하는 대신 원문에 주소를 붙인다"
+      },
+      {
+        "id": "c3",
+        "text": "한 turn이 여러 바구니에 동시에 들어가는 세 갈래 주소"
+      },
+      {
+        "id": "c4",
+        "text": "episode를 중심으로 공통 key와 시간을 보충하다"
+      },
+      {
+        "id": "c5",
+        "text": "더 싼데 더 정확하고, 모를 때 더 잘 멈췄다"
+      },
+      {
+        "id": "c6",
+        "text": "실패가 쓰기·찾기·읽기 중 어디서 생겼는지 추적하다"
+      },
+      {
+        "id": "c7",
+        "text": "LLM-Wiki를 모두 만들기 전의 값싼 메모리 층"
+      },
+      {
+        "id": "gloss",
+        "text": "핵심 용어 정리"
+      },
+      {
+        "id": "take",
+        "text": "이 논문을 한 장으로"
+      }
+    ]
+  },
+  {
+    "id": "2608.22331",
+    "topic": "evaluation",
+    "title": "에이전트 벤치마크의 잡음 바닥 감사",
+    "originalTitle": "Noise Floor Audit for Agent Benchmarks",
+    "summary": "같은 온도 0 재실행의 흔들림은 작았지만 뜻을 보존한 프롬프트 표현 변화는 paired SD를 11~58배 키워, 평균 정확도만으로는 평가 안정성을 판단하기 어렵다.",
+    "intro": "같은 에이전트를 똑같이 다시 돌릴 때 생기는 흔들림은 작았지만, 뜻을 보존한 채 프롬프트의 겉모양만 바꾸면 어떤 문제를 맞히는지가 훨씬 크게 바뀌었다. 따라서 도구 호출 벤치마크는 평균 정확도 하나만 내놓지 말고 프롬프트 민감도와 실패 유형도 함께 공개해야 한다는 것이 논문의 결론이다.",
+    "authors": "Yihang Chen · Pin Qian · Su Wang · Chong Peng · Huan Xu · Xiyang Wu · Yiqi Sun",
+    "venue": "arXiv preprint v1 (2026)",
+    "sourceUrl": "https://arxiv.org/abs/2608.22331",
+    "pdfUrl": "https://arxiv.org/pdf/2608.22331",
+    "collectedOn": "2026-09-10",
+    "tags": [],
+    "practical": "",
+    "keyPoints": [
+      "결론: 같은 실행의 잔여 잡음보다 뜻이 같은 프롬프트 말투 변화가 훨씬 큰 불안정성을 만들었다.",
+      "재실행 paired SD는 0.28pp·0.91pp·1.1pp, 프롬프트 변형 중앙 paired SD는 16pp·10pp·19pp였다.",
+      "평균 정확도는 숨긴다. 평균이 거의 같아도 맞는 문제와 틀리는 문제가 대량으로 서로 바뀔 수 있다.",
+      "실패 유형도 점수의 일부다. malformed output은 전체 실패의 30%·7%·1% 미만으로 endpoint별 성격이 달랐다.",
+      "평가 보고서에는 prompt family, paired 변동, flip 비율, failure taxonomy, endpoint identity를 함께 남기는 편이 좋다.",
+      "증거 경계: 이는 retrieval·multi-turn·environment interaction을 포함한 에이전트 전체의 보편 법칙이 아니라 BFCL native tool-call slice의 조건부 결과다."
+    ],
+    "headings": [
+      {
+        "id": "c1",
+        "text": "점수의 작은 차이보다 “질문 표현에 흔들리는가”를 먼저 보라"
+      },
+      {
+        "id": "c2",
+        "text": "에이전트 점수 하나는 여러 층이 합쳐진 결과다"
+      },
+      {
+        "id": "c3",
+        "text": "새 벤치마크가 아니라 기존 벤치마크의 온도계를 검사한다"
+      },
+      {
+        "id": "c4",
+        "text": "150개 문제를 고정하고 재실행과 말투 변화만 분리하다"
+      },
+      {
+        "id": "c5",
+        "text": "평균은 그대로인데, 맞히는 문제는 크게 갈아 끼워졌다"
+      },
+      {
+        "id": "c6",
+        "text": "같은 오답이라도 “틀린 인자”와 “깨진 출력”은 전혀 다르다"
+      },
+      {
+        "id": "c7",
+        "text": "재실행 예산보다 프롬프트 다양성과 실패 진단에 먼저 투자하라"
+      },
+      {
+        "id": "c8",
+        "text": "“에이전트 전체가 이렇다”까지 말할 수는 없다"
+      },
+      {
+        "id": "c9",
+        "text": "표본이 작으면 잡음 바닥 자체도 불안정하게 보인다"
+      },
+      {
+        "id": "gloss",
+        "text": "핵심 용어 정리"
+      },
+      {
+        "id": "take",
+        "text": "이 논문을 한 장으로"
+      }
+    ]
+  },
+  {
+    "id": "2609.06065",
+    "topic": "retrieval",
+    "title": "검색부터 생성까지 개체를 잃지 않는 DER-RAG",
+    "originalTitle": "Don't Lose Entities from Retrieval to Generation: Dual Entity Recovery RAG for Multi-hop QA",
+    "summary": "멀티홉 RAG에서는 정답 문장을 찾는 것만큼 그 문장이 누구의 사실인지 끝까지 보존하는 것이 중요하다.",
+    "intro": "멀티홉 RAG는 검색 질문과 검색된 문장 양쪽에서 누구에 관한 정보인지 를 잃는다. 중간 답 entity를 다음 질문에 넣고, 각 문장 앞에 대표 주어를 붙이는 두 장치만으로 이 연결을 복구한다.",
+    "authors": "Heechang Lee · Dong-Young Lim",
+    "venue": "Findings of EMNLP 2026",
+    "sourceUrl": "https://arxiv.org/abs/2609.06065",
+    "pdfUrl": "https://arxiv.org/pdf/2609.06065",
+    "collectedOn": "2026-09-09",
+    "tags": [],
+    "practical": "",
+    "keyPoints": [],
+    "headings": [
+      {
+        "id": "d1",
+        "text": "검색은 문장을 찾았는데, 그 문장이 누구 이야기인지 모른다"
+      },
+      {
+        "id": "d2",
+        "text": "다음 질문에 이름을 넘기고, 검색 문장 앞에도 이름을 붙인다"
+      },
+      {
+        "id": "d3",
+        "text": "모든 질문을 순차 처리하지 않고, 비교 질문만 빠르게 갈라 보낸다"
+      },
+      {
+        "id": "d4",
+        "text": "검색과 생성을 따로 흔들어 무엇이 고쳐졌는지 확인했다"
+      },
+      {
+        "id": "d5",
+        "text": "2Wiki에서 특히 강했고, HotpotQA에서는 구성에 따라 흔들렸다"
+      },
+      {
+        "id": "d6",
+        "text": "가벼운 보강의 증거이지, 지식 그래프 검색의 대체 증거는 아니다"
+      },
+      {
+        "id": "da",
+        "text": "부록은 데이터 구성, 비용, prompt, 실패 사례를 공개한다"
+      },
+      {
+        "id": "dc",
+        "text": "GraphRAG가 아니라 entity-aware adaptive multi-hop RAG다"
+      },
+      {
+        "id": "dg",
+        "text": "핵심 용어 정리"
+      },
+      {
+        "id": "dt",
+        "text": "이 논문을 한 장으로"
+      }
+    ]
+  },
+  {
+    "id": "2609.05776",
+    "topic": "evaluation",
+    "title": "검색한 업무 규칙을 계산에 적용할 수 있는가",
+    "originalTitle": "DI-Bench: Systematically Generating In-Domain Data Intelligence Benchmarks for Enterprise Agents",
+    "summary": "정답 업무 규칙을 찾아도 계산 계획에 적용하지 못하면 enterprise agent는 실패한다.",
+    "intro": "기업 agent의 병목은 정답 문서 검색만이 아니다. 정답 rule을 직접 줘도 성능이 거의 오르지 않아, 검색된 규칙을 계산 계획에 적용하는 능력 을 별도로 평가해야 한다.",
+    "authors": "Jiangyun Zhang · Kristen Surrao · Torpong Nitayanont · Yupei Zhang · Roopali Singh · Zhiyu Chen · Julia Huang · Zhou Tang · Shayan Ali Akbar · Omar Alonso · Erwin Cornejo · Yuan Li · Yi Zhang",
+    "venue": "EMNLP 2026 Industry Track (accepted)",
+    "sourceUrl": "https://arxiv.org/abs/2609.05776",
+    "pdfUrl": "https://arxiv.org/pdf/2609.05776",
+    "collectedOn": "2026-09-09",
+    "tags": [],
+    "practical": "",
+    "keyPoints": [],
+    "headings": [
+      {
+        "id": "i1",
+        "text": "문서를 찾는 것보다, 찾은 업무 규칙을 계산에 적용하는 일이 어렵다"
+      },
+      {
+        "id": "i2",
+        "text": "table·metric·rule·dimension을 연결해 함께 필요한 조합만 뽑는다"
+      },
+      {
+        "id": "i3",
+        "text": "SQL 실행으로 gold answer를 고정하고 자연어 질문을 역으로 생성한다"
+      },
+      {
+        "id": "i4",
+        "text": "규칙을 찾는 것보다 계산식에 정확히 끼워 넣는 단계가 병목이었다"
+      },
+      {
+        "id": "i5",
+        "text": "생성 pipeline의 각 단계와 데이터 분포를 부록까지 공개했다"
+      },
+      {
+        "id": "i6",
+        "text": "검색 평가를 ‘정답 문서를 찾았나’에서 ‘행동을 바꿨나’로 넓힌다"
+      },
+      {
+        "id": "ic",
+        "text": "GraphRAG가 아니라 graph로 RAG·agent benchmark를 생성하는 방법이다"
+      },
+      {
+        "id": "ig",
+        "text": "핵심 용어 정리"
+      },
+      {
+        "id": "it",
+        "text": "이 논문을 한 장으로"
+      }
+    ]
+  },
+  {
+    "id": "2609.05339",
+    "topic": "agents",
+    "title": "모델을 바꿔도 에이전트의 기억은 살아남는가",
+    "originalTitle": "Does Your Agent's Memory Survive a Model Upgrade? A Controlled Study of Memory Portability",
+    "summary": "에이전트 memory는 파일이 아니라 writer·embedding·schema의 버전 계약이며, 원문이 없으면 완전 복구가 어렵다.",
+    "intro": "memory migration은 파일 복사가 아니다. 자연어 note는 작성 모델, RAG는 embedding 공간, fixed KG는 schema 에 각각 묶이며, 손실 단계에 맞는 복구와 원문 보존이 필요하다.",
+    "authors": "Ankit Goyal · Jaideep Ray",
+    "venue": "arXiv preprint, under review",
+    "sourceUrl": "https://arxiv.org/abs/2609.05339",
+    "pdfUrl": "https://arxiv.org/pdf/2609.05339",
+    "collectedOn": "2026-09-09",
+    "tags": [],
+    "practical": "",
+    "keyPoints": [],
+    "headings": [
+      {
+        "id": "m1",
+        "text": "모델만 바꿨는데 기억이 사라질 수 있다"
+      },
+      {
+        "id": "m2",
+        "text": "원문, vector index, 자연어 note, fixed KG는 실패 위치가 다르다"
+      },
+      {
+        "id": "m3",
+        "text": "48개 history와 무작위 정답 코드로 외부 지식의 요행을 막았다"
+      },
+      {
+        "id": "m4",
+        "text": "KG는 안정적이었고 NOTES는 방향 의존적이며 mixed index는 절반짜리 수리였다"
+      },
+      {
+        "id": "m5",
+        "text": "NOTES는 쓸 때 잃고, RAG는 찾을 때 잃었다"
+      },
+      {
+        "id": "m6",
+        "text": "memory에는 writer·embedding·schema 버전을 함께 저장해야 한다"
+      },
+      {
+        "id": "mc",
+        "text": "RAG와 fixed KG memory를 비교하지만 GraphRAG 논문은 아니다"
+      },
+      {
+        "id": "mg",
+        "text": "핵심 용어 정리"
+      },
+      {
+        "id": "mt",
+        "text": "이 논문을 한 장으로"
+      }
+    ]
+  },
+  {
+    "id": "2609.05110",
+    "topic": "retrieval",
+    "title": "검색 결과가 틀렸다면 문서 벡터만 조금 고친다",
+    "originalTitle": "Embedding Surgery: Localized Updates for Adaptive Ranking Correction in Dense Retrieval",
+    "summary": "Dense retriever 전체를 재학습하거나 수백만 문서를 재색인하지 않고, 피드백과 충돌한 document embedding만 최소한으로 이동 해 원하는 ranking을 만든다. HNSW·IVF에서 대규모 in-place overwrite의 부작용도 측정했다.",
+    "intro": "Dense retriever 전체를 재학습하거나 수백만 문서를 재색인하지 않고, 피드백과 충돌한 document embedding만 최소한으로 이동 해 원하는 ranking을 만든다. HNSW·IVF에서 대규모 in-place overwrite의 부작용도 측정했다.",
+    "authors": "Maddalena Amendola, Antonio Mallia, Raffaele Perego",
+    "venue": "CIKM 2026 · Accepted",
+    "sourceUrl": "https://arxiv.org/abs/2609.05110",
+    "pdfUrl": "https://arxiv.org/pdf/2609.05110",
+    "collectedOn": "2026-09-08",
+    "tags": [],
+    "practical": "",
+    "keyPoints": [
+      "특정 ranking 오류를 문서 embedding의 최소 이동 으로 바로잡는다.",
+      "CIKM 2026 채택 논문이며 4개 retriever와 7개 IR benchmark를 평가했다.",
+      "Editorial +60.64%는 DL-Hard 한 조건의 상대 nDCG 향상이다.",
+      "18만여 벡터를 덮어써도 held-out HNSW·IVF 품질 변화는 작았다.",
+      "정말 쉽게: 검색기 전체를 다시 배우게 하지 않고, 잘못 놓인 책의 좌표 스티커만 살짝 고친다."
+    ],
+    "headings": [
+      {
+        "id": "c1",
+        "text": "검색기가 틀렸을 때 모델 전체를 다시 학습하지 않는다"
+      },
+      {
+        "id": "c2",
+        "text": "원하는 순서를 만족하는 범위에서 이동량을 최소화한다"
+      },
+      {
+        "id": "c3",
+        "text": "무엇이 위여야 하는지는 외부 피드백이 알려 준다"
+      },
+      {
+        "id": "c4",
+        "text": "정답 피드백에서는 크게 오르지만, 실전 신호의 이득은 더 작다"
+      },
+      {
+        "id": "c5",
+        "text": "18만여 벡터를 덮어써도 HNSW와 IVF의 검색 품질은 거의 유지됐다"
+      },
+      {
+        "id": "c6",
+        "text": "빠른 핫픽스에는 맞지만, 진실을 판정하는 장치는 아니다"
+      },
+      {
+        "id": "class",
+        "text": "ANN vector graph 계열이며 지식 그래프 RAG가 아니다"
+      },
+      {
+        "id": "gloss",
+        "text": "핵심 용어 정리"
+      },
+      {
+        "id": "take",
+        "text": "이 논문을 한 장으로"
+      }
+    ]
+  },
+  {
+    "id": "2609.04647",
+    "topic": "retrieval",
+    "title": "질문과 닮은 문단보다 서로 이어지는 문단을 고른다",
+    "originalTitle": "CAGE: Coherence-Aware Graph Encoding for Retrieval-Augmented Generation",
+    "summary": "각 passage를 관계 그래프로 바꾸고, 후보 문단들이 서로 같은 대상·추론 다리·양립 가능한 사실을 이루는지 를 query relevance와 함께 계산한다. Bridge 중심 benchmark에서는 좋아졌지만 구조가 같은 거짓 주장에는 약했다.",
+    "intro": "각 passage를 관계 그래프로 바꾸고, 후보 문단들이 서로 같은 대상·추론 다리·양립 가능한 사실을 이루는지 를 query relevance와 함께 계산한다. Bridge 중심 benchmark에서는 좋아졌지만 구조가 같은 거짓 주장에는 약했다.",
+    "authors": "Tong Qi, Jingyu Wu, Youbing Yin, Spencer Hong, Daben Liu, Erin Babinsky",
+    "venue": "arXiv · 2026",
+    "sourceUrl": "https://arxiv.org/abs/2609.04647",
+    "pdfUrl": "https://arxiv.org/pdf/2609.04647",
+    "collectedOn": "2026-09-08",
+    "tags": [],
+    "practical": "",
+    "keyPoints": [
+      "각 문단 점수뿐 아니라 검색된 문단들 사이의 구조적 coherence 를 본다.",
+      "2Wiki Recall@5는 Vanilla 80.4에서 CAGE 85.4로 +5.0p였다.",
+      "HotpotQA Llama EM은 coherence term으로 +4.4p였지만 F1은 −0.3p였다.",
+      "RAMDocs의 모양이 비슷한 거짓 주장은 잡지 못해 NLI 보완이 필요하다.",
+      "정말 쉽게: 질문과 닮은 퍼즐 조각뿐 아니라 서로 실제로 이어지는 조각을 고른다."
+    ],
+    "headings": [
+      {
+        "id": "c1",
+        "text": "좋은 문단 다섯 개를 모아도 함께 읽으면 모순일 수 있다"
+      },
+      {
+        "id": "c2",
+        "text": "같은 대상·잡음 억제·다리·모순 없음"
+      },
+      {
+        "id": "c3",
+        "text": "각 문단을 관계 그래프로 바꾸고, 그래프끼리 닮은 정도를 섞는다"
+      },
+      {
+        "id": "c4",
+        "text": "2Wiki에서 가장 컸고, 적대적 모순 데이터에서는 손해를 봤다"
+      },
+      {
+        "id": "c5",
+        "text": "완전 정답은 늘었지만 부분 단어 점수는 항상 오르지 않았다"
+      },
+      {
+        "id": "c6",
+        "text": "관계 구조를 구별할 수 있다는 이론이, 사실의 진위를 보장하지는 않는다"
+      },
+      {
+        "id": "appendix",
+        "text": "부록은 어디서 이기고 실패하는지 구체적으로 보여 준다"
+      },
+      {
+        "id": "class",
+        "text": "기타 graph-based RAG 재랭킹이며 Microsoft·Hippo 계열은 아니다"
+      },
+      {
+        "id": "gloss",
+        "text": "핵심 용어 정리"
+      },
+      {
+        "id": "take",
+        "text": "이 논문을 한 장으로"
+      }
+    ]
+  },
+  {
+    "id": "2608.31082",
+    "topic": "agents",
+    "title": "질문할수록 스스로 구조화되는 에이전트 검색",
+    "originalTitle": "Agentic Context Cracking: Token-Efficient Data Reasoning Agents via Adaptive Structuring of Unstructured Data",
+    "summary": "긴 문서를 다시 여는 비용을 한 번의 구조화 투자로 바꾼다. 현재 질문 때문에 이미 읽은 문서에서 미래에 재사용할 사실까지 추출 해, 관련 질문이 반복될수록 원문 prefill을 피하는 방식이다.",
+    "intro": "긴 문서를 다시 여는 비용을 한 번의 구조화 투자로 바꾼다. 현재 질문 때문에 이미 읽은 문서에서 미래에 재사용할 사실까지 추출 해, 관련 질문이 반복될수록 원문 prefill을 피하는 방식이다.",
+    "authors": "Milad Rezaei Hajidehi, Qitong Wang, Stratos Idreos",
+    "venue": "arXiv v2 · 2026",
+    "sourceUrl": "https://arxiv.org/abs/2608.31082",
+    "pdfUrl": "https://arxiv.org/pdf/2608.31082",
+    "collectedOn": "2026-09-08",
+    "tags": [],
+    "practical": "",
+    "keyPoints": [
+      "에이전트가 이미 연 문서에서 미래에 쓸 구조도 함께 추출 한다.",
+      "FanOutQA 평균 비용은 0.26달러에서 0.12달러로 줄었고 정확도 차이는 유의하지 않았다.",
+      "절감은 관련 질문의 문서·개체 재사용이 있을 때 생긴다.",
+      "평가는 관련 질문으로 저장소를 미리 데운 조건이며 실제 장기 로그는 아니다.",
+      "정말 쉽게: 한 번 펼친 책에서 다음에 물을 법한 답도 카드로 적어 두는 시스템이다."
+    ],
+    "headings": [
+      {
+        "id": "c1",
+        "text": "정답은 짧은데, 찾느라 수십만 토큰을 다시 읽는다"
+      },
+      {
+        "id": "c2",
+        "text": "미리 전부 구조화하지 않고, 필요해서 연 문서만 조금 더 캐낸다"
+      },
+      {
+        "id": "c3",
+        "text": "답하는 길과 카드 쓰는 길을 같은 읽기 지점에서 갈라낸다"
+      },
+      {
+        "id": "c4",
+        "text": "비용은 크게 줄었지만, 반복 질문을 인위적으로 만들어 준 실험이다"
+      },
+      {
+        "id": "c5",
+        "text": "아이디어는 강하지만 장기·기업 환경의 증거는 아직 없다"
+      },
+      {
+        "id": "class",
+        "text": "그래프를 저장하지만 Microsoft GraphRAG나 HippoRAG는 아니다"
+      },
+      {
+        "id": "gloss",
+        "text": "핵심 용어 정리"
+      },
+      {
+        "id": "take",
+        "text": "이 논문을 한 장으로"
+      }
+    ]
+  },
+  {
+    "id": "2609.03311",
+    "topic": "retrieval",
+    "title": "문서를 한 번만 읽고 재사용하는 LLM 재랭커",
+    "originalTitle": "DoPR: Reusable Compressed Document Prefixes for Efficient LLM Reranking",
+    "summary": "DoPR은 문서 핵심 표현을 다층 KV prefix로 미리 계산해 질의가 바뀌어도 재사용한다. Qwen3 0.6B–8B에서 온라인 문서 메모리를 8배 줄이고 최대 8.04배 빠르게 만들면서, 대응하는 전체 문서 재랭커 평균 NDCG@10의 97.1–99.5%를 유지했다.",
+    "intro": "DoPR은 문서 핵심 표현을 다층 KV prefix로 미리 계산해 질의가 바뀌어도 재사용한다. Qwen3 0.6B–8B에서 온라인 문서 메모리를 8배 줄이고 최대 8.04배 빠르게 만들면서, 대응하는 전체 문서 재랭커 평균 NDCG@10의 97.1–99.5%를 유지했다.",
+    "authors": "Beiya Dai, Yifan Wei, Guang Yang, Xing Shi, Xinbing Wang, Zhouhan Lin",
+    "venue": "arXiv 2026 · cs.IR",
+    "sourceUrl": "https://arxiv.org/abs/2609.03311",
+    "pdfUrl": "https://arxiv.org/pdf/2609.03311",
+    "collectedOn": "2026-09-07",
+    "tags": [],
+    "practical": "",
+    "keyPoints": [
+      "기존 pointwise LLM 재랭커는 같은 문서를 질의마다 반복 인코딩한다.",
+      "DoPR은 문서 핵심 토큰을 다층 KV prefix로 오프라인 저장해 재사용한다.",
+      "표준 데이터셋 평균 NDCG@10 보존율은 모델 크기에 따라 97.1–99.5%였다.",
+      "온라인 문서 메모리는 8배 줄었고 Covid의 Qwen3-8B 지연은 최대 8.04배 단축됐다.",
+      "긴 문서와 반복 조회일수록 오프라인 비용 상각 효과가 크다.",
+      "Llama-3.2와 추가 BEIR에서도 평가해 백본·데이터셋 일반화를 보였다.",
+      "동적 문서나 낮은 재사용률에서는 prefix 생성·저장 비용이 이득을 상쇄할 수 있다."
+    ],
+    "headings": [
+      {
+        "id": "c1",
+        "text": "재랭커는 같은 문서를 질문이 바뀔 때마다 다시 읽는다"
+      },
+      {
+        "id": "c2",
+        "text": "문서의 핵심 토큰을 여러 층의 KV prefix로 미리 저장한다"
+      },
+      {
+        "id": "c3",
+        "text": "문서 토큰을 8분의 1로 줄여도 큰 모델에서는 순위 품질이 거의 유지됐다"
+      },
+      {
+        "id": "c4",
+        "text": "긴 문서와 반복 조회에서 오프라인 비용을 빠르게 상각한다"
+      },
+      {
+        "id": "c5",
+        "text": "효율은 공짜가 아니라 저장공간과 문서 재사용을 전제로 한다"
+      },
+      {
+        "id": "gloss",
+        "text": "핵심 용어 정리"
+      },
+      {
+        "id": "take",
+        "text": "이 논문을 한 장으로"
+      }
+    ]
+  },
+  {
+    "id": "2609.03201",
+    "topic": "agents",
+    "title": "기억을 지우지 않고 최신 상태와 과거를 함께 관리하기",
+    "originalTitle": "MemoryLACE: Memory Lifecycle-Aware Consolidation and Evidence Retrieval",
+    "summary": "MemoryLACE는 텍스트 기억을 지우거나 거대한 지식 그래프로 바꾸지 않고 병합·대체·모순의 희소 관계 를 덧붙인다. 활성 기억을 먼저 찾은 뒤 과거·충돌 증거를 확장해, BEAM 부분집합에서 같은 백본 기준 최고 평균과 Hindsight 대비 2.99배 속도를 보였다.",
+    "intro": "MemoryLACE는 텍스트 기억을 지우거나 거대한 지식 그래프로 바꾸지 않고 병합·대체·모순의 희소 관계 를 덧붙인다. 활성 기억을 먼저 찾은 뒤 과거·충돌 증거를 확장해, BEAM 부분집합에서 같은 백본 기준 최고 평균과 Hindsight 대비 2.99배 속도를 보였다.",
+    "authors": "Meriem Yacoubi, Pia Schmidt, Nenad Petrovic, Ahmed Frikha, Martin Kirchhoff, Alois Knoll",
+    "venue": "arXiv 2026 · cs.CL",
+    "sourceUrl": "https://arxiv.org/abs/2609.03201",
+    "pdfUrl": "https://arxiv.org/pdf/2609.03201",
+    "collectedOn": "2026-09-07",
+    "tags": [],
+    "practical": "",
+    "keyPoints": [
+      "장기 메모리는 비슷한 문장 검색뿐 아니라 현재·과거·모순의 상태 를 구분해야 한다.",
+      "원문 기억은 보존하고 merge·supersession·contradiction 관계만 희소하게 추가한다.",
+      "활성 기억을 먼저 검색한 다음 관계를 따라 과거와 충돌 증거를 확장한다.",
+      "Qwen3.5-9B의 BEAM 종합 점수는 51.9로 비교 시스템 중 가장 높았다.",
+      "Hindsight 대비 전체 처리시간은 22시간 30분에서 7시간 31분으로 줄었다.",
+      "StructMemEval의 상태·트리 과제는 100%였지만 카운팅은 0%, 추천은 8.33%였다.",
+      "작은 부분집합과 자동 판정 의존 때문에 실제 장기 배포 효과는 추가 검증이 필요하다."
+    ],
+    "headings": [
+      {
+        "id": "c1",
+        "text": "장기 메모리는 ‘비슷한 문장 찾기’만으로 부족하다"
+      },
+      {
+        "id": "c2",
+        "text": "새 기억 하나를 가까운 후보와만 비교해 관계를 붙인다"
+      },
+      {
+        "id": "c3",
+        "text": "현재 기억을 먼저 찾고, 그 기억의 과거와 충돌 근거를 따라간다"
+      },
+      {
+        "id": "c4",
+        "text": "같은 백본끼리 비교해 평균 성능과 처리시간에서 이득을 보였다"
+      },
+      {
+        "id": "c5",
+        "text": "핵심 이득은 관계를 저장하는 것보다 검색 때 다시 펼치는 데서 컸다"
+      },
+      {
+        "id": "gloss",
+        "text": "핵심 용어 정리"
+      },
+      {
+        "id": "take",
+        "text": "이 논문을 한 장으로"
+      }
+    ]
+  },
+  {
+    "id": "2609.02894",
+    "topic": "retrieval",
+    "title": "비싼 그래프 RAG는 필요한 질문에만",
+    "originalTitle": "R²Adapter: A Routing and Rewriting Adapter for Efficient Hybrid RAG",
+    "summary": "R²Adapter는 작은 라우터로 질문을 바닐라 RAG와 그래프 RAG 사이에 배분하고, 애매한 그래프 질문만 관계 연쇄로 다시 쓴다. 세 다단계 QA 데이터셋에서 그래프 호출을 최대 59% 줄이면서 평균 답변 성능을 유지하거나 개선 했다.",
+    "intro": "R²Adapter는 작은 라우터로 질문을 바닐라 RAG와 그래프 RAG 사이에 배분하고, 애매한 그래프 질문만 관계 연쇄로 다시 쓴다. 세 다단계 QA 데이터셋에서 그래프 호출을 최대 59% 줄이면서 평균 답변 성능을 유지하거나 개선 했다.",
+    "authors": "Yucan Guo, Miao Su, Saiping Guan, Long Bai, Zhongni Hou, Zixuan Li, Xiaolong Jin, Jiafeng Guo, Xueqi Cheng",
+    "venue": "arXiv 2026 · cs.CL",
+    "sourceUrl": "https://arxiv.org/abs/2609.02894",
+    "pdfUrl": "https://arxiv.org/pdf/2609.02894",
+    "collectedOn": "2026-09-07",
+    "tags": [],
+    "practical": "",
+    "keyPoints": [
+      "간단한 질문은 빠른 바닐라 RAG, 관계 추론이 필요한 질문은 그래프 RAG로 보낸다.",
+      "라우터는 LLM 호출 대신 DeBERTa-v3-base로 구현해 평균 16ms가 걸렸다.",
+      "14,969개 질문을 두 검색기에 실제로 넣은 결과로 라우팅 라벨을 만들었다.",
+      "HippoRAG 2 조합은 세 데이터셋 평균 F1 66.9로 단독 65.8보다 높았다.",
+      "GraphRAG 조합에서는 그래프 경로 사용을 최대 59% 줄였다.",
+      "재작성은 recall보다 답변 정확도에 더 크게 기여해 구조 정렬 효과 를 시사한다.",
+      "다른 검색기·도메인에서는 라우터 재학습이 필요할 수 있다."
+    ],
+    "headings": [
+      {
+        "id": "c1",
+        "text": "왜 RAG를 두 종류로 나누는가"
+      },
+      {
+        "id": "c2",
+        "text": "작은 라우터로 먼저 고르고, 애매할 때만 질문을 다시 쓴다"
+      },
+      {
+        "id": "c3",
+        "text": "그래프 호출을 줄이면서 평균 답변 점수는 지켰다"
+      },
+      {
+        "id": "c4",
+        "text": "재작성의 이득은 ‘더 많이 찾기’보다 ‘관계를 더 잘 보여주기’에 가깝다"
+      },
+      {
+        "id": "c5",
+        "text": "플러그인이지만 학습 환경과 완전히 독립적인 것은 아니다"
+      },
+      {
+        "id": "gloss",
+        "text": "핵심 용어 정리"
+      },
+      {
+        "id": "take",
+        "text": "이 논문을 한 장으로"
+      }
+    ]
+  },
+  {
+    "id": "2609.02143",
+    "topic": "retrieval",
+    "title": "그래프 기반 벡터 검색은 언제 로그가 아니라 멱법칙으로 커지는가",
+    "originalTitle": "A Power Law in Logarithm's Clothing: On the Scalability of Graph-Based Vector Search",
+    "summary": "고정 recall에서 HNSW·Vamana의 검색 비용은 현실적 규모의 대부분에서 로그가 아니라 부분선형 멱법칙 N^c 으로 증가한다. 데이터가 기저 분포를 충분히 조밀하게 표본화한 뒤에야 부분다항식·다중로그 구간으로 꺾인다.",
+    "intro": "고정 recall에서 HNSW·Vamana의 검색 비용은 현실적 규모의 대부분에서 로그가 아니라 부분선형 멱법칙 N^c 으로 증가한다. 데이터가 기저 분포를 충분히 조밀하게 표본화한 뒤에야 부분다항식·다중로그 구간으로 꺾인다.",
+    "authors": "Sajad Faghfoor Maghrebi, Navid Eslami, Niv Dayan",
+    "venue": "arXiv 2026 · cs.DB",
+    "sourceUrl": "https://arxiv.org/abs/2609.02143",
+    "pdfUrl": "https://arxiv.org/pdf/2609.02143",
+    "collectedOn": "2026-09-04",
+    "tags": [],
+    "practical": "",
+    "keyPoints": [
+      "그래프 ANN의 로그 검색 비용 통념을 고정 recall 실험으로 다시 검증했다.",
+      "8개 데이터셋, recall 90–99%, 여러 설정에서 현실적 규모는 N^c 멱법칙을 따랐다.",
+      "SpaceV와 OpenAI 데이터에서는 큰 규모에서 증가세가 멱법칙 아래로 꺾였다.",
+      "국소 내재 차원의 성장과 포화가 멱법칙·부분다항식 구간을 하나로 설명한다.",
+      "질의 지수 모델 평균 R²≈0.88, ef_search 비용 적합도 R²>0.98, 삽입 모델 R²≥0.92였다.",
+      "결론은 평균 거리 계산·고정 recall에 관한 것이며 실제 지연시간과 모든 인덱스 구현을 보장하지 않는다."
+    ],
+    "headings": [
+      {
+        "id": "c1",
+        "text": "HNSW 검색은 정말 로그 비용으로 커지는가"
+      },
+      {
+        "id": "c2",
+        "text": "현재 규모에서는 비용이 N^c의 부분선형 멱법칙을 따른다"
+      },
+      {
+        "id": "c3",
+        "text": "국소 내재 차원이 두 비용 구간을 연결한다"
+      },
+      {
+        "id": "c4",
+        "text": "recall과 구성 파라미터로 성장 지수를 예측한다"
+      },
+      {
+        "id": "c5",
+        "text": "운영자는 로그 가정 대신 자신의 데이터 성장 곡선을 재야 한다"
+      },
+      {
+        "id": "gloss",
+        "text": "핵심 용어 정리"
+      },
+      {
+        "id": "take",
+        "text": "이 논문을 한 장으로"
+      }
+    ]
+  },
+  {
+    "id": "2609.02074",
+    "topic": "agents",
+    "title": "장기 에이전트의 실패를 계획과 실행 기억으로 나눠 배우기",
+    "originalTitle": "CHIME: Credit-Aware Hierarchical Memory Evolution for Long-Horizon Agentic Planning",
+    "summary": "CHIME은 실패 경험을 저장하기 전에 책임을 계획과 실행 층으로 귀속 하고, 가치가 높은 기억만 진화시킨다. 네 벤치마크에서 강한 기준선보다 평균 2.96·3.68점 높으면서 메모리는 129개만 유지했다.",
+    "intro": "CHIME은 실패 경험을 저장하기 전에 책임을 계획과 실행 층으로 귀속 하고, 가치가 높은 기억만 진화시킨다. 네 벤치마크에서 강한 기준선보다 평균 2.96·3.68점 높으면서 메모리는 129개만 유지했다.",
+    "authors": "Yongshi Ye, Tian Lan, Feihu Jiang, Muyang Ye, Bin Zhu, Qianghuai Jia, Longyue Wang, Zhao Xu, Weihua Luo, Xiaodong Shi",
+    "venue": "arXiv 2026 · cs.AI",
+    "sourceUrl": "https://arxiv.org/abs/2609.02074",
+    "pdfUrl": "https://arxiv.org/pdf/2609.02074",
+    "collectedOn": "2026-09-04",
+    "tags": [],
+    "practical": "",
+    "keyPoints": [
+      "실패를 저장하기 전에 원인을 계획·실행·둘 다·둘 다 아님 으로 귀속한다.",
+      "네 벤치마크에서 강한 기준선보다 평균 2.96·3.68점 높았다.",
+      "129개 메모리로 A-MapReduce의 3,585개보다 훨씬 작은 기억 은행을 유지했다.",
+      "고가치 기억 정확도는 계획 21.7→50.8%, 실행 23.7→35.4%로 올랐다.",
+      "귀속 안정성은 87.8–97.9%, 실패 구제율은 56.3–67.6%였다.",
+      "교차 벤치마크 전이는 약하고 백본의 근본 능력 한계는 메모리로 넘지 못한다."
+    ],
+    "headings": [
+      {
+        "id": "c1",
+        "text": "실패 한 번을 통째로 저장하면 잘못된 교훈이 쌓인다"
+      },
+      {
+        "id": "c2",
+        "text": "귀속 게이트 뒤에 계층 메모리와 가치 기반 진화를 둔다"
+      },
+      {
+        "id": "c3",
+        "text": "강한 기준선보다 평균 2.96·3.68점 높았다"
+      },
+      {
+        "id": "c4",
+        "text": "귀속은 대체로 안정적이고 실패의 절반 이상을 구했다"
+      },
+      {
+        "id": "c5",
+        "text": "메모리는 백본이 할 수 없는 일을 대신하지 못한다"
+      },
+      {
+        "id": "gloss",
+        "text": "핵심 용어 정리"
+      },
+      {
+        "id": "take",
+        "text": "이 논문을 한 장으로"
+      }
+    ]
+  },
+  {
+    "id": "2609.02056",
+    "topic": "retrieval",
+    "title": "과학 지식 그래프에서 비용과 근거를 함께 통제하는 가설 발견",
+    "originalTitle": "HyGRAIL: Cost-Aware and Evidence-Grounded Scientific Hypothesis Discovery over Knowledge Graphs",
+    "summary": "HyGRAIL은 지식 그래프의 후보 링크를 GNN으로 선별하고, 애매한 45.64%만 양쪽 그래프 증거와 함께 LLM이 검토 하게 한다. 최고 F1은 0.429지만, 이는 과학적 참의 확정이 아니라 후속 검증 후보의 우선순위다.",
+    "intro": "HyGRAIL은 지식 그래프의 후보 링크를 GNN으로 선별하고, 애매한 45.64%만 양쪽 그래프 증거와 함께 LLM이 검토 하게 한다. 최고 F1은 0.429지만, 이는 과학적 참의 확정이 아니라 후속 검증 후보의 우선순위다.",
+    "authors": "Yihang Sun, Zhihan Zhu, Zhiyuan Jiang, Jingyi Ge, Zixuan Li, Jiaxuan You",
+    "venue": "arXiv 2026 · cs.AI / cs.LG",
+    "sourceUrl": "https://arxiv.org/abs/2609.02056",
+    "pdfUrl": "https://arxiv.org/pdf/2609.02056",
+    "collectedOn": "2026-09-04",
+    "tags": [],
+    "practical": "",
+    "keyPoints": [
+      "지식 그래프의 누락 링크를 검증할 후보 가설 로 다룬다.",
+      "GNN이 쉬운 후보를 처리하고 평균 45.64%만 LLM에 보낸다.",
+      "R-GCN+Qwen3-4B의 최고 F1은 0.429였다.",
+      "양쪽 끝점 증거는 한쪽 증거보다 F1을 0.222·0.152 높였다.",
+      "증거를 더 많이 넣는다고 항상 좋아지지 않아 선택적 검색이 중요하다.",
+      "폐쇄세계 음성과 한 도메인 평가 때문에 과학적 참이나 일반성을 직접 증명하지는 않는다."
+    ],
+    "headings": [
+      {
+        "id": "c1",
+        "text": "지식 그래프의 빈 링크를 과학 가설 후보로 본다"
+      },
+      {
+        "id": "c2",
+        "text": "쉬운 후보는 GNN이, 애매한 후보만 LLM이 본다"
+      },
+      {
+        "id": "c3",
+        "text": "최고 F1 0.429, LLM 호출은 평균 45.64%였다"
+      },
+      {
+        "id": "c4",
+        "text": "시간 분할과 타입별 증거 스키마를 명시했다"
+      },
+      {
+        "id": "c5",
+        "text": "높은 분류 점수는 과학적 발견의 확정이 아니다"
+      },
+      {
+        "id": "gloss",
+        "text": "핵심 용어 정리"
+      },
+      {
+        "id": "take",
+        "text": "이 논문을 한 장으로"
+      }
+    ]
+  },
+  {
+    "id": "2609.01658",
+    "topic": "retrieval",
+    "title": "검색 과정의 매 단계를 보상해 더 믿을 만한 RAG 만들기",
+    "originalTitle": "PRO-Step: Step-level Process Reward Optimization for Retrieval-Augmented Generation",
+    "summary": "PRO-Step은 RAG의 최종 답만 보상하지 않고 각 추론·검색 단계의 논리성과 근거 정합성 을 판정한다. 5개 QA 평균에서 Search-R1보다 EM 2.5점·F1 3.4점 높았지만, 추론 단계의 낮은 심사 일치도는 중요한 한계다.",
+    "intro": "PRO-Step은 RAG의 최종 답만 보상하지 않고 각 추론·검색 단계의 논리성과 근거 정합성 을 판정한다. 5개 QA 평균에서 Search-R1보다 EM 2.5점·F1 3.4점 높았지만, 추론 단계의 낮은 심사 일치도는 중요한 한계다.",
+    "authors": "MinKeon Kim, Namjun Lee, Jaekwang Kim",
+    "venue": "EMNLP 2026 · arXiv cs.CL",
+    "sourceUrl": "https://arxiv.org/abs/2609.01658",
+    "pdfUrl": "https://arxiv.org/pdf/2609.01658",
+    "collectedOn": "2026-09-04",
+    "tags": [],
+    "practical": "",
+    "keyPoints": [
+      "최종 정답만 맞는지 가 아니라 중간 검색과 추론이 근거에 맞는지를 감독한다.",
+      "5개 QA 평균 34.5 EM·44.1 F1로 Search-R1보다 2.5·3.4점 높았다.",
+      "약 5천 시드로 31,728개 궤적·109,664개 단계·15,877개 선호쌍을 만들었다.",
+      "PRM 제거 시 평균 EM 34.5→32.7, F1 44.1→41.9로 떨어졌다.",
+      "사람 일치율은 84%지만 추론 단계 κ=0.12라 판정 신뢰성은 유형별로 다르다.",
+      "MuSiQue에서는 최선 기준선보다 낮았고, 단순 재생성 증강은 성능을 악화시켰다."
+    ],
+    "headings": [
+      {
+        "id": "c1",
+        "text": "최종 정답만 맞아도 중간 검색은 틀릴 수 있다"
+      },
+      {
+        "id": "c2",
+        "text": "판정하고, 가지를 탐색하고, 단계별 선호쌍을 학습한다"
+      },
+      {
+        "id": "c3",
+        "text": "5개 QA에서 평균 34.5 EM·44.1 F1을 기록했다"
+      },
+      {
+        "id": "c4",
+        "text": "5천 개 시드에서 10만 개가 넘는 단계 신호를 만들었다"
+      },
+      {
+        "id": "c5",
+        "text": "좋은 판정기가 필요하고, 재생성 증강은 오히려 해쳤다"
+      },
+      {
+        "id": "gloss",
+        "text": "핵심 용어 정리"
+      },
+      {
+        "id": "take",
+        "text": "이 논문을 한 장으로"
+      }
+    ]
+  },
+  {
+    "id": "2609.02564",
+    "topic": "evaluation",
+    "title": "에이전트 스킬이 정상 선택을 은밀히 조종할 때",
+    "originalTitle": "A Finger on the Scale: Covert Policy Steering through Agentic Skills",
+    "summary": "정상 작업과 출력 형식을 보존하는 스킬도 비교 기준·동률 해소·예시 를 통해 특정 후보를 은밀히 밀 수 있다. SkillShift는 두 과제에서 목표 선택률을 크게 높였고, 검사한 스캐너와 레지스트리는 이 의미 수준의 정책 조종을 대부분 놓쳤다.",
+    "intro": "정상 작업과 출력 형식을 보존하는 스킬도 비교 기준·동률 해소·예시 를 통해 특정 후보를 은밀히 밀 수 있다. SkillShift는 두 과제에서 목표 선택률을 크게 높였고, 검사한 스캐너와 레지스트리는 이 의미 수준의 정책 조종을 대부분 놓쳤다.",
+    "authors": "Jiarui Li, Jiahao Chen, Chunyi Zhou, Yuwen Pu, Oubo Ma, Zhou Feng, Chunqiang Hu, Shouling Ji",
+    "venue": "arXiv 2026 · cs.CR",
+    "sourceUrl": "https://arxiv.org/abs/2609.02564",
+    "pdfUrl": "https://arxiv.org/pdf/2609.02564",
+    "collectedOn": "2026-09-03",
+    "tags": [],
+    "practical": "",
+    "keyPoints": [
+      "재사용 스킬은 기능 묶음이면서 외부화된 행동 정책 이다.",
+      "SkillShift는 Python 63.33%, 쇼핑 81.33% PSR과 100% VR을 기록했다.",
+      "고정 스킬은 여섯 모델 및 두 실제 에이전트 환경으로 전이됐다.",
+      "검사한 여섯 탐지기는 SkillShift를 정상 스킬과 구분하지 못했다.",
+      "레지스트리는 직접 주입에는 더 민감했지만 은밀한 정책 조종은 받아들였다.",
+      "두 도메인·세 번 실행·LLM 품질 심사라는 일반화 한계 를 함께 봐야 한다."
+    ],
+    "headings": [
+      {
+        "id": "c1",
+        "text": "정상 작업을 하면서 선택 기준만 몰래 기울일 수 있다"
+      },
+      {
+        "id": "c2",
+        "text": "검은상자 출력만 보고 은밀한 정책 문구를 진화시킨다"
+      },
+      {
+        "id": "c3",
+        "text": "유효한 답을 유지하면서 목표 선택률은 크게 움직였다"
+      },
+      {
+        "id": "c4",
+        "text": "모델을 바꿔도 전이됐고 기존 스캐너는 은밀한 편향을 놓쳤다"
+      },
+      {
+        "id": "c5",
+        "text": "공격 성공은 보였지만 두 고정 후보 도메인에 한정된다"
+      },
+      {
+        "id": "gloss",
+        "text": "핵심 용어 정리"
+      },
+      {
+        "id": "take",
+        "text": "이 논문을 한 장으로"
+      }
+    ]
+  },
+  {
+    "id": "2609.02371",
+    "topic": "evaluation",
+    "title": "에이전트 실패를 구조화해 원인 단계와 유형을 진단하기",
+    "originalTitle": "Diagnosing with Insights: Structured Analysis of Agent Failures via Behavioral Abstractions",
+    "summary": "AgentScope는 긴 에이전트 로그를 Reasoning-Action Graph 로 바꾸고 실패 유형별 neural invariant를 검사한다. 새 데이터에서 단일 LLM 심사보다 단계 위치와 유형 판정은 크게 좋아졌지만 절대 정확도와 실행 시간에는 여전히 큰 여지가 있다.",
+    "intro": "AgentScope는 긴 에이전트 로그를 Reasoning-Action Graph 로 바꾸고 실패 유형별 neural invariant를 검사한다. 새 데이터에서 단일 LLM 심사보다 단계 위치와 유형 판정은 크게 좋아졌지만 절대 정확도와 실행 시간에는 여전히 큰 여지가 있다.",
+    "authors": "Jiayi Bi, Yanjie Gao, Yuanmin Xie, Liqun Li, Tianyin Xu, Fan Yang, Mao Yang",
+    "venue": "arXiv 2026 · cs.AI",
+    "sourceUrl": "https://arxiv.org/abs/2609.02371",
+    "pdfUrl": "https://arxiv.org/pdf/2609.02371",
+    "collectedOn": "2026-09-03",
+    "tags": [],
+    "practical": "",
+    "keyPoints": [
+      "원시 로그를 한 번에 심사하지 않고 구조화·검사·최종 선택 으로 나눈다.",
+      "303개 AgentErrata 궤적은 위치와 열 가지 실패 유형을 함께 표시한다.",
+      "정확 단계 SLA는 단일 심사의 1.98–3.63%에서 28.38–31.35%로 높아졌다.",
+      "실패 유형 CA는 18.15–20.63%에서 41.58–45.87%로 상승했다.",
+      "20개 궤적의 진단 오버헤드는 약 25–750초였다.",
+      "LLM 판정·합성 오류·결정적 오류 정의 때문에 형식적 보장이나 완전한 정답 으로 보면 안 된다."
+    ],
+    "headings": [
+      {
+        "id": "c1",
+        "text": "긴 에이전트 궤적에서 원인 단계와 증상을 구분한다"
+      },
+      {
+        "id": "c2",
+        "text": "원시 로그를 Reasoning-Action Graph로 바꾼 뒤 불변식을 검사한다"
+      },
+      {
+        "id": "c3",
+        "text": "구조화는 단일 LLM 심사보다 위치와 유형 판정을 크게 높였다"
+      },
+      {
+        "id": "c4",
+        "text": "정확도 향상은 많은 LLM 호출과 긴 지연을 대가로 한다"
+      },
+      {
+        "id": "c5",
+        "text": "303개 인위적 결정 오류는 균형적이지만 실제 실패 분포와 같지는 않다"
+      },
+      {
+        "id": "gloss",
+        "text": "핵심 용어 정리"
+      },
+      {
+        "id": "take",
+        "text": "이 논문을 한 장으로"
+      }
+    ]
+  },
+  {
+    "id": "2608.03729",
+    "topic": "retrieval",
+    "title": "LLM의 지식을 3,845만 트리플로 만들며 동음이의어까지 구분하기",
+    "originalTitle": "Direct Construction of Disambiguated Knowledge Bases from Large Language Models",
+    "summary": "GPTKB 2.0은 LLM에서 직접 지식을 꺼내면서 엔티티·관계·클래스를 생성 중 비중복화 한다. 3,845만 트리플과 159만 엔티티를 만들었지만, 개별 사실의 출처가 없는 ‘모델 믿음의 구조화’라는 경계를 유지해야 한다.",
+    "intro": "GPTKB 2.0은 LLM에서 직접 지식을 꺼내면서 엔티티·관계·클래스를 생성 중 비중복화 한다. 3,845만 트리플과 159만 엔티티를 만들었지만, 개별 사실의 출처가 없는 ‘모델 믿음의 구조화’라는 경계를 유지해야 한다.",
+    "authors": "Yujia Hu, Tuan-Phong Nguyen, Simon Razniewski",
+    "venue": "arXiv v3 2026 · cs.CL / cs.AI / cs.DB",
+    "sourceUrl": "https://arxiv.org/abs/2608.03729",
+    "pdfUrl": "https://arxiv.org/pdf/2608.03729",
+    "collectedOn": "2026-09-03",
+    "tags": [],
+    "practical": "",
+    "keyPoints": [
+      "LLM 지식 추출의 핵심 병목을 문자열이 아닌 실체 식별 로 본다.",
+      "출처 트리플과 생성 설명을 이용한 두 단계 NED를 적용한다.",
+      "최종 결과는 엔티티 1,592,185개와 트리플 38,450,135개다.",
+      "구축에는 활성 70일, API 4,770만 회, 6,992달러가 들었다.",
+      "표본 평가에서 병합·분할·사실성은 대체로 90% 이상이었다.",
+      "트리플별 근거·최신성이 없어 사실 KB가 아니라 모델 믿음의 근사치 로 읽어야 한다."
+    ],
+    "headings": [
+      {
+        "id": "c1",
+        "text": "문자열은 실체가 아니다"
+      },
+      {
+        "id": "c2",
+        "text": "출처 트리플과 설명을 두 차례 써서 엔티티를 비중복화한다"
+      },
+      {
+        "id": "c3",
+        "text": "70일 동안 4,770만 API 호출로 3,845만 트리플을 만들었다"
+      },
+      {
+        "id": "c4",
+        "text": "표본 평가에서 90%대 정확도를 보였지만 표본과 평가자 한계가 있다"
+      },
+      {
+        "id": "c5",
+        "text": "이 KB는 근거가 붙은 사실집이 아니라 모델 믿음의 물질화다"
+      },
+      {
+        "id": "gloss",
+        "text": "핵심 용어 정리"
+      },
+      {
+        "id": "take",
+        "text": "이 논문을 한 장으로"
+      }
+    ]
+  },
+  {
+    "id": "2609.01095",
+    "topic": "engineering",
+    "title": "코드 지식 그래프로 LLM 과학 프로그램을 실행 가능하게 만들기",
+    "originalTitle": "Reliable LLM-Generated Programs for High-Energy Physics Experiments through Graph-Grounded Software Knowledge",
+    "summary": "ROOT 코드베이스의 의존·포함·상속 관계를 그래프로 정리하고 완성된 예제와 실행 피드백을 함께 주면, 강한 코딩 에이전트에서도 명시적 소프트웨어 지식이 추가 이득 을 준다. 275개 과제에서 1차 실행률과 최종 성공률이 두 오케스트레이션 모두 상승했다.",
+    "intro": "ROOT 코드베이스의 의존·포함·상속 관계를 그래프로 정리하고 완성된 예제와 실행 피드백을 함께 주면, 강한 코딩 에이전트에서도 명시적 소프트웨어 지식이 추가 이득 을 준다. 275개 과제에서 1차 실행률과 최종 성공률이 두 오케스트레이션 모두 상승했다.",
+    "authors": "Yue Sun, Tong Liu, Yipu Liao, Jingde Chen, Ke Li",
+    "venue": "arXiv 2026 · cs.SE / hep-ex",
+    "sourceUrl": "https://arxiv.org/abs/2609.01095",
+    "pdfUrl": "https://arxiv.org/pdf/2609.01095",
+    "collectedOn": "2026-09-02",
+    "tags": [],
+    "practical": "",
+    "keyPoints": [
+      "코드 그래프+완성된 예제+실행 피드백 을 서로 다른 그라운딩 층으로 사용한다.",
+      "275개 ROOT 과제에서 첫 실행률이 58.5%→76.0%, 51.3%→64.0%로 올랐다.",
+      "최종 성공률도 90.5%→96.0%, 78.9%→90.9%로 상승했다.",
+      "Error-RAG는 동일한 113개 1차 실패에서 직접 오류 피드백보다 수리 성공률이 18.6%p 높았다.",
+      "토큰은 65.9%·111.5% 더 쓰지만, 성공 1건당 비용 증가는 1.3%·3.2%였다.",
+      "ROOT 밖의 코드베이스로 전이된다는 점은 아직 실험하지 않았다."
+    ],
+    "headings": [
+      {
+        "id": "c1",
+        "text": "과학 코드는 문법보다 소프트웨어 관계에서 무너진다"
+      },
+      {
+        "id": "c2",
+        "text": "구조, 완성된 예제, 실행 오류를 서로 다른 근거로 쓴다"
+      },
+      {
+        "id": "c3",
+        "text": "첫 실행부터 최종 성공까지 두 오케스트레이션에서 모두 개선됐다"
+      },
+      {
+        "id": "c4",
+        "text": "토큰은 더 많이 쓰지만, 성공 1건당 생성 비용은 거의 같다"
+      },
+      {
+        "id": "c5",
+        "text": "결과는 ROOT에서 강하지만, 일반 코드베이스로의 전이는 아직 가설이다"
+      },
+      {
+        "id": "gloss",
+        "text": "핵심 용어 정리"
+      },
+      {
+        "id": "take",
+        "text": "이 논문을 한 장으로"
+      }
+    ]
+  },
+  {
+    "id": "2609.01090",
+    "topic": "evaluation",
+    "title": "AI 모델에 대한 발견을 쌓는 검색형 카탈로그",
+    "originalTitle": "Modelpedia: A Catalog of Model Findings for the Meta-Science of AI",
+    "summary": "Modelpedia는 논문 속의 모델 행동·실패 발견을 추출해 모델·데이터셋·방법·개념·출처 에 연결한다. ICLR 2024·2025의 972편에서 1,026개 발견을 만들었지만, 이는 재현 검증이 아니라 출처 추적 가능한 지식 색인이다.",
+    "intro": "Modelpedia는 논문 속의 모델 행동·실패 발견을 추출해 모델·데이터셋·방법·개념·출처 에 연결한다. ICLR 2024·2025의 972편에서 1,026개 발견을 만들었지만, 이는 재현 검증이 아니라 출처 추적 가능한 지식 색인이다.",
+    "authors": "Franciszek Bernat et al.",
+    "venue": "arXiv 2026 · cs.LG",
+    "sourceUrl": "https://arxiv.org/abs/2609.01090",
+    "pdfUrl": "https://arxiv.org/pdf/2609.01090",
+    "collectedOn": "2026-09-02",
+    "tags": [],
+    "practical": "",
+    "keyPoints": [
+      "논문 단위가 아니라 발견 단위 로 AI 모델 지식을 누적한다.",
+      "ICLR 2024·2025 채택논문 972편에서 1,026개 발견을 추출했다.",
+      "각 발견은 모델·데이터셋·방법·개념·출처와 연결된다.",
+      "상관 근거가 대부분이고, 폐쇄형 모델의 개입 근거는 거의 없다.",
+      "원문 주장의 참여부를 재검증하지는 않는다. 결과는 색인으로 사용해야 한다."
+    ],
+    "headings": [
+      {
+        "id": "c1",
+        "text": "논문이 쌓여도 모델에 대한 지식은 남지 않는다"
+      },
+      {
+        "id": "c2",
+        "text": "발견 하나를 다섯 개의 근거 노드에 묶는다"
+      },
+      {
+        "id": "c3",
+        "text": "972편에서 1,026개 발견을 만들었다"
+      },
+      {
+        "id": "c4",
+        "text": "상관 근거가 대부분이고, 개입 근거는 드물다"
+      },
+      {
+        "id": "c5",
+        "text": "이 카탈로그는 발견을 모으지만 참인지 재검증하지는 않는다"
+      },
+      {
+        "id": "gloss",
+        "text": "핵심 용어 정리"
+      },
+      {
+        "id": "take",
+        "text": "이 논문을 한 장으로"
+      }
+    ]
+  },
+  {
+    "id": "2609.00052",
+    "topic": "evaluation",
+    "title": "도구 선택 정책으로 에이전트형 LLM API의 신원을 감사하기",
+    "originalTitle": "AgentProv: Auditing Agentic LLM API Providers via Tool-use Policy Probes",
+    "summary": "AgentProv는 자연어 토큰 대신 기능이 같은 도구 중 무엇을 고르는지 의 분포로 LLM API 백본을 비교한다. 36개 체크포인트의 630개 교차 쌍을 모두 탐지했고, 시스템 프롬프트만 바꾼 통제 실험의 오탐률은 7%로 MET 67%, RUT 53%보다 낮았다.",
+    "intro": "AgentProv는 자연어 토큰 대신 기능이 같은 도구 중 무엇을 고르는지 의 분포로 LLM API 백본을 비교한다. 36개 체크포인트의 630개 교차 쌍을 모두 탐지했고, 시스템 프롬프트만 바꾼 통제 실험의 오탐률은 7%로 MET 67%, RUT 53%보다 낮았다.",
+    "authors": "Xun Wang, Bihe Zhao, Michael Backes, Franziska Boenisch, Adam Dziedzic",
+    "venue": "Findings of EMNLP 2026 · cs.CR",
+    "sourceUrl": "https://arxiv.org/abs/2609.00052",
+    "pdfUrl": "https://arxiv.org/pdf/2609.00052",
+    "collectedOn": "2026-09-02",
+    "tags": [],
+    "practical": "",
+    "keyPoints": [
+      "텍스트가 아니라 도구 선택 분포 로 API 모델 신원을 비교한다.",
+      "20개 템플릿×50회로 엔드포인특 1,000개 행동 표본을 만든다.",
+      "36개 체크포인트의 630개 다른 쌍을 모두 거부했고 36개 자기 비교를 모두 수용했다.",
+      "시스템 프롬프트만 바꾼 통제에서 오탐은 AgentProv 7%, MET 67%, RUT 53%였다.",
+      "실제 9개 제3자 API 결과는 백본 진실값이 없으므로 상관 근거로만 해석 해야 한다.",
+      "신뢰할 수 있는 참조가 없는 완전 폐쇄형 모델에는 적용할 수 없고, 결과는 완전한 신원 증명서가 아니다."
+    ],
+    "headings": [
+      {
+        "id": "c1",
+        "text": "API의 모델 이름과 실제 백본이 같은지 텍스트 없이 감사한다"
+      },
+      {
+        "id": "c2",
+        "text": "동일한 기능의 도구 여러 개를 보여주고 선택 편향을 분포로 만든다"
+      },
+      {
+        "id": "c3",
+        "text": "36개 체크포인트의 630개 다른 쌍을 모두 탐지했다"
+      },
+      {
+        "id": "c4",
+        "text": "텍스트 감사는 숨겨진 프롬프트를 모델 교체로 오인하기 쉽다"
+      },
+      {
+        "id": "c5",
+        "text": "AgentProv는 신뢰할 수 있는 참조가 있어야 하며, 완전한 신원 증명서가 아니다"
+      },
+      {
+        "id": "gloss",
+        "text": "핵심 용어 정리"
+      },
+      {
+        "id": "take",
+        "text": "이 논문을 한 장으로"
+      }
+    ]
+  },
+  {
+    "id": "2608.29612",
+    "topic": "retrieval",
+    "title": "LLM은 해석하고, 임베딩은 조직하며, 그래프는 출현한다",
+    "originalTitle": "LLMs Interpret, Embeddings Organize, Graphs Emerge: Agent-Driven Compilation of Scientific Knowledge",
+    "summary": "ASKS는 논문 한 편을 읽고 끝나는 RAG가 아니라, 보존된 원문에서 Wiki와 의미 슬롯을 만들고 검증된 GraphDelta를 누적 그래프에 합치는 지속적 과학 지식 컴파일러 다. 56편의 시간순 ingest에서 낮은 멤버십 변동과 출처 추적 가능한 연구 지도가 형성됐다.",
+    "intro": "ASKS는 논문 한 편을 읽고 끝나는 RAG가 아니라, 보존된 원문에서 Wiki와 의미 슬롯을 만들고 검증된 GraphDelta를 누적 그래프에 합치는 지속적 과학 지식 컴파일러 다. 56편의 시간순 ingest에서 낮은 멤버십 변동과 출처 추적 가능한 연구 지도가 형성됐다.",
+    "authors": "Shi-Ju Ran, Kun Zhang, Xi Wu, Liu-Si Yang, Wen-Jun Li",
+    "venue": "arXiv 2026 · cs.AI",
+    "sourceUrl": "https://arxiv.org/abs/2608.29612",
+    "pdfUrl": "https://arxiv.org/pdf/2608.29612",
+    "collectedOn": "2026-09-01",
+    "tags": [],
+    "practical": "",
+    "keyPoints": [
+      "ASKS는 일회성 retrieval보다 후속 작업이 상속할 지식 상태 의 구축을 목표로 한다.",
+      "원문은 보존하고 Wiki와 의미 슬롯을 별도 계약으로 컴파일한다.",
+      "GraphDelta·원자적 fusion·source origin이 변경과 provenance를 검사 가능하게 만든다.",
+      "56편 궤적에서 18개 Hub, 50/56 mapping, 평균 old-node churn 0.00467이 관찰됐다.",
+      "이는 한 저자 코퍼스의 formation 증거이며 순서 강건성·대조 구성법·다른 도메인 일반화는 아직 남아 있다."
+    ],
+    "headings": [
+      {
+        "id": "c1",
+        "text": "RAG는 지금 질문에 읽을 문서를 찾지만, 컴파일은 다음 연구 작업이 이전 해석과 구조를 물려받게 한다."
+      },
+      {
+        "id": "c2",
+        "text": "LLM은 한 출처를 읽기 좋은 Wiki와 기계용 의미 슬롯으로 해석한다. 두 결과는 같은 원문을 뿌리로 하지만 별도 계약으로 검증된다."
+      },
+      {
+        "id": "c3",
+        "text": "GraphDelta는 현재 논문이 그래프에 만들거나 재사용하려는 변화를 쓰기 전에 보여주는 문서 로컬 중간표현이다."
+      },
+      {
+        "id": "c4",
+        "text": "2010–2026년 56편을 고정 순서로 컴파일하자 18개 Hub가 생겼고 모두 마지막까지 유지됐다. 기존 노드 멤버십 churn 평균은 0.00467이었다."
+      },
+      {
+        "id": "c5",
+        "text": "결과는 56개 로컬 bundle을 먼저 동결한 뒤 빈 그래프에서 fuse하는 2단계 격리 실행으로 만들어졌다."
+      },
+      {
+        "id": "gloss",
+        "text": "핵심 용어 정리"
+      },
+      {
+        "id": "take",
+        "text": "이 논문을 한 장으로"
+      }
+    ]
+  },
+  {
+    "id": "2608.29310",
+    "topic": "engineering",
+    "title": "한 코드베이스를 넘어 여러 앱을 함께 만드는 Super Library Agent",
+    "originalTitle": "Super Library Agent: Joint Generation and Maintenance of Multiple Applications Beyond the Single Codebase",
+    "summary": "관련 앱을 하나씩 따로 만들면 같은 로직과 유지보수 부채가 포트폴리오 전체에 복제된다. SLA-FULL은 후보 안내형 추출과 호출 그래프 기반 마이그레이션 으로 공통 라이브러리를 진화시키면서 기능을 보존하고 코드량·토큰·중복을 줄인다.",
+    "intro": "관련 앱을 하나씩 따로 만들면 같은 로직과 유지보수 부채가 포트폴리오 전체에 복제된다. SLA-FULL은 후보 안내형 추출과 호출 그래프 기반 마이그레이션 으로 공통 라이브러리를 진화시키면서 기능을 보존하고 코드량·토큰·중복을 줄인다.",
+    "authors": "Daegyu Sung, Yukyeong Lee, Geon Park, Yumin Choi, Sung Ju Hwang",
+    "venue": "Findings of EMNLP 2026 · cs.SE",
+    "sourceUrl": "https://arxiv.org/abs/2608.29310",
+    "pdfUrl": "https://arxiv.org/pdf/2608.29310",
+    "collectedOn": "2026-09-01",
+    "tags": [],
+    "practical": "",
+    "keyPoints": [
+      "관련 앱을 독립 생성하면 공통 로직과 변경 비용이 포트폴리오 전체에 복제된다.",
+      "자연어 코드 요약은 표면 유사도보다 기능적 재사용 후보 를 더 잘 찾는다.",
+      "추출 흔적과 호출 그래프가 안전한 cross-codebase migration의 핵심이다.",
+      "WebGen에서 LOC −9.0%, 토큰 −6.7%, Verbosity −38.0%였고 기능 정확도는 유지됐다.",
+      "초기 비용, 실제 장기 유지보수 검증 부족, 공유 오류의 확대 가능성을 함께 봐야 한다."
+    ],
+    "headings": [
+      {
+        "id": "c1",
+        "text": "LLM 코딩 에이전트가 관련 앱을 독립적으로 만들면 공통 로직을 매번 다시 쓰고, 변경도 앱마다 반복해야 한다."
+      },
+      {
+        "id": "c2",
+        "text": "단순 에이전트는 재사용 후보를 놓치고 추출 후 의존성까지 안전하게 바꾸지 못한다. SLA-FULL은 발견과 이주를 분리하고 구조화된 증거를 전달한다."
+      },
+      {
+        "id": "c3",
+        "text": "WebGen-Bench와 PaperBench 모두에서 기능은 유지하면서 코드 크기와 중복 지표가 개선됐다."
+      },
+      {
+        "id": "c4",
+        "text": "SLA-FULL은 단순 UI 조각뿐 아니라 상태·동작 훅과 페이지/도메인 패턴을 더 많이 재사용했다."
+      },
+      {
+        "id": "c5",
+        "text": "공유 라이브러리는 유지보수를 줄이지만 초기 생성 비용은 늘고, 벤치마크는 실제 장기 포트폴리오를 충분히 대변하지 못한다."
+      },
+      {
+        "id": "gloss",
+        "text": "핵심 용어 정리"
+      },
+      {
+        "id": "take",
+        "text": "이 논문을 한 장으로"
+      }
+    ]
+  },
+  {
+    "id": "2608.29305",
+    "topic": "agents",
+    "title": "LLM 웹 에이전트가 테스트 시점에 단순한 환경을 학습하는 법",
+    "originalTitle": "Learning Simple Test-Time Environments for LLM Web Agents",
+    "summary": "복잡한 웹 화면을 그대로 학습시키기보다 목표와 관찰을 작고 관련성 높은 하위 환경 으로 나누면, 정답 라벨 없이도 탐색과 자기평가가 좋아진다. TTED는 이 경험을 ICL 또는 RL로 흡수해 Qwen3-8B의 WebArena 성공률을 12.1%에서 21.0%로 높였다.",
+    "intro": "복잡한 웹 화면을 그대로 학습시키기보다 목표와 관찰을 작고 관련성 높은 하위 환경 으로 나누면, 정답 라벨 없이도 탐색과 자기평가가 좋아진다. TTED는 이 경험을 ICL 또는 RL로 흡수해 Qwen3-8B의 WebArena 성공률을 12.1%에서 21.0%로 높였다.",
+    "authors": "Junxuan Li, Zijun Liu, Ziyi Huang, Peng Li, Yuzhou Liu, Ming Yan, Yang Liu",
+    "venue": "arXiv 2026 · cs.CL",
+    "sourceUrl": "https://arxiv.org/abs/2608.29305",
+    "pdfUrl": "https://arxiv.org/pdf/2608.29305",
+    "collectedOn": "2026-09-01",
+    "tags": [],
+    "practical": "",
+    "keyPoints": [
+      "복잡한 웹 에이전트 실패의 일부는 화면 구성요소를 함께 처리하는 능력 의 부족이다.",
+      "TTED는 정답 라벨 없이도 하위 환경의 자기평가 경험을 ICL/RL로 학습한다.",
+      "Qwen3-8B WebArena 성공률은 12.1% → 21.0% , WorkArena는 22.7%였다.",
+      "목표·관찰 분해를 모두 유지해야 하며 배치 advantage 정규화가 스케일링에 중요하다.",
+      "상호작용·훈련 비용과 행동 공간 오류가 남아 있어 생산 배치 결론으로 과대해석하면 안 된다."
+    ],
+    "headings": [
+      {
+        "id": "c1",
+        "text": "복잡성은 지식 부족보다 조합 실패를 만든다"
+      },
+      {
+        "id": "c2",
+        "text": "TTED는 시험 행동 중 목표와 관찰을 함께 분해하고, 행동·분해 품질을 자기평가한 뒤 통과 경험만 학습한다."
+      },
+      {
+        "id": "c3",
+        "text": "WebArena에서 TTED-RL은 Qwen3-8B를 12.1%에서 21.0%로 높이고, 추가 학습 없이 WorkArena에서도 22.7%를 기록했다."
+      },
+      {
+        "id": "c4",
+        "text": "효과의 대부분은 목표와 관찰을 동시에 분해하는 데서 나오며, 분해가 맞아도 행동 공간 오해와 과도한 추론은 남는다."
+      },
+      {
+        "id": "c5",
+        "text": "부록은 더 큰 모델, 과제 구성, 계산비용, ICL 시뮬레이션 절차를 공개해 주장의 경계를 확인하게 한다."
+      },
+      {
+        "id": "gloss",
+        "text": "핵심 용어 정리"
+      },
+      {
+        "id": "take",
+        "text": "이 논문을 한 장으로"
+      }
+    ]
+  },
+  {
+    "id": "2608.29118",
+    "topic": "evaluation",
+    "title": "창발적 오정렬은 마법이 아니다",
+    "originalTitle": "Emergent Misalignment Is Not Magical",
+    "summary": "좁은 유해 데이터 미세조정 뒤 광범위한 오정렬이 나타나는 현상을 ‘악한 페르소나의 등장’으로 설명할 필요가 없다. 기본 모델 표현에서 평가 프롬프트가 훈련 데이터 중심에 가까울수록 사악함이 커지는 데이터 의존적 일반화 로 상당 부분 예측된다.",
+    "intro": "좁은 유해 데이터 미세조정 뒤 광범위한 오정렬이 나타나는 현상을 ‘악한 페르소나의 등장’으로 설명할 필요가 없다. 기본 모델 표현에서 평가 프롬프트가 훈련 데이터 중심에 가까울수록 사악함이 커지는 데이터 의존적 일반화 로 상당 부분 예측된다.",
+    "authors": "Mingxuan Li, Qirun Dai, Heran Wang, Chenhao Tan",
+    "venue": "arXiv 2026 · cs.AI",
+    "sourceUrl": "https://arxiv.org/abs/2608.29118",
+    "pdfUrl": "https://arxiv.org/pdf/2608.29118",
+    "collectedOn": "2026-09-01",
+    "tags": [],
+    "practical": "",
+    "keyPoints": [
+      "EM은 훈련 데이터와 평가 프롬프트의 표현 공간 거리 로 상당 부분 예측된다.",
+      "12개 설정 평균 상관은 −0.73이었고, 가까운 프롬프트일수록 더 나쁜 응답을 유도했다.",
+      "데이터 내용뿐 아니라 형식이 효과 크기와 내부 방향을 바꿨다.",
+      "보편 악한 페르소나나 단일 전이 가능한 오정렬 방향은 관찰을 충분히 설명하지 못했다.",
+      "연구 범위는 SFT와 activation 기반 지표이며 judge 오차·비선형성·다른 학습 알고리즘은 남은 과제다."
+    ],
+    "headings": [
+      {
+        "id": "c1",
+        "text": "EM은 좁은 유해 훈련이 무관한 질문의 행동까지 나쁘게 만드는 현상이다. 논문은 이를 초자연적 점프가 아니라 표현 공간의 국소 일반화로 본다."
+      },
+      {
+        "id": "c2",
+        "text": "12개 모델×데이터 설정의 평균 Spearman 상관은 −0.73이었다. 훈련 중심에서 멀수록 EM 후 사악함이 낮아졌다."
+      },
+      {
+        "id": "c3",
+        "text": "같은 내용을 코드/조언 형식으로 바꾸자 EM 효과가 평균 52.5% 감소했다. 단일 ‘보편 오정렬 방향’과 ‘악한 페르소나’ 해석도 데이터셋을 넘어 안정적으로 전이되지 않았다."
+      },
+      {
+        "id": "c4",
+        "text": "무작위 토큰 추가나 paraphrase처럼 의미를 보존하는 작은 변화는 사악함을 크게 바꾸지만, 학습한 데이터별 일반화 방향은 그 변화를 중간 정도 이상 예측했다."
+      },
+      {
+        "id": "c5",
+        "text": "기본 모델 대조, 추가 GPT-OSS 모델, open-endedness 분석, 훈련 세부조건은 결과가 단일 설정의 우연이 아님을 확인하지만 범위는 SFT에 한정된다."
+      },
+      {
+        "id": "gloss",
+        "text": "핵심 용어 정리"
+      },
+      {
+        "id": "take",
+        "text": "이 논문을 한 장으로"
+      }
+    ]
+  },
+  {
+    "id": "2605.21812",
+    "topic": "retrieval",
+    "title": "콜드스타트 자연어 검색을 위한 대조·시드 기반 학습 CASTLE",
+    "originalTitle": "CASTLE: Contrastive and Seed-Guided Training for Cold-Start Natural Language Search",
+    "summary": "실사용 쿼리와 relevance label이 전혀 없는 검색 출시 전에도, 예약 세션의 listing 쌍과 약 500개 조사 쿼리를 결합해 현실적인 쿼리와 라벨을 함께 만들 수 있다. CASTLE은 라벨을 사후 판정하지 않고 생성 조건 자체로 구성 하며 실제 사용자 쿼리 분포에 훨씬 가깝다.",
+    "intro": "실사용 쿼리와 relevance label이 전혀 없는 검색 출시 전에도, 예약 세션의 listing 쌍과 약 500개 조사 쿼리를 결합해 현실적인 쿼리와 라벨을 함께 만들 수 있다. CASTLE은 라벨을 사후 판정하지 않고 생성 조건 자체로 구성 하며 실제 사용자 쿼리 분포에 훨씬 가깝다.",
+    "authors": "Wendy Ran Wei et al.",
+    "venue": "CIKM 2026 · cs.IR",
+    "sourceUrl": "https://arxiv.org/abs/2605.21812",
+    "pdfUrl": "https://arxiv.org/pdf/2605.21812",
+    "collectedOn": "2026-09-01",
+    "tags": [],
+    "practical": "",
+    "keyPoints": [
+      "CASTLE은 query 생성과 relevance label 생성을 하나의 대조 조건으로 결합한다.",
+      "약 500개 survey seed가 검색창다운 표현을 제공하고 구조화 속성이 환각을 억제한다.",
+      "길이 KL 1.01, 속성 유형 KL 0.08, 사람 라벨 동의 평균 92%를 기록했다.",
+      "하루 약 10,000개를 생성하는 생산 파이프라인과 QC·warm-start 전환 절차가 제시됐다.",
+      "합성 holdout 결과와 실제 온라인 품질은 다르며 bias·분포 이동·짧은 쿼리 실패가 남는다."
+    ],
+    "headings": [
+      {
+        "id": "c1",
+        "text": "새 자연어 검색에는 사용자가 어떻게 말하는지 보여줄 쿼리도, 어떤 결과가 맞는지 보여줄 라벨도 없다."
+      },
+      {
+        "id": "c2",
+        "text": "약 500개 사용자 조사 쿼리가 말투와 길이를 제공하고, booking-session pair와 구조화 listing 속성이 내용과 라벨을 제공한다."
+      },
+      {
+        "id": "c3",
+        "text": "CASTLE의 실제 사용자 대비 쿼리 길이 KL은 1.01로 InPars 9.51, Promptagator 9.33보다 크게 낮았다. 속성 유형 KL도 0.08로 최저였다."
+      },
+      {
+        "id": "c4",
+        "text": "Airbnb 파이프라인은 약 500개 seed에서 하루 약 10,000개 합성 쿼리를 만들고 2시간 안에 적재한다."
+      },
+      {
+        "id": "c5",
+        "text": "CASTLE은 실제 데이터를 영구 대체하는 것이 아니라 출시 전 bridge다. 실제 쿼리가 쌓이면 survey seed를 대체하고 합성:실제 비율을 낮춰야 한다."
+      },
+      {
+        "id": "gloss",
+        "text": "핵심 용어 정리"
+      },
+      {
+        "id": "take",
+        "text": "이 논문을 한 장으로"
+      }
+    ]
+  }
+]

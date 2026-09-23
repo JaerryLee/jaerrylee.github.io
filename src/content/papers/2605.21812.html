@@ -1,0 +1,90 @@
+<section class="ch" id="c1">
+<div class="ch-eyebrow"><span class="cnum">01</span><span class="clabel">Problem · 콜드스타트</span></div>
+<h2 class="ch-title">새 자연어 검색에는 사용자가 어떻게 말하는지 보여줄 쿼리도, 어떤 결과가 맞는지 보여줄 라벨도 없다.</h2>
+<div class="tldr"><div class="h">한눈에 요약</div><p>새 자연어 검색에는 사용자가 어떻게 말하는지 보여줄 쿼리도, 어떤 결과가 맞는지 보여줄 라벨도 없다.</p></div>
+<p class="lead">규칙, 인적 라벨링, 타 도메인 전이는 각각 표현력·비용·도메인 간극 문제를 가진다.</p><p>CASTLE은 이 둘을 한 번에 푼다. 같은 검색 세션에서 예약·참여한 listing을 양성, 덜 참여한 listing을 음성으로 잡고, “양성이 더 관련 있는 쿼리”를 LLM에 생성시켜 query와 pairwise label을 함께 얻는다.</p>
+</section>
+<section class="ch" id="c2">
+<div class="ch-eyebrow"><span class="cnum">02</span><span class="clabel">Method · 생성과 라벨</span></div>
+<h2 class="ch-title">약 500개 사용자 조사 쿼리가 말투와 길이를 제공하고, booking-session pair와 구조화 listing 속성이 내용과 라벨을 제공한다.</h2>
+<div class="tldr"><div class="h">한눈에 요약</div><p>약 500개 사용자 조사 쿼리가 말투와 길이를 제공하고, booking-session pair와 구조화 listing 속성이 내용과 라벨을 제공한다.</p></div>
+<p class="lead">Seed Controlled, Seed Freeform, Variety 세 프롬프트를 80/20 seed-guided/variety 비율로 섞는다.</p><p>양·음 listing의 amenity, property type, 위치, 평점, 비식별 review summary를 넣고, 중복·금칙어를 거른다. Contrastive label은 훈련에, 별도 Virtual Judge는 더 넓은 평가에 쓴다. VJ는 쿼리 의도를 listing 속성과 먼저 대조하게 해 문체 자기선호를 줄인다.</p><figure>
+<div class="fig-top"><span class="fnum">FIG 1</span><span class="ftitle">CASTLE 대조 쿼리 생성 파이프라인</span></div>
+<div class="imgbox"><img alt="CASTLE 대조 쿼리 생성 파이프라인" decoding="async" loading="lazy" src="/paper-assets/cc5f6cc48f9695fd09760afbdf6d6a01d06221bb01c65b9f656dfeb7ff1b2ce4.png"/></div>
+<figcaption>같은 검색 세션의 예약·참여 listing과 덜 참여한 listing을 쌍으로 만들고, seed query와 구조화 속성을 조건으로 쿼리와 정답 라벨을 함께 만든다.</figcaption>
+</figure><figure>
+<div class="fig-top"><span class="fnum">TABLE 1</span><span class="ftitle">원문 표 1</span></div>
+<div class="imgbox"><img alt="원문 표 1" decoding="async" loading="lazy" src="/paper-assets/b765244db3126294f5ac9f3edaa4e6cfcfcc239373bb6c1f688672f3309e7df1.png"/></div>
+<figcaption>네 생성 방식의 실제 예문을 비교한다. CASTLE은 짧고 검색창다운 표현을 만들며 대조 라벨도 함께 제공한다.</figcaption>
+</figure>
+</section>
+<section class="ch" id="c3">
+<div class="ch-eyebrow"><span class="cnum">03</span><span class="clabel">Evaluation · 실험 결과</span></div>
+<h2 class="ch-title">CASTLE의 실제 사용자 대비 쿼리 길이 KL은 1.01로 InPars 9.51, Promptagator 9.33보다 크게 낮았다. 속성 유형 KL도 0.08로 최저였다.</h2>
+<div class="tldr"><div class="h">한눈에 요약</div><p>CASTLE의 실제 사용자 대비 쿼리 길이 KL은 1.01로 InPars 9.51, Promptagator 9.33보다 크게 낮았다. 속성 유형 KL도 0.08로 최저였다.</p></div>
+<p class="lead">사람 3명이 200개 triplet을 평가했을 때 라벨 동의율은 91–93%, 평균 92%였다.</p><div class="stat-row"><div class="stat"><div class="v">1.01</div><div class="l">길이 KL vs Real</div></div><div class="stat"><div class="v arb">0.08</div><div class="l">속성 유형 KL</div></div><div class="stat"><div class="v">92%</div><div class="l">사람 평균 라벨 동의</div></div></div><p>합성 데이터만으로 fine-tuning한 pairwise 정확도는 Qwen3 EBR 0.790→0.967, first-pass ranker 0.570→0.705, LLM reranker 0.620→0.884였다. 단 이 평가는 같은 합성 분포의 10% holdout이므로 실제 온라인 개선으로 곧바로 읽으면 안 된다.</p><figure>
+<div class="fig-top"><span class="fnum">FIG 2</span><span class="ftitle">쿼리 길이 구간 분포</span></div>
+<div class="imgbox"><img alt="쿼리 길이 구간 분포" decoding="async" loading="lazy" src="/paper-assets/2b314a46a1bab97a9125b3988048d9dd44cc2f938130e9bf378bcb85c2c869ba.png"/></div>
+<figcaption>InPars·Promptagator는 거의 모두 3–8단어에 몰리고 Contrastive-Only는 지나치게 길다. CASTLE은 실제 사용자 분포에 더 가깝다.</figcaption>
+</figure><figure>
+<div class="fig-top"><span class="fnum">FIG 3</span><span class="ftitle">세 분포 지표의 실제 사용자 대비 KL</span></div>
+<div class="imgbox"><img alt="세 분포 지표의 실제 사용자 대비 KL" decoding="async" loading="lazy" src="/paper-assets/4142e828d73d62da67a864627dc5c814bbe29a750fef2cb4e61620cb17254f15.png"/></div>
+<figcaption>10,000회 부트스트랩 신뢰구간을 포함한 비교에서 CASTLE이 특히 속성 유형 분포에서 가장 낮은 발산을 보인다.</figcaption>
+</figure><figure>
+<div class="fig-top"><span class="fnum">TABLE 2</span><span class="ftitle">원문 표 2</span></div>
+<div class="imgbox"><img alt="원문 표 2" decoding="async" loading="lazy" src="/paper-assets/73df4de66ce6ca3c166a04b05ae15404baff82f8e13086fe0a3e0a731d460e26.png"/></div>
+<figcaption>쿼리 분포, judge 편향, 사람 라벨, 모델 fine-tuning과 데이터 규모 효과를 원문 수치로 보여준다.</figcaption>
+</figure><figure>
+<div class="fig-top"><span class="fnum">TABLE 3</span><span class="ftitle">원문 표 3</span></div>
+<div class="imgbox"><img alt="원문 표 3" decoding="async" loading="lazy" src="/paper-assets/2a8a192fff69d3af7ded6dbb3b3939cbd27be010c403b05186ca002ee1c25f85.png"/></div>
+<figcaption>쿼리 분포, judge 편향, 사람 라벨, 모델 fine-tuning과 데이터 규모 효과를 원문 수치로 보여준다.</figcaption>
+</figure><figure>
+<div class="fig-top"><span class="fnum">TABLE 4</span><span class="ftitle">원문 표 4</span></div>
+<div class="imgbox"><img alt="원문 표 4" decoding="async" loading="lazy" src="/paper-assets/e314c46c19c4c8e8ae8b7b0d254078c733221a937344bd264d35b1c5d42a31e0.png"/></div>
+<figcaption>쿼리 분포, judge 편향, 사람 라벨, 모델 fine-tuning과 데이터 규모 효과를 원문 수치로 보여준다.</figcaption>
+</figure><figure>
+<div class="fig-top"><span class="fnum">TABLE 5</span><span class="ftitle">원문 표 5</span></div>
+<div class="imgbox"><img alt="원문 표 5" decoding="async" loading="lazy" src="/paper-assets/6dbfbab64b2be0c4652f4a4024606815d7e577e52de064ffc242bac0c6273b9c.png"/></div>
+<figcaption>쿼리 분포, judge 편향, 사람 라벨, 모델 fine-tuning과 데이터 규모 효과를 원문 수치로 보여준다.</figcaption>
+</figure><figure>
+<div class="fig-top"><span class="fnum">TABLE 6</span><span class="ftitle">원문 표 6</span></div>
+<div class="imgbox"><img alt="원문 표 6" decoding="async" loading="lazy" src="/paper-assets/8ffc093350e2b02a67143df5efeaa84eaf2e08cb2cfee25ae85930359770a5b1.png"/></div>
+<figcaption>쿼리 분포, judge 편향, 사람 라벨, 모델 fine-tuning과 데이터 규모 효과를 원문 수치로 보여준다.</figcaption>
+</figure><figure>
+<div class="fig-top"><span class="fnum">TABLE 7</span><span class="ftitle">원문 표 7</span></div>
+<div class="imgbox"><img alt="원문 표 7" decoding="async" loading="lazy" src="/paper-assets/13dc2e12867723091ee434d75eed281132d26ab42c249efccf245605dd6445d3.png"/></div>
+<figcaption>쿼리 분포, judge 편향, 사람 라벨, 모델 fine-tuning과 데이터 규모 효과를 원문 수치로 보여준다.</figcaption>
+</figure><figure>
+<div class="fig-top"><span class="fnum">TABLE 8</span><span class="ftitle">원문 표 8</span></div>
+<div class="imgbox"><img alt="원문 표 8" decoding="async" loading="lazy" src="/paper-assets/0de04841d8f07b4fff61921916e0fd5cc590e0ae729ee766ef42b59170b0ff3c.png"/></div>
+<figcaption>쿼리 분포, judge 편향, 사람 라벨, 모델 fine-tuning과 데이터 규모 효과를 원문 수치로 보여준다.</figcaption>
+</figure>
+</section>
+<section class="ch" id="c4">
+<div class="ch-eyebrow"><span class="cnum">04</span><span class="clabel">Production · 운영</span></div>
+<h2 class="ch-title">Airbnb 파이프라인은 약 500개 seed에서 하루 약 10,000개 합성 쿼리를 만들고 2시간 안에 적재한다.</h2>
+<div class="tldr"><div class="h">한눈에 요약</div><p>Airbnb 파이프라인은 약 500개 seed에서 하루 약 10,000개 합성 쿼리를 만들고 2시간 안에 적재한다.</p></div>
+<p class="lead">약 5,000개 대조 pair를 쓰며 generation call은 입력 500–800토큰, 출력 100–150토큰이다.</p><p>매일 길이 KL, 속성 coverage, VJ label consistency, cosine 중복을 검사하고 이상 batch를 격리한다. 1K→5K 데이터에서 eval 정확도는 0.755→0.869로 크게 올랐지만 20K까지 정체해, 이 규모에서는 양보다 생성 품질이 병목임을 보여준다.</p>
+</section>
+<section class="ch" id="c5">
+<div class="ch-eyebrow"><span class="cnum">05</span><span class="clabel">Limits · 실패와 전환</span></div>
+<h2 class="ch-title">CASTLE은 실제 데이터를 영구 대체하는 것이 아니라 출시 전 bridge다. 실제 쿼리가 쌓이면 survey seed를 대체하고 합성:실제 비율을 낮춰야 한다.</h2>
+<div class="tldr"><div class="h">한눈에 요약</div><p>CASTLE은 실제 데이터를 영구 대체하는 것이 아니라 출시 전 bridge다. 실제 쿼리가 쌓이면 survey seed를 대체하고 합성:실제 비율을 낮춰야 한다.</p></div>
+<p class="lead">주요 실패는 다중 의도, 1–2단어 초단문, 구조화 속성에 없는 분위기·경험 표현이다.</p><p>또 booking pair는 전환이 높은 listing을 과대표집할 수 있고, query template과 entity를 독립 표본으로 보는 가정도 현실의 상관을 놓친다. 저자들은 길이 층화 seed, multi-attribute pair, 이미지·style signal, fairness-aware sampling을 후속 개선으로 제안한다.</p><figure>
+<div class="fig-top"><span class="fnum">TABLE 9</span><span class="ftitle">원문 표 9</span></div>
+<div class="imgbox"><img alt="원문 표 9" decoding="async" loading="lazy" src="/paper-assets/abec4090387c65509b400ab3dda6ab863f88f7699fb7667bb18ce1d6f513dae7.png"/></div>
+<figcaption>정성 실패 사례와 원인·완화책을 원문 표로 보존했다.</figcaption>
+</figure>
+</section>
+<section class="ch" id="gloss">
+<div class="ch-eyebrow"><span class="cnum">＋</span><span class="clabel">Glossary · 핵심 용어</span></div>
+<h2 class="ch-title">핵심 용어 정리</h2>
+<div class="tldr"><div class="h">한눈에 요약</div><p>논문의 주장을 따라가는 데 필요한 용어만 간결하게 모았다.</p></div>
+<div class="gloss"><div class="gitem"><div class="term">콜드스타트<span class="en">Cold start</span></div><p>출시 전 실제 쿼리·클릭·예약 라벨이 없어 학습과 평가가 모두 막힌 상태.</p></div><div class="gitem"><div class="term">대조 listing pair<span class="en">Contrastive pair</span></div><p>같은 검색 상황의 더 관련 있는 listing과 덜 관련 있는 listing 쌍.</p></div><div class="gitem"><div class="term">Seed query<span class="en">Seed query</span></div><p>사람이 실제로 검색창에 입력할 법한 말투·길이·구조를 제공하는 소량 예시.</p></div><div class="gitem"><div class="term">구성에 의한 라벨<span class="en">Label by construction</span></div><p>LLM이 양성 listing에 더 맞는 쿼리를 만들게 해 생성 조건 자체가 정답 관계를 정하는 방식.</p></div><div class="gitem"><div class="term">KL divergence<span class="en">KL divergence</span></div><p>합성 쿼리 분포가 실제 사용자 분포와 얼마나 다른지 나타내는 값. 낮을수록 가깝다.</p></div></div>
+</section>
+<section class="ch" id="take">
+<div class="ch-eyebrow"><span class="cnum">＋</span><span class="clabel">One-page Summary · 한 장 정리</span></div>
+<h2 class="ch-title">이 논문을 한 장으로</h2>
+<div class="tldr"><div class="h">한눈에 요약</div><p>문제, 방법, 증거, 한계를 한 번에 다시 정리한다.</p></div>
+<div class="takeaways"><div class="take"><div class="n">01</div><div class="body">CASTLE은 query 생성과 relevance label 생성을 하나의 대조 조건으로 결합한다.</div></div><div class="take"><div class="n">02</div><div class="body">약 500개 survey seed가 검색창다운 표현을 제공하고 구조화 속성이 환각을 억제한다.</div></div><div class="take"><div class="n">03</div><div class="body">길이 KL 1.01, 속성 유형 KL 0.08, 사람 라벨 동의 평균 92%를 기록했다.</div></div><div class="take"><div class="n">04</div><div class="body">하루 약 10,000개를 생성하는 생산 파이프라인과 QC·warm-start 전환 절차가 제시됐다.</div></div><div class="take"><div class="n">05</div><div class="body">합성 holdout 결과와 실제 온라인 품질은 다르며 bias·분포 이동·짧은 쿼리 실패가 남는다.</div></div></div>
+</section>

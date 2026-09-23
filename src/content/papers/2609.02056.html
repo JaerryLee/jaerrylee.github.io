@@ -1,0 +1,811 @@
+<section class="ch" id="c1">
+<div class="ch-eyebrow"><span class="cnum">01</span><span class="clabel">Problem · 문제</span></div>
+<h2 class="ch-title">지식 그래프의 빈 링크를 과학 가설 후보로 본다</h2>
+<div class="tldr"><div class="h">한눈에 요약</div><p>HyGRAIL은 재료과학 지식 그래프에서 관측되지 않은 타입 적합 링크를 후보 가설로 정의한다. 문제는 진짜 유망 링크가 극도로 희소해, 모든 후보를 LLM으로 검토하면 비용과 오탐이 커진다는 점이다.</p></div>
+<p class="lead">후보 링크는 곧바로 과학적 사실이 아니라 <strong>검증할 가치가 있는 가설</strong>이다.</p><p>실험은 3천 노드 MatKG 표본과 7개 관계 유형을 사용하며 양성:음성 비율을 1:20으로 둔다. 음성은 폐쇄세계 가정으로 만든 “관측되지 않은 링크”이므로 실제로 거짓이라고 확정할 수 없다.</p><div class="tbl-wrap"><div class="tbl-cap"><span class="tn">TABLE 1</span>MatKG 후보 가설 공간의 희소성</div><div class="tbl-scroll"><table>
+<tr class="ltx_tr" id="S1.T1.2.1">
+<td class="ltx_td ltx_align_left ltx_border_tt" id="S1.T1.2.1.1"><span class="ltx_text ltx_font_bold" id="S1.T1.2.1.1.1">Type</span></td>
+<td class="ltx_td ltx_align_center ltx_border_tt" id="S1.T1.2.1.2"><math class="ltx_Math" display="inline" id="S1.T1.m1"><semantics><mi>𝐏</mi><annotation encoding="application/x-tex">\mathbf{P}</annotation></semantics></math> <math class="ltx_Math" display="inline" id="S1.T1.m2"><semantics><mrow><mo stretchy="false">(</mo><msup><mn>10</mn><mn>5</mn></msup><mo stretchy="false">)</mo></mrow><annotation encoding="application/x-tex">(10^{5})</annotation></semantics></math></td>
+<td class="ltx_td ltx_align_center ltx_border_tt" id="S1.T1.2.1.3"><math class="ltx_Math" display="inline" id="S1.T1.m3"><semantics><mi>𝐂</mi><annotation encoding="application/x-tex">\mathbf{C}</annotation></semantics></math> <math class="ltx_Math" display="inline" id="S1.T1.m4"><semantics><mrow><mo stretchy="false">(</mo><msup><mn>10</mn><mn>8</mn></msup><mo stretchy="false">)</mo></mrow><annotation encoding="application/x-tex">(10^{8})</annotation></semantics></math></td>
+<td class="ltx_td ltx_nopad_r ltx_align_center ltx_border_tt" id="S1.T1.2.1.4"><math class="ltx_Math" display="inline" id="S1.T1.m5"><semantics><mi>𝝆</mi><annotation encoding="application/x-tex">\boldsymbol{\rho}</annotation></semantics></math> <math class="ltx_Math" display="inline" id="S1.T1.m6"><semantics><mrow><mo stretchy="false">(</mo><msup><mn>10</mn><mrow><mo>−</mo><mn>3</mn></mrow></msup><mo stretchy="false">)</mo></mrow><annotation encoding="application/x-tex">(10^{-3})</annotation></semantics></math></td></tr>
+<tr class="ltx_tr" id="S1.T1.2.2">
+<td class="ltx_td ltx_align_left ltx_border_t" id="S1.T1.2.2.1">CHM–APL</td>
+<td class="ltx_td ltx_align_center ltx_border_t" id="S1.T1.2.2.2">1.06</td>
+<td class="ltx_td ltx_align_center ltx_border_t" id="S1.T1.2.2.3">1.91</td>
+<td class="ltx_td ltx_nopad_r ltx_align_center ltx_border_t" id="S1.T1.2.2.4">0.556</td></tr>
+<tr class="ltx_tr" id="S1.T1.2.3">
+<td class="ltx_td ltx_align_left" id="S1.T1.2.3.1">CHM–PRO</td>
+<td class="ltx_td ltx_align_center" id="S1.T1.2.3.2">3.40</td>
+<td class="ltx_td ltx_align_center" id="S1.T1.2.3.3">4.27</td>
+<td class="ltx_td ltx_nopad_r ltx_align_center" id="S1.T1.2.3.4">0.796</td></tr>
+<tr class="ltx_tr" id="S1.T1.2.4">
+<td class="ltx_td ltx_align_left" id="S1.T1.2.4.1">PRO–APL</td>
+<td class="ltx_td ltx_align_center" id="S1.T1.2.4.2">1.18</td>
+<td class="ltx_td ltx_align_center" id="S1.T1.2.4.3">3.23</td>
+<td class="ltx_td ltx_nopad_r ltx_align_center" id="S1.T1.2.4.4">0.367</td></tr>
+<tr class="ltx_tr" id="S1.T1.2.5">
+<td class="ltx_td ltx_align_left" id="S1.T1.2.5.1">SMT–PRO</td>
+<td class="ltx_td ltx_align_center" id="S1.T1.2.5.2">0.757</td>
+<td class="ltx_td ltx_align_center" id="S1.T1.2.5.3">1.82</td>
+<td class="ltx_td ltx_nopad_r ltx_align_center" id="S1.T1.2.5.4">0.417</td></tr>
+<tr class="ltx_tr" id="S1.T1.2.6">
+<td class="ltx_td ltx_align_left" id="S1.T1.2.6.1">CHM–SMT</td>
+<td class="ltx_td ltx_align_center" id="S1.T1.2.6.2">0.831</td>
+<td class="ltx_td ltx_align_center" id="S1.T1.2.6.3">1.07</td>
+<td class="ltx_td ltx_nopad_r ltx_align_center" id="S1.T1.2.6.4">0.774</td></tr>
+<tr class="ltx_tr" id="S1.T1.2.7">
+<td class="ltx_td ltx_align_left" id="S1.T1.2.7.1">CHM–DSC</td>
+<td class="ltx_td ltx_align_center" id="S1.T1.2.7.2">1.66</td>
+<td class="ltx_td ltx_align_center" id="S1.T1.2.7.3">0.927</td>
+<td class="ltx_td ltx_nopad_r ltx_align_center" id="S1.T1.2.7.4">1.79</td></tr>
+<tr class="ltx_tr" id="S1.T1.2.8">
+<td class="ltx_td ltx_align_left ltx_border_bb" id="S1.T1.2.8.1">CHM–CMT</td>
+<td class="ltx_td ltx_align_center ltx_border_bb" id="S1.T1.2.8.2">2.10</td>
+<td class="ltx_td ltx_align_center ltx_border_bb" id="S1.T1.2.8.3">1.96</td>
+<td class="ltx_td ltx_nopad_r ltx_align_center ltx_border_bb" id="S1.T1.2.8.4">1.07</td></tr>
+</table></div><div class="tbl-foot">원문 arXiv HTML의 셀과 수치를 순서대로 재구성했다.</div></div>
+</section>
+<section class="ch" id="c2">
+<div class="ch-eyebrow"><span class="cnum">02</span><span class="clabel">Architecture · 방법</span></div>
+<h2 class="ch-title">쉬운 후보는 GNN이, 애매한 후보만 LLM이 본다</h2>
+<div class="tldr"><div class="h">한눈에 요약</div><p>GNN이 모든 후보를 점수화해 명확한 양성·음성을 먼저 처리하고, 검증셋에서 정한 모호 구간의 후보만 LLM으로 보낸다. LLM에는 두 끝점에서 모은 2·3홉 그래프 증거와 자연어로 풀어 쓴 가설을 함께 준다.</p></div>
+<p class="lead">이 설계는 LLM을 전면 분류기로 쓰지 않고 값비싼 예외 심사자로 제한한다.</p><p>증거 검색은 후보 양쪽 엔드포인트의 노드 수준 속성과 타입별 허용 간선을 사용한다. 마지막 LLM은 이 근거에 따라 결정과 신뢰도를 반환한다.</p><figure>
+<div class="fig-top"><span class="fnum">FIG 1</span><span class="ftitle">GNN 선별–그래프 증거–LLM 검토 파이프라인</span></div>
+<div class="imgbox"><img alt="GNN 선별–그래프 증거–LLM 검토 파이프라인" decoding="async" loading="lazy" src="/paper-assets/9c7cba0912400b121d2c684681e54af764eb1d2e16e1b0e4924c248216019015.png"/></div>
+<figcaption>GNN의 저·고신뢰 후보는 자동 처리하고 중간 점수만 증거와 함께 LLM이 재검토한다.</figcaption>
+</figure><figure>
+<div class="fig-top"><span class="fnum">FIG 2</span><span class="ftitle">검증셋으로 정한 모호 구간</span></div>
+<div class="imgbox"><img alt="검증셋으로 정한 모호 구간" decoding="async" loading="lazy" src="/paper-assets/48e7c14af72549f788e8d3f9c4f8839403eb07610434f15badcd8be3b1180330.png"/></div>
+<figcaption>두 임계값 사이의 후보만 LLM 호출 대상으로 보내 비용을 통제한다.</figcaption>
+</figure>
+</section>
+<section class="ch" id="c3">
+<div class="ch-eyebrow"><span class="cnum">03</span><span class="clabel">Evidence · 결과</span></div>
+<h2 class="ch-title">최고 F1 0.429, LLM 호출은 평균 45.64%였다</h2>
+<div class="tldr"><div class="h">한눈에 요약</div><p>R-GCN과 Qwen3-4B 조합의 최고 F1은 0.429였다. 논문이 비교한 TSH보다 0.242, KG-FM보다 0.256, 대응 GNN 단독보다 0.322 높다. GNN 선별로 후보 중 평균 45.64%만 LLM이 검토했다.</p></div>
+<p class="lead">양쪽 끝점의 증거를 주는 것이 한쪽 증거보다 Qwen3-14B에서 F1 0.222, Qwen3-4B에서 0.152 높았다.</p><p>증거를 기본량보다 줄이면 성능이 낮아졌지만, 더 많이 주면 늘 좋아지는 것은 아니었다. 이는 그래프 검색도 단순 컨텍스트 확대보다 관련성 제어가 중요함을 보여준다.</p><figure>
+<div class="fig-top"><span class="fnum">FIG 3</span><span class="ftitle">증거 양과 F1</span></div>
+<div class="imgbox"><img alt="증거 양과 F1" decoding="async" loading="lazy" src="/paper-assets/b17d4ea7cd983a1d2772e148b7a4621b54812097ebacdbd4f47febd4497e2b7d.png"/></div>
+<figcaption>근거를 늘릴수록 단조롭게 좋아지지 않아 선택적 검색의 필요성을 보여준다.</figcaption>
+</figure><figure>
+<div class="fig-top"><span class="fnum">FIG 4</span><span class="ftitle">양쪽 엔드포인트 증거의 효과</span></div>
+<div class="imgbox"><img alt="양쪽 엔드포인트 증거의 효과" decoding="async" loading="lazy" src="/paper-assets/ed49f9975b666a290f880ebfd9e6cc2f39afd4e70714c95a4501b51fd356a410.png"/></div>
+<figcaption>후보 링크 양쪽에서 증거를 모을 때 두 LLM 모두 큰 F1 이득을 얻는다.</figcaption>
+</figure><div class="tbl-wrap"><div class="tbl-cap"><span class="tn">TABLE 2</span>MatKG 가설 검증 주요 결과</div><div class="tbl-scroll"><table>
+<tr class="ltx_tr" id="S4.T2.4.1.1">
+<td class="ltx_td ltx_align_center ltx_border_rr ltx_border_t" id="S4.T2.4.1.1.1"><span class="ltx_text ltx_font_bold" id="S4.T2.4.1.1.1.1">Method</span></td>
+<td class="ltx_td ltx_align_center ltx_border_t" colspan="8" id="S4.T2.4.1.1.2"><span class="ltx_text ltx_font_bold" id="S4.T2.4.1.1.2.1">Prior Baselines</span></td></tr>
+<tr class="ltx_tr" id="S4.T2.4.1.2">
+<td class="ltx_td ltx_align_center ltx_border_rr ltx_border_t" id="S4.T2.4.1.2.1"><span class="ltx_text ltx_font_bold" id="S4.T2.4.1.2.1.1">LLM</span></td>
+<td class="ltx_td ltx_align_center ltx_border_r ltx_border_t" colspan="2" id="S4.T2.4.1.2.2"><span class="ltx_text ltx_font_bold" id="S4.T2.4.1.2.2.1">Qwen3-4B</span></td>
+<td class="ltx_td ltx_align_center ltx_border_r ltx_border_t" colspan="2" id="S4.T2.4.1.2.3"><span class="ltx_text ltx_font_bold" id="S4.T2.4.1.2.3.1">Qwen3-14B</span></td>
+<td class="ltx_td ltx_align_center ltx_border_r ltx_border_t" colspan="2" id="S4.T2.4.1.2.4"><span class="ltx_text ltx_font_bold" id="S4.T2.4.1.2.4.1">Ministral-3B</span></td>
+<td class="ltx_td ltx_align_center ltx_border_t" colspan="2" id="S4.T2.4.1.2.5"><span class="ltx_text ltx_font_bold" id="S4.T2.4.1.2.5.1">Ministral-14B</span></td></tr>
+<tr class="ltx_tr" id="S4.T2.4.1.3">
+<td class="ltx_td ltx_align_left ltx_border_rr" id="S4.T2.4.1.3.1"><span class="ltx_text ltx_font_bold" id="S4.T2.4.1.3.1.1">Method</span></td>
+<td class="ltx_td ltx_align_center" id="S4.T2.4.1.3.2"><span class="ltx_text ltx_font_bold" id="S4.T2.4.1.3.2.1">Rec.</span></td>
+<td class="ltx_td ltx_align_center ltx_border_r" id="S4.T2.4.1.3.3"><span class="ltx_text ltx_font_bold" id="S4.T2.4.1.3.3.1">F1</span></td>
+<td class="ltx_td ltx_align_center" id="S4.T2.4.1.3.4"><span class="ltx_text ltx_font_bold" id="S4.T2.4.1.3.4.1">Rec.</span></td>
+<td class="ltx_td ltx_align_center ltx_border_r" id="S4.T2.4.1.3.5"><span class="ltx_text ltx_font_bold" id="S4.T2.4.1.3.5.1">F1</span></td>
+<td class="ltx_td ltx_align_center" id="S4.T2.4.1.3.6"><span class="ltx_text ltx_font_bold" id="S4.T2.4.1.3.6.1">Rec.</span></td>
+<td class="ltx_td ltx_align_center ltx_border_r" id="S4.T2.4.1.3.7"><span class="ltx_text ltx_font_bold" id="S4.T2.4.1.3.7.1">F1</span></td>
+<td class="ltx_td ltx_align_center" id="S4.T2.4.1.3.8"><span class="ltx_text ltx_font_bold" id="S4.T2.4.1.3.8.1">Rec.</span></td>
+<td class="ltx_td ltx_align_center" id="S4.T2.4.1.3.9"><span class="ltx_text ltx_font_bold" id="S4.T2.4.1.3.9.1">F1</span></td></tr>
+<tr class="ltx_tr" id="S4.T2.4.1.4">
+<td class="ltx_td ltx_align_left ltx_border_rr ltx_border_tt" id="S4.T2.4.1.4.1"><span class="ltx_text ltx_font_bold" id="S4.T2.4.1.4.1.1">TSH</span></td>
+<td class="ltx_td ltx_align_center ltx_border_tt" colspan="8" id="S4.T2.4.1.4.2">Rec. 0.379  F1 0.187</td></tr>
+<tr class="ltx_tr" id="S4.T2.4.1.5">
+<td class="ltx_td ltx_align_left ltx_border_rr" id="S4.T2.4.1.5.1"><span class="ltx_text ltx_font_bold" id="S4.T2.4.1.5.1.1">KG-FM</span></td>
+<td class="ltx_td ltx_align_center" id="S4.T2.4.1.5.2">0.089</td>
+<td class="ltx_td ltx_align_center ltx_border_r" id="S4.T2.4.1.5.3">0.113</td>
+<td class="ltx_td ltx_align_center" id="S4.T2.4.1.5.4">0.012</td>
+<td class="ltx_td ltx_align_center ltx_border_r" id="S4.T2.4.1.5.5">0.023</td>
+<td class="ltx_td ltx_align_center" id="S4.T2.4.1.5.6">0.245</td>
+<td class="ltx_td ltx_align_center ltx_border_r" id="S4.T2.4.1.5.7">0.149</td>
+<td class="ltx_td ltx_align_center" id="S4.T2.4.1.5.8">0.173</td>
+<td class="ltx_td ltx_align_center" id="S4.T2.4.1.5.9">0.173</td></tr>
+<tr class="ltx_tr" id="S4.T2.4.1.6">
+<td class="ltx_td ltx_align_center ltx_border_rr ltx_border_t" id="S4.T2.4.1.6.1"><span class="ltx_text ltx_font_bold" id="S4.T2.4.1.6.1.1">GNN Backbone</span></td>
+<td class="ltx_td ltx_align_center ltx_border_t" colspan="8" id="S4.T2.4.1.6.2"><span class="ltx_text ltx_font_bold" id="S4.T2.4.1.6.2.1">HeteroConv</span></td></tr>
+<tr class="ltx_tr" id="S4.T2.4.1.7">
+<td class="ltx_td ltx_align_center ltx_border_rr ltx_border_t" id="S4.T2.4.1.7.1"><span class="ltx_text ltx_font_bold" id="S4.T2.4.1.7.1.1">LLM</span></td>
+<td class="ltx_td ltx_align_center ltx_border_r ltx_border_t" colspan="2" id="S4.T2.4.1.7.2"><span class="ltx_text ltx_font_bold" id="S4.T2.4.1.7.2.1">Qwen3-4B</span></td>
+<td class="ltx_td ltx_align_center ltx_border_r ltx_border_t" colspan="2" id="S4.T2.4.1.7.3"><span class="ltx_text ltx_font_bold" id="S4.T2.4.1.7.3.1">Qwen3-14B</span></td>
+<td class="ltx_td ltx_align_center ltx_border_r ltx_border_t" colspan="2" id="S4.T2.4.1.7.4"><span class="ltx_text ltx_font_bold" id="S4.T2.4.1.7.4.1">Ministral-3B</span></td>
+<td class="ltx_td ltx_align_center ltx_border_t" colspan="2" id="S4.T2.4.1.7.5"><span class="ltx_text ltx_font_bold" id="S4.T2.4.1.7.5.1">Ministral-14B</span></td></tr>
+<tr class="ltx_tr" id="S4.T2.4.1.8">
+<td class="ltx_td ltx_align_left ltx_border_rr" id="S4.T2.4.1.8.1"><span class="ltx_text ltx_font_bold" id="S4.T2.4.1.8.1.1">Method</span></td>
+<td class="ltx_td ltx_align_center" id="S4.T2.4.1.8.2"><span class="ltx_text ltx_font_bold" id="S4.T2.4.1.8.2.1">Rec.</span></td>
+<td class="ltx_td ltx_align_center ltx_border_r" id="S4.T2.4.1.8.3"><span class="ltx_text ltx_font_bold" id="S4.T2.4.1.8.3.1">F1</span></td>
+<td class="ltx_td ltx_align_center" id="S4.T2.4.1.8.4"><span class="ltx_text ltx_font_bold" id="S4.T2.4.1.8.4.1">Rec.</span></td>
+<td class="ltx_td ltx_align_center ltx_border_r" id="S4.T2.4.1.8.5"><span class="ltx_text ltx_font_bold" id="S4.T2.4.1.8.5.1">F1</span></td>
+<td class="ltx_td ltx_align_center" id="S4.T2.4.1.8.6"><span class="ltx_text ltx_font_bold" id="S4.T2.4.1.8.6.1">Rec.</span></td>
+<td class="ltx_td ltx_align_center ltx_border_r" id="S4.T2.4.1.8.7"><span class="ltx_text ltx_font_bold" id="S4.T2.4.1.8.7.1">F1</span></td>
+<td class="ltx_td ltx_align_center" id="S4.T2.4.1.8.8"><span class="ltx_text ltx_font_bold" id="S4.T2.4.1.8.8.1">Rec.</span></td>
+<td class="ltx_td ltx_align_center" id="S4.T2.4.1.8.9"><span class="ltx_text ltx_font_bold" id="S4.T2.4.1.8.9.1">F1</span></td></tr>
+<tr class="ltx_tr" id="S4.T2.4.1.9">
+<td class="ltx_td ltx_align_left ltx_border_rr ltx_border_tt" id="S4.T2.4.1.9.1"><span class="ltx_text ltx_font_bold" id="S4.T2.4.1.9.1.1">GNN</span></td>
+<td class="ltx_td ltx_align_center ltx_border_tt" colspan="8" id="S4.T2.4.1.9.2">Rec. 0.868  F1 0.093</td></tr>
+<tr class="ltx_tr" id="S4.T2.4.1.10">
+<td class="ltx_td ltx_align_left ltx_border_rr" id="S4.T2.4.1.10.1"><span class="ltx_text ltx_font_bold" id="S4.T2.4.1.10.1.1">HyGRAIL-NE</span></td>
+<td class="ltx_td ltx_align_center" id="S4.T2.4.1.10.2">0.450</td>
+<td class="ltx_td ltx_align_center ltx_border_r" id="S4.T2.4.1.10.3">0.153</td>
+<td class="ltx_td ltx_align_center" id="S4.T2.4.1.10.4">0.441</td>
+<td class="ltx_td ltx_align_center ltx_border_r" id="S4.T2.4.1.10.5">0.159</td>
+<td class="ltx_td ltx_align_center" id="S4.T2.4.1.10.6">0.481</td>
+<td class="ltx_td ltx_align_center ltx_border_r" id="S4.T2.4.1.10.7">0.144</td>
+<td class="ltx_td ltx_align_center" id="S4.T2.4.1.10.8">0.485</td>
+<td class="ltx_td ltx_align_center" id="S4.T2.4.1.10.9">0.150</td></tr>
+<tr class="ltx_tr" id="S4.T2.4.1.11">
+<td class="ltx_td ltx_align_left ltx_border_rr ltx_border_tt" id="S4.T2.4.1.11.1"><span class="ltx_text ltx_font_bold" id="S4.T2.4.1.11.1.1">HyGRAIL-Auto</span></td>
+<td class="ltx_td ltx_align_center ltx_border_tt" id="S4.T2.4.1.11.2">0.512</td>
+<td class="ltx_td ltx_align_center ltx_border_r ltx_border_tt" id="S4.T2.4.1.11.3"><span class="ltx_text ltx_underline" id="S4.T2.4.1.11.3.1">0.219</span></td>
+<td class="ltx_td ltx_align_center ltx_border_tt" id="S4.T2.4.1.11.4">0.512</td>
+<td class="ltx_td ltx_align_center ltx_border_r ltx_border_tt" id="S4.T2.4.1.11.5">0.215</td>
+<td class="ltx_td ltx_align_center ltx_border_tt" id="S4.T2.4.1.11.6">0.398</td>
+<td class="ltx_td ltx_align_center ltx_border_r ltx_border_tt" id="S4.T2.4.1.11.7"><span class="ltx_text ltx_font_italic" id="S4.T2.4.1.11.7.1">0.179</span></td>
+<td class="ltx_td ltx_align_center ltx_border_tt" id="S4.T2.4.1.11.8">0.472</td>
+<td class="ltx_td ltx_align_center ltx_border_tt" id="S4.T2.4.1.11.9">0.207</td></tr>
+<tr class="ltx_tr" id="S4.T2.4.1.12">
+<td class="ltx_td ltx_align_left ltx_border_rr" id="S4.T2.4.1.12.1"><span class="ltx_text ltx_font_bold" id="S4.T2.4.1.12.1.1">HyGRAIL-LLM</span></td>
+<td class="ltx_td ltx_align_center" id="S4.T2.4.1.12.2">0.479</td>
+<td class="ltx_td ltx_align_center ltx_border_r" id="S4.T2.4.1.12.3">0.206</td>
+<td class="ltx_td ltx_align_center" id="S4.T2.4.1.12.4">0.443</td>
+<td class="ltx_td ltx_align_center ltx_border_r" id="S4.T2.4.1.12.5">0.194</td>
+<td class="ltx_td ltx_align_center" id="S4.T2.4.1.12.6">0.394</td>
+<td class="ltx_td ltx_align_center ltx_border_r" id="S4.T2.4.1.12.7">0.173</td>
+<td class="ltx_td ltx_align_center" id="S4.T2.4.1.12.8">0.450</td>
+<td class="ltx_td ltx_align_center" id="S4.T2.4.1.12.9">0.197</td></tr>
+<tr class="ltx_tr" id="S4.T2.4.1.13">
+<td class="ltx_td ltx_align_center ltx_border_rr ltx_border_t" id="S4.T2.4.1.13.1"><span class="ltx_text ltx_font_bold" id="S4.T2.4.1.13.1.1">GNN Backbone</span></td>
+<td class="ltx_td ltx_align_center ltx_border_t" colspan="8" id="S4.T2.4.1.13.2"><span class="ltx_text ltx_font_bold" id="S4.T2.4.1.13.2.1">HGT</span></td></tr>
+<tr class="ltx_tr" id="S4.T2.4.1.14">
+<td class="ltx_td ltx_align_center ltx_border_rr ltx_border_t" id="S4.T2.4.1.14.1"><span class="ltx_text ltx_font_bold" id="S4.T2.4.1.14.1.1">LLM</span></td>
+<td class="ltx_td ltx_align_center ltx_border_r ltx_border_t" colspan="2" id="S4.T2.4.1.14.2"><span class="ltx_text ltx_font_bold" id="S4.T2.4.1.14.2.1">Qwen3-4B</span></td>
+<td class="ltx_td ltx_align_center ltx_border_r ltx_border_t" colspan="2" id="S4.T2.4.1.14.3"><span class="ltx_text ltx_font_bold" id="S4.T2.4.1.14.3.1">Qwen3-14B</span></td>
+<td class="ltx_td ltx_align_center ltx_border_r ltx_border_t" colspan="2" id="S4.T2.4.1.14.4"><span class="ltx_text ltx_font_bold" id="S4.T2.4.1.14.4.1">Ministral-3B</span></td>
+<td class="ltx_td ltx_align_center ltx_border_t" colspan="2" id="S4.T2.4.1.14.5"><span class="ltx_text ltx_font_bold" id="S4.T2.4.1.14.5.1">Ministral-14B</span></td></tr>
+<tr class="ltx_tr" id="S4.T2.4.1.15">
+<td class="ltx_td ltx_align_left ltx_border_rr" id="S4.T2.4.1.15.1"><span class="ltx_text ltx_font_bold" id="S4.T2.4.1.15.1.1">Method</span></td>
+<td class="ltx_td ltx_align_center" id="S4.T2.4.1.15.2"><span class="ltx_text ltx_font_bold" id="S4.T2.4.1.15.2.1">Rec.</span></td>
+<td class="ltx_td ltx_align_center ltx_border_r" id="S4.T2.4.1.15.3"><span class="ltx_text ltx_font_bold" id="S4.T2.4.1.15.3.1">F1</span></td>
+<td class="ltx_td ltx_align_center" id="S4.T2.4.1.15.4"><span class="ltx_text ltx_font_bold" id="S4.T2.4.1.15.4.1">Rec.</span></td>
+<td class="ltx_td ltx_align_center ltx_border_r" id="S4.T2.4.1.15.5"><span class="ltx_text ltx_font_bold" id="S4.T2.4.1.15.5.1">F1</span></td>
+<td class="ltx_td ltx_align_center" id="S4.T2.4.1.15.6"><span class="ltx_text ltx_font_bold" id="S4.T2.4.1.15.6.1">Rec.</span></td>
+<td class="ltx_td ltx_align_center ltx_border_r" id="S4.T2.4.1.15.7"><span class="ltx_text ltx_font_bold" id="S4.T2.4.1.15.7.1">F1</span></td>
+<td class="ltx_td ltx_align_center" id="S4.T2.4.1.15.8"><span class="ltx_text ltx_font_bold" id="S4.T2.4.1.15.8.1">Rec.</span></td>
+<td class="ltx_td ltx_align_center" id="S4.T2.4.1.15.9"><span class="ltx_text ltx_font_bold" id="S4.T2.4.1.15.9.1">F1</span></td></tr>
+<tr class="ltx_tr" id="S4.T2.4.1.16">
+<td class="ltx_td ltx_align_left ltx_border_rr ltx_border_tt" id="S4.T2.4.1.16.1"><span class="ltx_text ltx_font_bold" id="S4.T2.4.1.16.1.1">GNN</span></td>
+<td class="ltx_td ltx_align_center ltx_border_tt" colspan="8" id="S4.T2.4.1.16.2">Rec. 0.942  F1 0.093</td></tr>
+<tr class="ltx_tr" id="S4.T2.4.1.17">
+<td class="ltx_td ltx_align_left ltx_border_rr" id="S4.T2.4.1.17.1"><span class="ltx_text ltx_font_bold" id="S4.T2.4.1.17.1.1">HyGRAIL-NE</span></td>
+<td class="ltx_td ltx_align_center" id="S4.T2.4.1.17.2">0.568</td>
+<td class="ltx_td ltx_align_center ltx_border_r" id="S4.T2.4.1.17.3">0.103</td>
+<td class="ltx_td ltx_align_center" id="S4.T2.4.1.17.4">0.597</td>
+<td class="ltx_td ltx_align_center ltx_border_r" id="S4.T2.4.1.17.5">0.106</td>
+<td class="ltx_td ltx_align_center" id="S4.T2.4.1.17.6">0.577</td>
+<td class="ltx_td ltx_align_center ltx_border_r" id="S4.T2.4.1.17.7">0.102</td>
+<td class="ltx_td ltx_align_center" id="S4.T2.4.1.17.8">0.588</td>
+<td class="ltx_td ltx_align_center" id="S4.T2.4.1.17.9">0.103</td></tr>
+<tr class="ltx_tr" id="S4.T2.4.1.18">
+<td class="ltx_td ltx_align_left ltx_border_rr ltx_border_tt" id="S4.T2.4.1.18.1"><span class="ltx_text ltx_font_bold" id="S4.T2.4.1.18.1.1">HyGRAIL-Auto</span></td>
+<td class="ltx_td ltx_align_center ltx_border_tt" id="S4.T2.4.1.18.2">0.617</td>
+<td class="ltx_td ltx_align_center ltx_border_r ltx_border_tt" id="S4.T2.4.1.18.3"><span class="ltx_text ltx_underline" id="S4.T2.4.1.18.3.1">0.117</span></td>
+<td class="ltx_td ltx_align_center ltx_border_tt" id="S4.T2.4.1.18.4">0.611</td>
+<td class="ltx_td ltx_align_center ltx_border_r ltx_border_tt" id="S4.T2.4.1.18.5">0.115</td>
+<td class="ltx_td ltx_align_center ltx_border_tt" id="S4.T2.4.1.18.6">0.546</td>
+<td class="ltx_td ltx_align_center ltx_border_r ltx_border_tt" id="S4.T2.4.1.18.7">0.105</td>
+<td class="ltx_td ltx_align_center ltx_border_tt" id="S4.T2.4.1.18.8">0.579</td>
+<td class="ltx_td ltx_align_center ltx_border_tt" id="S4.T2.4.1.18.9">0.110</td></tr>
+<tr class="ltx_tr" id="S4.T2.4.1.19">
+<td class="ltx_td ltx_align_left ltx_border_rr" id="S4.T2.4.1.19.1"><span class="ltx_text ltx_font_bold" id="S4.T2.4.1.19.1.1">HyGRAIL-LLM</span></td>
+<td class="ltx_td ltx_align_center" id="S4.T2.4.1.19.2">0.626</td>
+<td class="ltx_td ltx_align_center ltx_border_r" id="S4.T2.4.1.19.3"><span class="ltx_text ltx_underline" id="S4.T2.4.1.19.3.1">0.117</span></td>
+<td class="ltx_td ltx_align_center" id="S4.T2.4.1.19.4">0.557</td>
+<td class="ltx_td ltx_align_center ltx_border_r" id="S4.T2.4.1.19.5">0.106</td>
+<td class="ltx_td ltx_align_center" id="S4.T2.4.1.19.6">0.548</td>
+<td class="ltx_td ltx_align_center ltx_border_r" id="S4.T2.4.1.19.7">0.105</td>
+<td class="ltx_td ltx_align_center" id="S4.T2.4.1.19.8">0.557</td>
+<td class="ltx_td ltx_align_center" id="S4.T2.4.1.19.9">0.106</td></tr>
+<tr class="ltx_tr" id="S4.T2.4.1.20">
+<td class="ltx_td ltx_align_center ltx_border_rr ltx_border_t" id="S4.T2.4.1.20.1"><span class="ltx_text ltx_font_bold" id="S4.T2.4.1.20.1.1">GNN Backbone</span></td>
+<td class="ltx_td ltx_align_center ltx_border_t" colspan="8" id="S4.T2.4.1.20.2"><span class="ltx_text ltx_font_bold" id="S4.T2.4.1.20.2.1">R-GCN</span></td></tr>
+<tr class="ltx_tr" id="S4.T2.4.1.21">
+<td class="ltx_td ltx_align_center ltx_border_rr ltx_border_t" id="S4.T2.4.1.21.1"><span class="ltx_text ltx_font_bold" id="S4.T2.4.1.21.1.1">LLM</span></td>
+<td class="ltx_td ltx_align_center ltx_border_r ltx_border_t" colspan="2" id="S4.T2.4.1.21.2"><span class="ltx_text ltx_font_bold" id="S4.T2.4.1.21.2.1">Qwen3-4B</span></td>
+<td class="ltx_td ltx_align_center ltx_border_r ltx_border_t" colspan="2" id="S4.T2.4.1.21.3"><span class="ltx_text ltx_font_bold" id="S4.T2.4.1.21.3.1">Qwen3-14B</span></td>
+<td class="ltx_td ltx_align_center ltx_border_r ltx_border_t" colspan="2" id="S4.T2.4.1.21.4"><span class="ltx_text ltx_font_bold" id="S4.T2.4.1.21.4.1">Ministral-3B</span></td>
+<td class="ltx_td ltx_align_center ltx_border_t" colspan="2" id="S4.T2.4.1.21.5"><span class="ltx_text ltx_font_bold" id="S4.T2.4.1.21.5.1">Ministral-14B</span></td></tr>
+<tr class="ltx_tr" id="S4.T2.4.1.22">
+<td class="ltx_td ltx_align_left ltx_border_rr" id="S4.T2.4.1.22.1"><span class="ltx_text ltx_font_bold" id="S4.T2.4.1.22.1.1">Method</span></td>
+<td class="ltx_td ltx_align_center" id="S4.T2.4.1.22.2"><span class="ltx_text ltx_font_bold" id="S4.T2.4.1.22.2.1">Rec.</span></td>
+<td class="ltx_td ltx_align_center ltx_border_r" id="S4.T2.4.1.22.3"><span class="ltx_text ltx_font_bold" id="S4.T2.4.1.22.3.1">F1</span></td>
+<td class="ltx_td ltx_align_center" id="S4.T2.4.1.22.4"><span class="ltx_text ltx_font_bold" id="S4.T2.4.1.22.4.1">Rec.</span></td>
+<td class="ltx_td ltx_align_center ltx_border_r" id="S4.T2.4.1.22.5"><span class="ltx_text ltx_font_bold" id="S4.T2.4.1.22.5.1">F1</span></td>
+<td class="ltx_td ltx_align_center" id="S4.T2.4.1.22.6"><span class="ltx_text ltx_font_bold" id="S4.T2.4.1.22.6.1">Rec.</span></td>
+<td class="ltx_td ltx_align_center ltx_border_r" id="S4.T2.4.1.22.7"><span class="ltx_text ltx_font_bold" id="S4.T2.4.1.22.7.1">F1</span></td>
+<td class="ltx_td ltx_align_center" id="S4.T2.4.1.22.8"><span class="ltx_text ltx_font_bold" id="S4.T2.4.1.22.8.1">Rec.</span></td>
+<td class="ltx_td ltx_align_center" id="S4.T2.4.1.22.9"><span class="ltx_text ltx_font_bold" id="S4.T2.4.1.22.9.1">F1</span></td></tr>
+<tr class="ltx_tr" id="S4.T2.4.1.23">
+<td class="ltx_td ltx_align_left ltx_border_rr ltx_border_tt" id="S4.T2.4.1.23.1"><span class="ltx_text ltx_font_bold" id="S4.T2.4.1.23.1.1">GNN</span></td>
+<td class="ltx_td ltx_align_center ltx_border_tt" colspan="8" id="S4.T2.4.1.23.2">Rec. 0.38  F1 0.107</td></tr>
+<tr class="ltx_tr" id="S4.T2.4.1.24">
+<td class="ltx_td ltx_align_left ltx_border_rr" id="S4.T2.4.1.24.1"><span class="ltx_text ltx_font_bold" id="S4.T2.4.1.24.1.1">HyGRAIL-NE</span></td>
+<td class="ltx_td ltx_align_center" id="S4.T2.4.1.24.2">0.273</td>
+<td class="ltx_td ltx_align_center ltx_border_r" id="S4.T2.4.1.24.3">0.116</td>
+<td class="ltx_td ltx_align_center" id="S4.T2.4.1.24.4">0.169</td>
+<td class="ltx_td ltx_align_center ltx_border_r" id="S4.T2.4.1.24.5">0.147</td>
+<td class="ltx_td ltx_align_center" id="S4.T2.4.1.24.6">0.312</td>
+<td class="ltx_td ltx_align_center ltx_border_r" id="S4.T2.4.1.24.7">0.122</td>
+<td class="ltx_td ltx_align_center" id="S4.T2.4.1.24.8">0.506</td>
+<td class="ltx_td ltx_align_center" id="S4.T2.4.1.24.9">0.132</td></tr>
+<tr class="ltx_tr" id="S4.T2.4.1.25">
+<td class="ltx_td ltx_align_left ltx_border_rr ltx_border_tt" id="S4.T2.4.1.25.1"><span class="ltx_text ltx_font_bold" id="S4.T2.4.1.25.1.1">HyGRAIL-Auto</span></td>
+<td class="ltx_td ltx_align_center ltx_border_tt" id="S4.T2.4.1.25.2">0.351</td>
+<td class="ltx_td ltx_align_center ltx_border_r ltx_border_tt" id="S4.T2.4.1.25.3"><span class="ltx_text ltx_underline ltx_font_bold ltx_font_italic" id="S4.T2.4.1.25.3.1">0.429</span></td>
+<td class="ltx_td ltx_align_center ltx_border_tt" id="S4.T2.4.1.25.4">0.351</td>
+<td class="ltx_td ltx_align_center ltx_border_r ltx_border_tt" id="S4.T2.4.1.25.5"><span class="ltx_text ltx_font_italic" id="S4.T2.4.1.25.5.1">0.362</span></td>
+<td class="ltx_td ltx_align_center ltx_border_tt" id="S4.T2.4.1.25.6">0.091</td>
+<td class="ltx_td ltx_align_center ltx_border_r ltx_border_tt" id="S4.T2.4.1.25.7">0.159</td>
+<td class="ltx_td ltx_align_center ltx_border_tt" id="S4.T2.4.1.25.8">0.286</td>
+<td class="ltx_td ltx_align_center ltx_border_tt" id="S4.T2.4.1.25.9"><span class="ltx_text ltx_font_italic" id="S4.T2.4.1.25.9.1">0.333</span></td></tr>
+<tr class="ltx_tr" id="S4.T2.4.1.26">
+<td class="ltx_td ltx_align_left ltx_border_b ltx_border_rr" id="S4.T2.4.1.26.1"><span class="ltx_text ltx_font_bold" id="S4.T2.4.1.26.1.1">HyGRAIL-LLM</span></td>
+<td class="ltx_td ltx_align_center ltx_border_b" id="S4.T2.4.1.26.2">0.377</td>
+<td class="ltx_td ltx_align_center ltx_border_b ltx_border_r" id="S4.T2.4.1.26.3">0.337</td>
+<td class="ltx_td ltx_align_center ltx_border_b" id="S4.T2.4.1.26.4">0.234</td>
+<td class="ltx_td ltx_align_center ltx_border_b ltx_border_r" id="S4.T2.4.1.26.5">0.319</td>
+<td class="ltx_td ltx_align_center ltx_border_b" id="S4.T2.4.1.26.6">0.974</td>
+<td class="ltx_td ltx_align_center ltx_border_b ltx_border_r" id="S4.T2.4.1.26.7">0.092</td>
+<td class="ltx_td ltx_align_center ltx_border_b" id="S4.T2.4.1.26.8">0.156</td>
+<td class="ltx_td ltx_align_center ltx_border_b" id="S4.T2.4.1.26.9">0.247</td></tr>
+</table></div><div class="tbl-foot">원문 arXiv HTML의 셀과 수치를 순서대로 재구성했다.</div></div><div class="tbl-wrap"><div class="tbl-cap"><span class="tn">TABLE 3</span>GNN 선별에 따른 LLM 호출률</div><div class="tbl-scroll"><table>
+<tr class="ltx_tr" id="S5.T3.4.1">
+<td class="ltx_td ltx_align_left ltx_border_tt" id="S5.T3.4.1.1"><span class="ltx_text ltx_font_bold" id="S5.T3.4.1.1.1">GNN Backbone</span></td>
+<td class="ltx_td ltx_align_center ltx_border_tt" id="S5.T3.4.1.2"><span class="ltx_text ltx_font_bold" id="S5.T3.4.1.2.1">LLM Call Rate</span></td>
+<td class="ltx_td ltx_align_center ltx_border_tt" id="S5.T3.4.1.3"><span class="ltx_text ltx_font_bold" id="S5.T3.4.1.3.1">Reduction</span></td></tr>
+<tr class="ltx_tr" id="S5.T3.4.2">
+<td class="ltx_td ltx_align_left ltx_border_t" id="S5.T3.4.2.1">HeteroConv</td>
+<td class="ltx_td ltx_align_center ltx_border_t" id="S5.T3.4.2.2">53.45%</td>
+<td class="ltx_td ltx_align_center ltx_border_t" id="S5.T3.4.2.3">46.55%</td></tr>
+<tr class="ltx_tr" id="S5.T3.4.3">
+<td class="ltx_td ltx_align_left" id="S5.T3.4.3.1">HGT</td>
+<td class="ltx_td ltx_align_center" id="S5.T3.4.3.2">29.99%</td>
+<td class="ltx_td ltx_align_center" id="S5.T3.4.3.3">70.01%</td></tr>
+<tr class="ltx_tr" id="S5.T3.4.4">
+<td class="ltx_td ltx_align_left ltx_border_bb" id="S5.T3.4.4.1">R-GCN</td>
+<td class="ltx_td ltx_align_center ltx_border_bb" id="S5.T3.4.4.2">53.49%</td>
+<td class="ltx_td ltx_align_center ltx_border_bb" id="S5.T3.4.4.3">46.51%</td></tr>
+</table></div><div class="tbl-foot">원문 arXiv HTML의 셀과 수치를 순서대로 재구성했다.</div></div>
+</section>
+<section class="ch" id="c4">
+<div class="ch-eyebrow"><span class="cnum">04</span><span class="clabel">Setup · 실험 설계</span></div>
+<h2 class="ch-title">시간 분할과 타입별 증거 스키마를 명시했다</h2>
+<div class="tldr"><div class="h">한눈에 요약</div><p>데이터는 시간 순서에 따라 7:1:2로 나눴고, 노드·간선 유형과 가설 관계별 표본 수를 공개했다. 증거 검색은 노드 유형마다 허용된 관계 집합을 다르게 둔다.</p></div>
+<p class="lead">명시적인 타입 스키마는 설명 가능성과 재현성을 높이지만, 새로운 분야로 옮길 때 사람이 다시 설계해야 하는 비용이 있다.</p><p>LLM별 추론 설정과 프롬프트 템플릿까지 제공해 결과가 어떤 자연화·판정 형식에서 나온 것인지 추적할 수 있다.</p><div class="tbl-wrap"><div class="tbl-cap"><span class="tn">TABLE 4</span>표본 MatKG 노드 유형 통계</div><div class="tbl-scroll"><table>
+<tr class="ltx_tr" id="A1.T4.2.1">
+<td class="ltx_td ltx_align_left ltx_border_tt" id="A1.T4.2.1.1"><span class="ltx_text ltx_font_bold" id="A1.T4.2.1.1.1">Node Type</span></td>
+<td class="ltx_td ltx_align_right ltx_border_tt" id="A1.T4.2.1.2"><span class="ltx_text ltx_font_bold" id="A1.T4.2.1.2.1"># Nodes</span></td>
+<td class="ltx_td ltx_align_right ltx_border_tt" id="A1.T4.2.1.3"><span class="ltx_text ltx_font_bold" id="A1.T4.2.1.3.1">Ratio</span></td></tr>
+<tr class="ltx_tr" id="A1.T4.2.2">
+<td class="ltx_td ltx_align_left ltx_border_t" id="A1.T4.2.2.1"><span class="ltx_text ltx_font_typewriter" id="A1.T4.2.2.1.1">CHM</span></td>
+<td class="ltx_td ltx_align_right ltx_border_t" id="A1.T4.2.2.2">661</td>
+<td class="ltx_td ltx_align_right ltx_border_t" id="A1.T4.2.2.3">22.03%</td></tr>
+<tr class="ltx_tr" id="A1.T4.2.3">
+<td class="ltx_td ltx_align_left" id="A1.T4.2.3.1"><span class="ltx_text ltx_font_typewriter" id="A1.T4.2.3.1.1">PRO</span></td>
+<td class="ltx_td ltx_align_right" id="A1.T4.2.3.2">1,013</td>
+<td class="ltx_td ltx_align_right" id="A1.T4.2.3.3">33.77%</td></tr>
+<tr class="ltx_tr" id="A1.T4.2.4">
+<td class="ltx_td ltx_align_left" id="A1.T4.2.4.1"><span class="ltx_text ltx_font_typewriter" id="A1.T4.2.4.1.1">APL</span></td>
+<td class="ltx_td ltx_align_right" id="A1.T4.2.4.2">419</td>
+<td class="ltx_td ltx_align_right" id="A1.T4.2.4.3">13.97%</td></tr>
+<tr class="ltx_tr" id="A1.T4.2.5">
+<td class="ltx_td ltx_align_left" id="A1.T4.2.5.1"><span class="ltx_text ltx_font_typewriter" id="A1.T4.2.5.1.1">SMT</span></td>
+<td class="ltx_td ltx_align_right" id="A1.T4.2.5.2">221</td>
+<td class="ltx_td ltx_align_right" id="A1.T4.2.5.3">7.37%</td></tr>
+<tr class="ltx_tr" id="A1.T4.2.6">
+<td class="ltx_td ltx_align_left" id="A1.T4.2.6.1"><span class="ltx_text ltx_font_typewriter" id="A1.T4.2.6.1.1">DSC</span></td>
+<td class="ltx_td ltx_align_right" id="A1.T4.2.6.2">205</td>
+<td class="ltx_td ltx_align_right" id="A1.T4.2.6.3">6.83%</td></tr>
+<tr class="ltx_tr" id="A1.T4.2.7">
+<td class="ltx_td ltx_align_left" id="A1.T4.2.7.1"><span class="ltx_text ltx_font_typewriter" id="A1.T4.2.7.1.1">CMT</span></td>
+<td class="ltx_td ltx_align_right" id="A1.T4.2.7.2">448</td>
+<td class="ltx_td ltx_align_right" id="A1.T4.2.7.3">14.93%</td></tr>
+<tr class="ltx_tr" id="A1.T4.2.8">
+<td class="ltx_td ltx_align_left" id="A1.T4.2.8.1"><span class="ltx_text ltx_font_typewriter" id="A1.T4.2.8.1.1">SPL</span></td>
+<td class="ltx_td ltx_align_right" id="A1.T4.2.8.2">33</td>
+<td class="ltx_td ltx_align_right" id="A1.T4.2.8.3">1.10%</td></tr>
+<tr class="ltx_tr" id="A1.T4.2.9">
+<td class="ltx_td ltx_align_left ltx_border_bb ltx_border_t" id="A1.T4.2.9.1"><span class="ltx_text ltx_font_bold" id="A1.T4.2.9.1.1">Total</span></td>
+<td class="ltx_td ltx_align_right ltx_border_bb ltx_border_t" id="A1.T4.2.9.2">3,000</td>
+<td class="ltx_td ltx_align_right ltx_border_bb ltx_border_t" id="A1.T4.2.9.3">100%</td></tr>
+</table></div><div class="tbl-foot">원문 arXiv HTML의 셀과 수치를 순서대로 재구성했다.</div></div><div class="tbl-wrap"><div class="tbl-cap"><span class="tn">TABLE 5</span>표본 MatKG 간선 유형 통계</div><div class="tbl-scroll"><table>
+<tr class="ltx_tr" id="A1.T5.2.1">
+<td class="ltx_td ltx_align_left ltx_border_tt" id="A1.T5.2.1.1"><span class="ltx_text ltx_font_bold" id="A1.T5.2.1.1.1">Edge Type</span></td>
+<td class="ltx_td ltx_align_right ltx_border_tt" id="A1.T5.2.1.2"><span class="ltx_text ltx_font_bold" id="A1.T5.2.1.2.1"># Edges</span></td>
+<td class="ltx_td ltx_align_right ltx_border_tt" id="A1.T5.2.1.3"><span class="ltx_text ltx_font_bold" id="A1.T5.2.1.3.1">Ratio</span></td></tr>
+<tr class="ltx_tr" id="A1.T5.2.2">
+<td class="ltx_td ltx_align_left ltx_border_t" id="A1.T5.2.2.1"><span class="ltx_text ltx_font_typewriter" id="A1.T5.2.2.1.1">CHM--APL</span></td>
+<td class="ltx_td ltx_align_right ltx_border_t" id="A1.T5.2.2.2">194</td>
+<td class="ltx_td ltx_align_right ltx_border_t" id="A1.T5.2.2.3">1.96%</td></tr>
+<tr class="ltx_tr" id="A1.T5.2.3">
+<td class="ltx_td ltx_align_left" id="A1.T5.2.3.1"><span class="ltx_text ltx_font_typewriter" id="A1.T5.2.3.1.1">CHM--PRO</span></td>
+<td class="ltx_td ltx_align_right" id="A1.T5.2.3.2">621</td>
+<td class="ltx_td ltx_align_right" id="A1.T5.2.3.3">6.29%</td></tr>
+<tr class="ltx_tr" id="A1.T5.2.4">
+<td class="ltx_td ltx_align_left" id="A1.T5.2.4.1"><span class="ltx_text ltx_font_typewriter" id="A1.T5.2.4.1.1">PRO--APL</span></td>
+<td class="ltx_td ltx_align_right" id="A1.T5.2.4.2">216</td>
+<td class="ltx_td ltx_align_right" id="A1.T5.2.4.3">2.19%</td></tr>
+<tr class="ltx_tr" id="A1.T5.2.5">
+<td class="ltx_td ltx_align_left" id="A1.T5.2.5.1"><span class="ltx_text ltx_font_typewriter" id="A1.T5.2.5.1.1">SMT--PRO</span></td>
+<td class="ltx_td ltx_align_right" id="A1.T5.2.5.2">138</td>
+<td class="ltx_td ltx_align_right" id="A1.T5.2.5.3">1.40%</td></tr>
+<tr class="ltx_tr" id="A1.T5.2.6">
+<td class="ltx_td ltx_align_left" id="A1.T5.2.6.1"><span class="ltx_text ltx_font_typewriter" id="A1.T5.2.6.1.1">CHM--SMT</span></td>
+<td class="ltx_td ltx_align_right" id="A1.T5.2.6.2">152</td>
+<td class="ltx_td ltx_align_right" id="A1.T5.2.6.3">1.54%</td></tr>
+<tr class="ltx_tr" id="A1.T5.2.7">
+<td class="ltx_td ltx_align_left" id="A1.T5.2.7.1"><span class="ltx_text ltx_font_typewriter" id="A1.T5.2.7.1.1">CHM--DSC</span></td>
+<td class="ltx_td ltx_align_right" id="A1.T5.2.7.2">304</td>
+<td class="ltx_td ltx_align_right" id="A1.T5.2.7.3">3.08%</td></tr>
+<tr class="ltx_tr" id="A1.T5.2.8">
+<td class="ltx_td ltx_align_left" id="A1.T5.2.8.1"><span class="ltx_text ltx_font_typewriter" id="A1.T5.2.8.1.1">CHM--CMT</span></td>
+<td class="ltx_td ltx_align_right" id="A1.T5.2.8.2">385</td>
+<td class="ltx_td ltx_align_right" id="A1.T5.2.8.3">3.90%</td></tr>
+<tr class="ltx_tr" id="A1.T5.2.9">
+<td class="ltx_td ltx_align_left" id="A1.T5.2.9.1">Other edge types</td>
+<td class="ltx_td ltx_align_right" id="A1.T5.2.9.2">7,864</td>
+<td class="ltx_td ltx_align_right" id="A1.T5.2.9.3">79.65%</td></tr>
+<tr class="ltx_tr" id="A1.T5.2.10">
+<td class="ltx_td ltx_align_left ltx_border_bb ltx_border_t" id="A1.T5.2.10.1"><span class="ltx_text ltx_font_bold" id="A1.T5.2.10.1.1">Total</span></td>
+<td class="ltx_td ltx_align_right ltx_border_bb ltx_border_t" id="A1.T5.2.10.2">9,874</td>
+<td class="ltx_td ltx_align_right ltx_border_bb ltx_border_t" id="A1.T5.2.10.3">100%</td></tr>
+</table></div><div class="tbl-foot">원문 arXiv HTML의 셀과 수치를 순서대로 재구성했다.</div></div><div class="tbl-wrap"><div class="tbl-cap"><span class="tn">TABLE 6</span>7개 가설 유형별 데이터 분할</div><div class="tbl-scroll"><table>
+<tr class="ltx_tr" id="A1.T6.2.1">
+<td class="ltx_td ltx_align_left ltx_border_tt" id="A1.T6.2.1.1" rowspan="2"><span class="ltx_text ltx_font_bold" id="A1.T6.2.1.1.1">Hypothesis Type</span></td>
+<td class="ltx_td ltx_align_center ltx_border_tt" colspan="3" id="A1.T6.2.1.2"><span class="ltx_text ltx_font_bold" id="A1.T6.2.1.2.1">Train</span></td>
+<td class="ltx_td ltx_align_center ltx_border_tt" colspan="3" id="A1.T6.2.1.3"><span class="ltx_text ltx_font_bold" id="A1.T6.2.1.3.1">Validation</span></td>
+<td class="ltx_td ltx_align_center ltx_border_tt" colspan="3" id="A1.T6.2.1.4"><span class="ltx_text ltx_font_bold" id="A1.T6.2.1.4.1">Test</span></td></tr>
+<tr class="ltx_tr" id="A1.T6.2.2">
+<td class="ltx_td ltx_align_right ltx_border_t" id="A1.T6.2.2.1"><span class="ltx_text ltx_font_bold" id="A1.T6.2.2.1.1">Pos.</span></td>
+<td class="ltx_td ltx_align_right ltx_border_t" id="A1.T6.2.2.2"><span class="ltx_text ltx_font_bold" id="A1.T6.2.2.2.1">Neg.</span></td>
+<td class="ltx_td ltx_align_right ltx_border_t" id="A1.T6.2.2.3"><span class="ltx_text ltx_font_bold" id="A1.T6.2.2.3.1">Total</span></td>
+<td class="ltx_td ltx_align_right ltx_border_t" id="A1.T6.2.2.4"><span class="ltx_text ltx_font_bold" id="A1.T6.2.2.4.1">Pos.</span></td>
+<td class="ltx_td ltx_align_right ltx_border_t" id="A1.T6.2.2.5"><span class="ltx_text ltx_font_bold" id="A1.T6.2.2.5.1">Neg.</span></td>
+<td class="ltx_td ltx_align_right ltx_border_t" id="A1.T6.2.2.6"><span class="ltx_text ltx_font_bold" id="A1.T6.2.2.6.1">Total</span></td>
+<td class="ltx_td ltx_align_right ltx_border_t" id="A1.T6.2.2.7"><span class="ltx_text ltx_font_bold" id="A1.T6.2.2.7.1">Pos.</span></td>
+<td class="ltx_td ltx_align_right ltx_border_t" id="A1.T6.2.2.8"><span class="ltx_text ltx_font_bold" id="A1.T6.2.2.8.1">Neg.</span></td>
+<td class="ltx_td ltx_align_right ltx_border_t" id="A1.T6.2.2.9"><span class="ltx_text ltx_font_bold" id="A1.T6.2.2.9.1">Total</span></td></tr>
+<tr class="ltx_tr" id="A1.T6.2.3">
+<td class="ltx_td ltx_align_left ltx_border_t" id="A1.T6.2.3.1"><span class="ltx_text ltx_font_typewriter" id="A1.T6.2.3.1.1">CHM--APL</span></td>
+<td class="ltx_td ltx_align_right ltx_border_t" id="A1.T6.2.3.2">137</td>
+<td class="ltx_td ltx_align_right ltx_border_t" id="A1.T6.2.3.3">2,714</td>
+<td class="ltx_td ltx_align_right ltx_border_t" id="A1.T6.2.3.4">2,851</td>
+<td class="ltx_td ltx_align_right ltx_border_t" id="A1.T6.2.3.5">18</td>
+<td class="ltx_td ltx_align_right ltx_border_t" id="A1.T6.2.3.6">390</td>
+<td class="ltx_td ltx_align_right ltx_border_t" id="A1.T6.2.3.7">408</td>
+<td class="ltx_td ltx_align_right ltx_border_t" id="A1.T6.2.3.8">39</td>
+<td class="ltx_td ltx_align_right ltx_border_t" id="A1.T6.2.3.9">776</td>
+<td class="ltx_td ltx_align_right ltx_border_t" id="A1.T6.2.3.10">815</td></tr>
+<tr class="ltx_tr" id="A1.T6.2.4">
+<td class="ltx_td ltx_align_left" id="A1.T6.2.4.1"><span class="ltx_text ltx_font_typewriter" id="A1.T6.2.4.1.1">CHM--PRO</span></td>
+<td class="ltx_td ltx_align_right" id="A1.T6.2.4.2">437</td>
+<td class="ltx_td ltx_align_right" id="A1.T6.2.4.3">8,691</td>
+<td class="ltx_td ltx_align_right" id="A1.T6.2.4.4">9,128</td>
+<td class="ltx_td ltx_align_right" id="A1.T6.2.4.5">58</td>
+<td class="ltx_td ltx_align_right" id="A1.T6.2.4.6">1,246</td>
+<td class="ltx_td ltx_align_right" id="A1.T6.2.4.7">1,304</td>
+<td class="ltx_td ltx_align_right" id="A1.T6.2.4.8">126</td>
+<td class="ltx_td ltx_align_right" id="A1.T6.2.4.9">2,483</td>
+<td class="ltx_td ltx_align_right" id="A1.T6.2.4.10">2,609</td></tr>
+<tr class="ltx_tr" id="A1.T6.2.5">
+<td class="ltx_td ltx_align_left" id="A1.T6.2.5.1"><span class="ltx_text ltx_font_typewriter" id="A1.T6.2.5.1.1">PRO--APL</span></td>
+<td class="ltx_td ltx_align_right" id="A1.T6.2.5.2">152</td>
+<td class="ltx_td ltx_align_right" id="A1.T6.2.5.3">3,023</td>
+<td class="ltx_td ltx_align_right" id="A1.T6.2.5.4">3,175</td>
+<td class="ltx_td ltx_align_right" id="A1.T6.2.5.5">21</td>
+<td class="ltx_td ltx_align_right" id="A1.T6.2.5.6">432</td>
+<td class="ltx_td ltx_align_right" id="A1.T6.2.5.7">453</td>
+<td class="ltx_td ltx_align_right" id="A1.T6.2.5.8">43</td>
+<td class="ltx_td ltx_align_right" id="A1.T6.2.5.9">865</td>
+<td class="ltx_td ltx_align_right" id="A1.T6.2.5.10">908</td></tr>
+<tr class="ltx_tr" id="A1.T6.2.6">
+<td class="ltx_td ltx_align_left" id="A1.T6.2.6.1"><span class="ltx_text ltx_font_typewriter" id="A1.T6.2.6.1.1">SMT--PRO</span></td>
+<td class="ltx_td ltx_align_right" id="A1.T6.2.6.2">98</td>
+<td class="ltx_td ltx_align_right" id="A1.T6.2.6.3">1,930</td>
+<td class="ltx_td ltx_align_right" id="A1.T6.2.6.4">2,028</td>
+<td class="ltx_td ltx_align_right" id="A1.T6.2.6.5">13</td>
+<td class="ltx_td ltx_align_right" id="A1.T6.2.6.6">277</td>
+<td class="ltx_td ltx_align_right" id="A1.T6.2.6.7">290</td>
+<td class="ltx_td ltx_align_right" id="A1.T6.2.6.8">27</td>
+<td class="ltx_td ltx_align_right" id="A1.T6.2.6.9">553</td>
+<td class="ltx_td ltx_align_right" id="A1.T6.2.6.10">580</td></tr>
+<tr class="ltx_tr" id="A1.T6.2.7">
+<td class="ltx_td ltx_align_left" id="A1.T6.2.7.1"><span class="ltx_text ltx_font_typewriter" id="A1.T6.2.7.1.1">CHM--SMT</span></td>
+<td class="ltx_td ltx_align_right" id="A1.T6.2.7.2">106</td>
+<td class="ltx_td ltx_align_right" id="A1.T6.2.7.3">2,128</td>
+<td class="ltx_td ltx_align_right" id="A1.T6.2.7.4">2,234</td>
+<td class="ltx_td ltx_align_right" id="A1.T6.2.7.5">15</td>
+<td class="ltx_td ltx_align_right" id="A1.T6.2.7.6">304</td>
+<td class="ltx_td ltx_align_right" id="A1.T6.2.7.7">319</td>
+<td class="ltx_td ltx_align_right" id="A1.T6.2.7.8">31</td>
+<td class="ltx_td ltx_align_right" id="A1.T6.2.7.9">608</td>
+<td class="ltx_td ltx_align_right" id="A1.T6.2.7.10">639</td></tr>
+<tr class="ltx_tr" id="A1.T6.2.8">
+<td class="ltx_td ltx_align_left" id="A1.T6.2.8.1"><span class="ltx_text ltx_font_typewriter" id="A1.T6.2.8.1.1">CHM--DSC</span></td>
+<td class="ltx_td ltx_align_right" id="A1.T6.2.8.2">213</td>
+<td class="ltx_td ltx_align_right" id="A1.T6.2.8.3">4,255</td>
+<td class="ltx_td ltx_align_right" id="A1.T6.2.8.4">4,468</td>
+<td class="ltx_td ltx_align_right" id="A1.T6.2.8.5">31</td>
+<td class="ltx_td ltx_align_right" id="A1.T6.2.8.6">608</td>
+<td class="ltx_td ltx_align_right" id="A1.T6.2.8.7">639</td>
+<td class="ltx_td ltx_align_right" id="A1.T6.2.8.8">60</td>
+<td class="ltx_td ltx_align_right" id="A1.T6.2.8.9">1,217</td>
+<td class="ltx_td ltx_align_right" id="A1.T6.2.8.10">1,277</td></tr>
+<tr class="ltx_tr" id="A1.T6.2.9">
+<td class="ltx_td ltx_align_left" id="A1.T6.2.9.1"><span class="ltx_text ltx_font_typewriter" id="A1.T6.2.9.1.1">CHM--CMT</span></td>
+<td class="ltx_td ltx_align_right" id="A1.T6.2.9.2">270</td>
+<td class="ltx_td ltx_align_right" id="A1.T6.2.9.3">5,389</td>
+<td class="ltx_td ltx_align_right" id="A1.T6.2.9.4">5,659</td>
+<td class="ltx_td ltx_align_right" id="A1.T6.2.9.5">38</td>
+<td class="ltx_td ltx_align_right" id="A1.T6.2.9.6">771</td>
+<td class="ltx_td ltx_align_right" id="A1.T6.2.9.7">809</td>
+<td class="ltx_td ltx_align_right" id="A1.T6.2.9.8">77</td>
+<td class="ltx_td ltx_align_right" id="A1.T6.2.9.9">1,540</td>
+<td class="ltx_td ltx_align_right" id="A1.T6.2.9.10">1,617</td></tr>
+<tr class="ltx_tr" id="A1.T6.2.10">
+<td class="ltx_td ltx_align_left ltx_border_bb ltx_border_t" id="A1.T6.2.10.1">Total</td>
+<td class="ltx_td ltx_align_right ltx_border_bb ltx_border_t" id="A1.T6.2.10.2">1,413</td>
+<td class="ltx_td ltx_align_right ltx_border_bb ltx_border_t" id="A1.T6.2.10.3">28,130</td>
+<td class="ltx_td ltx_align_right ltx_border_bb ltx_border_t" id="A1.T6.2.10.4">29,543</td>
+<td class="ltx_td ltx_align_right ltx_border_bb ltx_border_t" id="A1.T6.2.10.5">194</td>
+<td class="ltx_td ltx_align_right ltx_border_bb ltx_border_t" id="A1.T6.2.10.6">4,028</td>
+<td class="ltx_td ltx_align_right ltx_border_bb ltx_border_t" id="A1.T6.2.10.7">4,222</td>
+<td class="ltx_td ltx_align_right ltx_border_bb ltx_border_t" id="A1.T6.2.10.8">403</td>
+<td class="ltx_td ltx_align_right ltx_border_bb ltx_border_t" id="A1.T6.2.10.9">8,042</td>
+<td class="ltx_td ltx_align_right ltx_border_bb ltx_border_t" id="A1.T6.2.10.10">8,445</td></tr>
+</table></div><div class="tbl-foot">원문 arXiv HTML의 셀과 수치를 순서대로 재구성했다.</div></div><div class="tbl-wrap"><div class="tbl-cap"><span class="tn">TABLE 7</span>노드 유형별 증거 간선 집합</div><div class="tbl-scroll"><table>
+<tr class="ltx_tr" id="A1.T7.2.1">
+<td class="ltx_td ltx_align_left ltx_border_tt" id="A1.T7.2.1.1"><span class="ltx_text ltx_font_bold" id="A1.T7.2.1.1.1">Node Type</span></td>
+<td class="ltx_td ltx_align_left ltx_border_tt" id="A1.T7.2.1.2">
+<span class="ltx_inline-block ltx_align_top" id="A1.T7.2.1.2.1">
+<span class="ltx_p" id="A1.T7.2.1.2.1.1"><span class="ltx_text ltx_font_bold" id="A1.T7.2.1.2.1.1.1">Evidence Edge Types</span></span>
+</span></td></tr>
+<tr class="ltx_tr" id="A1.T7.2.2">
+<td class="ltx_td ltx_align_left ltx_border_t" id="A1.T7.2.2.1"><span class="ltx_text ltx_font_typewriter" id="A1.T7.2.2.1.1">CHM</span></td>
+<td class="ltx_td ltx_align_left ltx_border_t" id="A1.T7.2.2.2">
+<span class="ltx_inline-block ltx_align_top" id="A1.T7.2.2.2.1">
+<span class="ltx_p" id="A1.T7.2.2.2.1.1">CHM-PRO, CHM-APL, CHM-SPL, CHM-SMT, CHM-CMT, CHM-DSC, CHM-CHM</span>
+</span></td></tr>
+<tr class="ltx_tr" id="A1.T7.2.3">
+<td class="ltx_td ltx_align_left" id="A1.T7.2.3.1"><span class="ltx_text ltx_font_typewriter" id="A1.T7.2.3.1.1">PRO</span></td>
+<td class="ltx_td ltx_align_left" id="A1.T7.2.3.2">
+<span class="ltx_inline-block ltx_align_top" id="A1.T7.2.3.2.1">
+<span class="ltx_p" id="A1.T7.2.3.2.1.1">PRO-CHM, PRO-SPL, PRO-APL, PRO-SMT, PRO-CMT</span>
+</span></td></tr>
+<tr class="ltx_tr" id="A1.T7.2.4">
+<td class="ltx_td ltx_align_left" id="A1.T7.2.4.1"><span class="ltx_text ltx_font_typewriter" id="A1.T7.2.4.1.1">APL</span></td>
+<td class="ltx_td ltx_align_left" id="A1.T7.2.4.2">
+<span class="ltx_inline-block ltx_align_top" id="A1.T7.2.4.2.1">
+<span class="ltx_p" id="A1.T7.2.4.2.1.1">APL-PRO, APL-CHM</span>
+</span></td></tr>
+<tr class="ltx_tr" id="A1.T7.2.5">
+<td class="ltx_td ltx_align_left" id="A1.T7.2.5.1"><span class="ltx_text ltx_font_typewriter" id="A1.T7.2.5.1.1">SMT</span></td>
+<td class="ltx_td ltx_align_left" id="A1.T7.2.5.2">
+<span class="ltx_inline-block ltx_align_top" id="A1.T7.2.5.2.1">
+<span class="ltx_p" id="A1.T7.2.5.2.1.1">SMT-CHM, SMT-SPL, SMT-PRO, SMT-CMT</span>
+</span></td></tr>
+<tr class="ltx_tr" id="A1.T7.2.6">
+<td class="ltx_td ltx_align_left" id="A1.T7.2.6.1"><span class="ltx_text ltx_font_typewriter" id="A1.T7.2.6.1.1">DSC</span></td>
+<td class="ltx_td ltx_align_left" id="A1.T7.2.6.2">
+<span class="ltx_inline-block ltx_align_top" id="A1.T7.2.6.2.1">
+<span class="ltx_p" id="A1.T7.2.6.2.1.1">DSC-CHM</span>
+</span></td></tr>
+<tr class="ltx_tr" id="A1.T7.2.7">
+<td class="ltx_td ltx_align_left" id="A1.T7.2.7.1"><span class="ltx_text ltx_font_typewriter" id="A1.T7.2.7.1.1">CMT</span></td>
+<td class="ltx_td ltx_align_left" id="A1.T7.2.7.2">
+<span class="ltx_inline-block ltx_align_top" id="A1.T7.2.7.2.1">
+<span class="ltx_p" id="A1.T7.2.7.2.1.1">CMT-PRO, CMT-SPL, CMT-CHM</span>
+</span></td></tr>
+<tr class="ltx_tr" id="A1.T7.2.8">
+<td class="ltx_td ltx_align_left ltx_border_bb" id="A1.T7.2.8.1"><span class="ltx_text ltx_font_typewriter" id="A1.T7.2.8.1.1">SPL</span></td>
+<td class="ltx_td ltx_align_left ltx_border_bb" id="A1.T7.2.8.2">
+<span class="ltx_inline-block ltx_align_top" id="A1.T7.2.8.2.1">
+<span class="ltx_p" id="A1.T7.2.8.2.1.1">SPL-CHM, SPL-PRO, SPL-SMT, SPL-CMT</span>
+</span></td></tr>
+</table></div><div class="tbl-foot">원문 arXiv HTML의 셀과 수치를 순서대로 재구성했다.</div></div><div class="tbl-wrap"><div class="tbl-cap"><span class="tn">TABLE 8</span>LLM별 vLLM·디코딩 설정</div><div class="tbl-scroll"><table>
+<tr class="ltx_tr" id="A2.T8.2.1.1">
+<td class="ltx_td ltx_align_left ltx_border_tt" id="A2.T8.2.1.1.1"><span class="ltx_text ltx_font_bold" id="A2.T8.2.1.1.1.1">Model</span></td>
+<td class="ltx_td ltx_align_center ltx_border_tt" id="A2.T8.2.1.1.2"><span class="ltx_text ltx_font_bold" id="A2.T8.2.1.1.2.1">gpu-mem</span></td>
+<td class="ltx_td ltx_align_center ltx_border_tt" id="A2.T8.2.1.1.3"><span class="ltx_text ltx_font_bold" id="A2.T8.2.1.1.3.1">max-len</span></td>
+<td class="ltx_td ltx_align_center ltx_border_tt" id="A2.T8.2.1.1.4"><span class="ltx_text ltx_font_bold" id="A2.T8.2.1.1.4.1">max-seq</span></td>
+<td class="ltx_td ltx_align_center ltx_border_tt" id="A2.T8.2.1.1.5"><span class="ltx_text ltx_font_bold" id="A2.T8.2.1.1.5.1">new-tok</span></td></tr>
+<tr class="ltx_tr" id="A2.T8.2.1.2">
+<td class="ltx_td ltx_align_left ltx_border_t" id="A2.T8.2.1.2.1">Qwen3-4B-Instruct-2507</td>
+<td class="ltx_td ltx_align_center ltx_border_t" id="A2.T8.2.1.2.2">0.90</td>
+<td class="ltx_td ltx_align_center ltx_border_t" id="A2.T8.2.1.2.3">32,768</td>
+<td class="ltx_td ltx_align_center ltx_border_t" id="A2.T8.2.1.2.4">64</td>
+<td class="ltx_td ltx_align_center ltx_border_t" id="A2.T8.2.1.2.5">1024</td></tr>
+<tr class="ltx_tr" id="A2.T8.2.1.3">
+<td class="ltx_td ltx_align_left" id="A2.T8.2.1.3.1">Qwen3-14B</td>
+<td class="ltx_td ltx_align_center" id="A2.T8.2.1.3.2">0.90</td>
+<td class="ltx_td ltx_align_center" id="A2.T8.2.1.3.3">32,768</td>
+<td class="ltx_td ltx_align_center" id="A2.T8.2.1.3.4">32</td>
+<td class="ltx_td ltx_align_center" id="A2.T8.2.1.3.5">1024</td></tr>
+<tr class="ltx_tr" id="A2.T8.2.1.4">
+<td class="ltx_td ltx_align_left" id="A2.T8.2.1.4.1">Mistral-3B-reasoning</td>
+<td class="ltx_td ltx_align_center" id="A2.T8.2.1.4.2">0.85</td>
+<td class="ltx_td ltx_align_center" id="A2.T8.2.1.4.3">default</td>
+<td class="ltx_td ltx_align_center" id="A2.T8.2.1.4.4">64</td>
+<td class="ltx_td ltx_align_center" id="A2.T8.2.1.4.5">4096</td></tr>
+<tr class="ltx_tr" id="A2.T8.2.1.5">
+<td class="ltx_td ltx_align_left ltx_border_bb" id="A2.T8.2.1.5.1">Magistral-Small-14B</td>
+<td class="ltx_td ltx_align_center ltx_border_bb" id="A2.T8.2.1.5.2">0.90</td>
+<td class="ltx_td ltx_align_center ltx_border_bb" id="A2.T8.2.1.5.3">32,768</td>
+<td class="ltx_td ltx_align_center ltx_border_bb" id="A2.T8.2.1.5.4">16</td>
+<td class="ltx_td ltx_align_center ltx_border_bb" id="A2.T8.2.1.5.5">4096</td></tr>
+</table></div><div class="tbl-foot">원문 arXiv HTML의 셀과 수치를 순서대로 재구성했다.</div></div>
+</section>
+<section class="ch" id="c5">
+<div class="ch-eyebrow"><span class="cnum">05</span><span class="clabel">Limits · 해석 경계</span></div>
+<h2 class="ch-title">높은 분류 점수는 과학적 발견의 확정이 아니다</h2>
+<div class="tldr"><div class="h">한눈에 요약</div><p>폐쇄세계 음성은 아직 관측되지 않았을 뿐 실제로 거짓이 아닐 수 있다. 또 미리 정의한 관계 스키마와 증거 유형에 의존하고, 임계값·프롬프트·LLM 보정에 민감하다. 통과한 가설은 전문가와 실험 검증을 거쳐야 한다.</p></div>
+<p class="lead">HyGRAIL의 가장 유용한 위치는 자동 발견기가 아니라 <strong>비용을 통제하는 후보 우선순위기</strong>다.</p><p>현재 평가는 표본 MatKG 한 도메인에 집중된다. 다른 과학 그래프, 열린 관계 유형, 실제 후속 실험까지 이어지는지 검증해야 일반성을 주장할 수 있다.</p><figure>
+<div class="fig-top"><span class="fnum">FIG 5</span><span class="ftitle">증거 자연화 프롬프트</span></div>
+<div class="imgbox"><img alt="증거 자연화 프롬프트" decoding="async" loading="lazy" src="/paper-assets/a87a6a77d137bfceefcbf8b0ba1409937556170f2e85dde0ccfbe5423efd8a44.png"/></div>
+<figcaption>구조화된 그래프 경로를 LLM이 읽을 수 있는 자연어 근거로 변환한다.</figcaption>
+</figure><figure>
+<div class="fig-top"><span class="fnum">FIG 6</span><span class="ftitle">가설 검토 프롬프트</span></div>
+<div class="imgbox"><img alt="가설 검토 프롬프트" decoding="async" loading="lazy" src="/paper-assets/bc5f411660def1964521a4b8f12a98dc863fa5279ca1c06e72a1a06622bdf7c2.png"/></div>
+<figcaption>가설과 근거를 받아 판정과 신뢰도를 함께 출력하도록 제한한다.</figcaption>
+</figure><div class="tbl-wrap"><div class="tbl-cap"><span class="tn">TABLE 9</span>가설·증거 자연화 템플릿</div><div class="tbl-scroll"><table>
+<tr class="ltx_tr" id="A4.T9.2.1">
+<td class="ltx_td ltx_align_left ltx_align_top ltx_border_tt" id="A4.T9.2.1.1">
+<span class="ltx_inline-block ltx_align_top" id="A4.T9.2.1.1.1">
+<span class="ltx_p" id="A4.T9.2.1.1.1.1"><span class="ltx_text ltx_font_bold" id="A4.T9.2.1.1.1.1.1">Category</span></span>
+</span></td>
+<td class="ltx_td ltx_nopad_r ltx_align_left ltx_align_top ltx_border_tt" id="A4.T9.2.1.2">
+<span class="ltx_inline-block ltx_align_top" id="A4.T9.2.1.2.1">
+<span class="ltx_p" id="A4.T9.2.1.2.1.1"><span class="ltx_text ltx_font_bold" id="A4.T9.2.1.2.1.1.1">Template Structure</span></span>
+</span></td></tr>
+<tr class="ltx_tr" id="A4.T9.2.2">
+<td class="ltx_td ltx_align_left ltx_align_top ltx_border_t" colspan="2" id="A4.T9.2.2.1"><span class="ltx_text ltx_font_bold" id="A4.T9.2.2.1.1">1. Overall Evidence Format</span></td></tr>
+<tr class="ltx_tr" id="A4.T9.2.3">
+<td class="ltx_td ltx_align_left ltx_align_top ltx_border_t" id="A4.T9.2.3.1">
+<span class="ltx_inline-block ltx_align_top" id="A4.T9.2.3.1.1">
+<span class="ltx_p" id="A4.T9.2.3.1.1.1">Full Structure</span>
+</span></td>
+<td class="ltx_td ltx_nopad_r ltx_align_left ltx_align_top ltx_border_t" id="A4.T9.2.3.2">
+<span class="ltx_inline-block ltx_align_top" id="A4.T9.2.3.2.1">
+<span class="ltx_p" id="A4.T9.2.3.2.1.1">Hypothesis: {hypothesis_statement}
+<br class="ltx_break"/>Evidence: The following evidence about {left_entity} and {right_entity} has been extracted from the knowledge graph:
+<br class="ltx_break"/>{left_entity_feature_sentences}
+<br class="ltx_break"/>{right_entity_feature_sentences}
+<br class="ltx_break"/>{connecting_path_sentences or no-path sentence}
+<br class="ltx_break"/>{optional_convergence_sentence}
+<br class="ltx_break"/>{optional_contradiction_sentence}
+<br class="ltx_break"/>(GNN prediction score: {score:.4f})</span>
+</span></td></tr>
+<tr class="ltx_tr" id="A4.T9.2.4">
+<td class="ltx_td ltx_align_left ltx_align_top ltx_border_t" colspan="2" id="A4.T9.2.4.1"><span class="ltx_text ltx_font_bold" id="A4.T9.2.4.1.1">2. Hypothesis Statements</span></td></tr>
+<tr class="ltx_tr" id="A4.T9.2.5">
+<td class="ltx_td ltx_align_left ltx_align_top ltx_border_t" id="A4.T9.2.5.1">
+<span class="ltx_inline-block ltx_align_top" id="A4.T9.2.5.1.1">
+<span class="ltx_p" id="A4.T9.2.5.1.1.1">CHM-APL</span>
+</span></td>
+<td class="ltx_td ltx_nopad_r ltx_align_left ltx_align_top ltx_border_t" id="A4.T9.2.5.2">
+<span class="ltx_inline-block ltx_align_top" id="A4.T9.2.5.2.1">
+<span class="ltx_p" id="A4.T9.2.5.2.1.1">The material {left} can be effectively used for {right}.</span>
+</span></td></tr>
+<tr class="ltx_tr" id="A4.T9.2.6">
+<td class="ltx_td ltx_align_left ltx_align_top" id="A4.T9.2.6.1">
+<span class="ltx_inline-block ltx_align_top" id="A4.T9.2.6.1.1">
+<span class="ltx_p" id="A4.T9.2.6.1.1.1">CHM-PRO</span>
+</span></td>
+<td class="ltx_td ltx_nopad_r ltx_align_left ltx_align_top" id="A4.T9.2.6.2">
+<span class="ltx_inline-block ltx_align_top" id="A4.T9.2.6.2.1">
+<span class="ltx_p" id="A4.T9.2.6.2.1.1">The material {left} exhibits the property {right}.</span>
+</span></td></tr>
+<tr class="ltx_tr" id="A4.T9.2.7">
+<td class="ltx_td ltx_align_left ltx_align_top" id="A4.T9.2.7.1">
+<span class="ltx_inline-block ltx_align_top" id="A4.T9.2.7.1.1">
+<span class="ltx_p" id="A4.T9.2.7.1.1.1">PRO-APL</span>
+</span></td>
+<td class="ltx_td ltx_nopad_r ltx_align_left ltx_align_top" id="A4.T9.2.7.2">
+<span class="ltx_inline-block ltx_align_top" id="A4.T9.2.7.2.1">
+<span class="ltx_p" id="A4.T9.2.7.2.1.1">The property {left} is relevant and beneficial to the application {right}.</span>
+</span></td></tr>
+<tr class="ltx_tr" id="A4.T9.2.8">
+<td class="ltx_td ltx_align_left ltx_align_top" id="A4.T9.2.8.1">
+<span class="ltx_inline-block ltx_align_top" id="A4.T9.2.8.1.1">
+<span class="ltx_p" id="A4.T9.2.8.1.1.1">SMT-PRO</span>
+</span></td>
+<td class="ltx_td ltx_nopad_r ltx_align_left ltx_align_top" id="A4.T9.2.8.2">
+<span class="ltx_inline-block ltx_align_top" id="A4.T9.2.8.2.1">
+<span class="ltx_p" id="A4.T9.2.8.2.1.1">The synthesis method {left} can produce or enhance the property {right}.</span>
+</span></td></tr>
+<tr class="ltx_tr" id="A4.T9.2.9">
+<td class="ltx_td ltx_align_left ltx_align_top" id="A4.T9.2.9.1">
+<span class="ltx_inline-block ltx_align_top" id="A4.T9.2.9.1.1">
+<span class="ltx_p" id="A4.T9.2.9.1.1.1">CHM-SMT</span>
+</span></td>
+<td class="ltx_td ltx_nopad_r ltx_align_left ltx_align_top" id="A4.T9.2.9.2">
+<span class="ltx_inline-block ltx_align_top" id="A4.T9.2.9.2.1">
+<span class="ltx_p" id="A4.T9.2.9.2.1.1">The material {left} can be synthesized using the method {right}.</span>
+</span></td></tr>
+<tr class="ltx_tr" id="A4.T9.2.10">
+<td class="ltx_td ltx_align_left ltx_align_top" id="A4.T9.2.10.1">
+<span class="ltx_inline-block ltx_align_top" id="A4.T9.2.10.1.1">
+<span class="ltx_p" id="A4.T9.2.10.1.1.1">CHM-DSC</span>
+</span></td>
+<td class="ltx_td ltx_nopad_r ltx_align_left ltx_align_top" id="A4.T9.2.10.2">
+<span class="ltx_inline-block ltx_align_top" id="A4.T9.2.10.2.1">
+<span class="ltx_p" id="A4.T9.2.10.2.1.1">The material {left} can be described by the descriptor {right}.</span>
+</span></td></tr>
+<tr class="ltx_tr" id="A4.T9.2.11">
+<td class="ltx_td ltx_align_left ltx_align_top" id="A4.T9.2.11.1">
+<span class="ltx_inline-block ltx_align_top" id="A4.T9.2.11.1.1">
+<span class="ltx_p" id="A4.T9.2.11.1.1.1">CHM-CMT</span>
+</span></td>
+<td class="ltx_td ltx_nopad_r ltx_align_left ltx_align_top" id="A4.T9.2.11.2">
+<span class="ltx_inline-block ltx_align_top" id="A4.T9.2.11.2.1">
+<span class="ltx_p" id="A4.T9.2.11.2.1.1">The material {left} can be characterized using the method {right}.</span>
+</span></td></tr>
+<tr class="ltx_tr" id="A4.T9.2.12">
+<td class="ltx_td ltx_align_left ltx_align_top ltx_border_t" colspan="2" id="A4.T9.2.12.1"><span class="ltx_text ltx_font_bold" id="A4.T9.2.12.1.1">3. Left-Entity Features</span></td></tr>
+<tr class="ltx_tr" id="A4.T9.2.13">
+<td class="ltx_td ltx_align_left ltx_align_top ltx_border_t" id="A4.T9.2.13.1">
+<span class="ltx_inline-block ltx_align_top" id="A4.T9.2.13.1.1">
+<span class="ltx_p" id="A4.T9.2.13.1.1.1">Well-established</span>
+</span></td>
+<td class="ltx_td ltx_nopad_r ltx_align_left ltx_align_top ltx_border_t" id="A4.T9.2.13.2">
+<span class="ltx_inline-block ltx_align_top" id="A4.T9.2.13.2.1">
+<span class="ltx_p" id="A4.T9.2.13.2.1.1">{left} is strongly characterized by {right} (norm={norm:.2f}, count={count:.0f}), representing a well-established and defining trait</span>
+</span></td></tr>
+<tr class="ltx_tr" id="A4.T9.2.14">
+<td class="ltx_td ltx_align_left ltx_align_top" id="A4.T9.2.14.1">
+<span class="ltx_inline-block ltx_align_top" id="A4.T9.2.14.1.1">
+<span class="ltx_p" id="A4.T9.2.14.1.1.1">Promising</span>
+</span></td>
+<td class="ltx_td ltx_nopad_r ltx_align_left ltx_align_top" id="A4.T9.2.14.2">
+<span class="ltx_inline-block ltx_align_top" id="A4.T9.2.14.2.1">
+<span class="ltx_p" id="A4.T9.2.14.2.1.1">{left} shows a notable association with {right} (norm={norm:.2f}, count={count:.0f}), suggesting a promising but less-explored characteristic</span>
+</span></td></tr>
+<tr class="ltx_tr" id="A4.T9.2.15">
+<td class="ltx_td ltx_align_left ltx_align_top" id="A4.T9.2.15.1">
+<span class="ltx_inline-block ltx_align_top" id="A4.T9.2.15.1.1">
+<span class="ltx_p" id="A4.T9.2.15.1.1.1">Common</span>
+</span></td>
+<td class="ltx_td ltx_nopad_r ltx_align_left ltx_align_top" id="A4.T9.2.15.2">
+<span class="ltx_inline-block ltx_align_top" id="A4.T9.2.15.2.1">
+<span class="ltx_p" id="A4.T9.2.15.2.1.1">{left} has some association with {right} (norm={norm:.2f}, count={count:.0f}), though this is a common trait shared by many materials</span>
+</span></td></tr>
+<tr class="ltx_tr" id="A4.T9.2.16">
+<td class="ltx_td ltx_align_left ltx_align_top" id="A4.T9.2.16.1">
+<span class="ltx_inline-block ltx_align_top" id="A4.T9.2.16.1.1">
+<span class="ltx_p" id="A4.T9.2.16.1.1.1">Weak</span>
+</span></td>
+<td class="ltx_td ltx_nopad_r ltx_align_left ltx_align_top" id="A4.T9.2.16.2">
+<span class="ltx_inline-block ltx_align_top" id="A4.T9.2.16.2.1">
+<span class="ltx_p" id="A4.T9.2.16.2.1.1">{left} has a weak association with {right} (norm={norm:.2f}, count={count:.0f}), providing limited discriminative evidence</span>
+</span></td></tr>
+<tr class="ltx_tr" id="A4.T9.2.17">
+<td class="ltx_td ltx_align_left ltx_align_top ltx_border_t" colspan="2" id="A4.T9.2.17.1"><span class="ltx_text ltx_font_bold" id="A4.T9.2.17.1.1">4. Right-Entity Features</span></td></tr>
+<tr class="ltx_tr" id="A4.T9.2.18">
+<td class="ltx_td ltx_align_left ltx_align_top ltx_border_t" id="A4.T9.2.18.1">
+<span class="ltx_inline-block ltx_align_top" id="A4.T9.2.18.1.1">
+<span class="ltx_p" id="A4.T9.2.18.1.1.1">Well-established</span>
+</span></td>
+<td class="ltx_td ltx_nopad_r ltx_align_left ltx_align_top ltx_border_t" id="A4.T9.2.18.2">
+<span class="ltx_inline-block ltx_align_top" id="A4.T9.2.18.2.1">
+<span class="ltx_p" id="A4.T9.2.18.2.1.1">{left} fundamentally requires {right} (norm={norm:.2f}, count={count:.0f}), a well-documented core requirement</span>
+</span></td></tr>
+<tr class="ltx_tr" id="A4.T9.2.19">
+<td class="ltx_td ltx_align_left ltx_align_top" id="A4.T9.2.19.1">
+<span class="ltx_inline-block ltx_align_top" id="A4.T9.2.19.1.1">
+<span class="ltx_p" id="A4.T9.2.19.1.1.1">Promising</span>
+</span></td>
+<td class="ltx_td ltx_nopad_r ltx_align_left ltx_align_top" id="A4.T9.2.19.2">
+<span class="ltx_inline-block ltx_align_top" id="A4.T9.2.19.2.1">
+<span class="ltx_p" id="A4.T9.2.19.2.1.1">{left} appears to benefit from {right} (norm={norm:.2f}, count={count:.0f}), an emerging but less-explored requirement</span>
+</span></td></tr>
+<tr class="ltx_tr" id="A4.T9.2.20">
+<td class="ltx_td ltx_align_left ltx_align_top" id="A4.T9.2.20.1">
+<span class="ltx_inline-block ltx_align_top" id="A4.T9.2.20.1.1">
+<span class="ltx_p" id="A4.T9.2.20.1.1.1">Common</span>
+</span></td>
+<td class="ltx_td ltx_nopad_r ltx_align_left ltx_align_top" id="A4.T9.2.20.2">
+<span class="ltx_inline-block ltx_align_top" id="A4.T9.2.20.2.1">
+<span class="ltx_p" id="A4.T9.2.20.2.1.1">{left} has some relevance to {right} (norm={norm:.2f}, count={count:.0f}), though this is a general association</span>
+</span></td></tr>
+<tr class="ltx_tr" id="A4.T9.2.21">
+<td class="ltx_td ltx_align_left ltx_align_top" id="A4.T9.2.21.1">
+<span class="ltx_inline-block ltx_align_top" id="A4.T9.2.21.1.1">
+<span class="ltx_p" id="A4.T9.2.21.1.1.1">Weak</span>
+</span></td>
+<td class="ltx_td ltx_nopad_r ltx_align_left ltx_align_top" id="A4.T9.2.21.2">
+<span class="ltx_inline-block ltx_align_top" id="A4.T9.2.21.2.1">
+<span class="ltx_p" id="A4.T9.2.21.2.1.1">{left} shows weak relevance to {right} (norm={norm:.2f}, count={count:.0f}), suggesting peripheral importance</span>
+</span></td></tr>
+<tr class="ltx_tr" id="A4.T9.2.22">
+<td class="ltx_td ltx_align_left ltx_align_top ltx_border_t" colspan="2" id="A4.T9.2.22.1"><span class="ltx_text ltx_font_bold" id="A4.T9.2.22.1.1">5. Connecting Paths</span></td></tr>
+<tr class="ltx_tr" id="A4.T9.2.23">
+<td class="ltx_td ltx_align_left ltx_align_top ltx_border_t" id="A4.T9.2.23.1">
+<span class="ltx_inline-block ltx_align_top" id="A4.T9.2.23.1.1">
+<span class="ltx_p" id="A4.T9.2.23.1.1.1">Strong</span>
+</span></td>
+<td class="ltx_td ltx_nopad_r ltx_align_left ltx_align_top ltx_border_t" id="A4.T9.2.23.2">
+<span class="ltx_inline-block ltx_align_top" id="A4.T9.2.23.2.1">
+<span class="ltx_p" id="A4.T9.2.23.2.1.1">A strong mechanistic link exists: {material} possesses {intermediate}, which is directly relevant to {application} (path score={score:.3f}, indicating robust evidence)</span>
+</span></td></tr>
+<tr class="ltx_tr" id="A4.T9.2.24">
+<td class="ltx_td ltx_align_left ltx_align_top" id="A4.T9.2.24.1">
+<span class="ltx_inline-block ltx_align_top" id="A4.T9.2.24.1.1">
+<span class="ltx_p" id="A4.T9.2.24.1.1.1">Moderate</span>
+</span></td>
+<td class="ltx_td ltx_nopad_r ltx_align_left ltx_align_top" id="A4.T9.2.24.2">
+<span class="ltx_inline-block ltx_align_top" id="A4.T9.2.24.2.1">
+<span class="ltx_p" id="A4.T9.2.24.2.1.1">A plausible connection exists: {material} exhibits {intermediate}, which relates to {application} (path score={score:.3f}, suggesting moderate evidence)</span>
+</span></td></tr>
+<tr class="ltx_tr" id="A4.T9.2.25">
+<td class="ltx_td ltx_align_left ltx_align_top" id="A4.T9.2.25.1">
+<span class="ltx_inline-block ltx_align_top" id="A4.T9.2.25.1.1">
+<span class="ltx_p" id="A4.T9.2.25.1.1.1">Weak</span>
+</span></td>
+<td class="ltx_td ltx_nopad_r ltx_align_left ltx_align_top" id="A4.T9.2.25.2">
+<span class="ltx_inline-block ltx_align_top" id="A4.T9.2.25.2.1">
+<span class="ltx_p" id="A4.T9.2.25.2.1.1">A weak connection exists: {material} is linked to {application} via {intermediate} (path score={score:.3f}), but this provides limited mechanistic support</span>
+</span></td></tr>
+<tr class="ltx_tr" id="A4.T9.2.26">
+<td class="ltx_td ltx_align_left ltx_align_top" id="A4.T9.2.26.1">
+<span class="ltx_inline-block ltx_align_top" id="A4.T9.2.26.1.1">
+<span class="ltx_p" id="A4.T9.2.26.1.1.1">Hub Node</span>
+</span></td>
+<td class="ltx_td ltx_nopad_r ltx_align_left ltx_align_top" id="A4.T9.2.26.2">
+<span class="ltx_inline-block ltx_align_top" id="A4.T9.2.26.2.1">
+<span class="ltx_p" id="A4.T9.2.26.2.1.1">A path exists via {intermediate}, but this is a generic/common node (path score={score:.3f}), providing weak discriminative evidence</span>
+</span></td></tr>
+<tr class="ltx_tr" id="A4.T9.2.27">
+<td class="ltx_td ltx_align_left ltx_align_top ltx_border_t" colspan="2" id="A4.T9.2.27.1"><span class="ltx_text ltx_font_bold" id="A4.T9.2.27.1.1">6. Structural Context Sentences</span></td></tr>
+<tr class="ltx_tr" id="A4.T9.2.28">
+<td class="ltx_td ltx_align_left ltx_align_top ltx_border_t" id="A4.T9.2.28.1">
+<span class="ltx_inline-block ltx_align_top" id="A4.T9.2.28.1.1">
+<span class="ltx_p" id="A4.T9.2.28.1.1.1">No-path</span>
+</span></td>
+<td class="ltx_td ltx_nopad_r ltx_align_left ltx_align_top ltx_border_t" id="A4.T9.2.28.2">
+<span class="ltx_inline-block ltx_align_top" id="A4.T9.2.28.2.1">
+<span class="ltx_p" id="A4.T9.2.28.2.1.1">No connecting paths were found in the knowledge graph between {left_entity} and {right_entity}, limiting the mechanistic evidence available.</span>
+</span></td></tr>
+<tr class="ltx_tr" id="A4.T9.2.29">
+<td class="ltx_td ltx_align_left ltx_align_top" id="A4.T9.2.29.1">
+<span class="ltx_inline-block ltx_align_top" id="A4.T9.2.29.1.1">
+<span class="ltx_p" id="A4.T9.2.29.1.1.1">Convergence</span>
+</span></td>
+<td class="ltx_td ltx_nopad_r ltx_align_left ltx_align_top" id="A4.T9.2.29.2">
+<span class="ltx_inline-block ltx_align_top" id="A4.T9.2.29.2.1">
+<span class="ltx_p" id="A4.T9.2.29.2.1.1">Notably, multiple connecting paths converge on similar mechanisms ({mechanisms}), strengthening the evidence for this relationship.</span>
+</span></td></tr>
+<tr class="ltx_tr" id="A4.T9.2.30">
+<td class="ltx_td ltx_align_left ltx_align_top ltx_border_bb" id="A4.T9.2.30.1">
+<span class="ltx_inline-block ltx_align_top" id="A4.T9.2.30.1.1">
+<span class="ltx_p" id="A4.T9.2.30.1.1.1">Contradiction</span>
+</span></td>
+<td class="ltx_td ltx_nopad_r ltx_align_left ltx_align_top ltx_border_bb" id="A4.T9.2.30.2">
+<span class="ltx_inline-block ltx_align_top" id="A4.T9.2.30.2.1">
+<span class="ltx_p" id="A4.T9.2.30.2.1.1">However, there is potential inconsistency: {description}. This warrants caution in the confidence assessment.</span>
+</span></td></tr>
+</table></div><div class="tbl-foot">원문 arXiv HTML의 셀과 수치를 순서대로 재구성했다.</div></div>
+</section>
+<section class="ch" id="gloss">
+<div class="ch-eyebrow"><span class="cnum">＋</span><span class="clabel">Glossary · 핵심 용어</span></div>
+<h2 class="ch-title">핵심 용어 정리</h2>
+<div class="tldr"><div class="h">한눈에 요약</div><p>논문의 주장을 따라가는 데 필요한 용어만 간결하게 모았다.</p></div>
+<div class="gloss"><div class="gitem"><div class="term">후보 가설<span class="en">Candidate hypothesis</span></div><p>지식 그래프에 아직 없는 타입 적합 링크로, 검증 대상이지 확정 사실은 아니다.</p></div><div class="gitem"><div class="term">GNN 선별<span class="en">GNN triage</span></div><p>명확한 후보는 자동 판정하고 모호한 후보만 LLM 심사로 보내는 단계.</p></div><div class="gitem"><div class="term">양쪽 증거<span class="en">Two-sided evidence</span></div><p>후보 링크의 출발 노드와 도착 노드 양쪽에서 검색한 그래프 근거.</p></div><div class="gitem"><div class="term">폐쇄세계 가정<span class="en">Closed-world assumption</span></div><p>그래프에 없는 링크를 음성으로 취급하는 평가 가정.</p></div><div class="gitem"><div class="term">R-GCN<span class="en">Relational GCN</span></div><p>여러 관계 유형별 변환을 학습하는 지식 그래프 신경망.</p></div></div>
+</section>
+<section class="ch" id="take">
+<div class="ch-eyebrow"><span class="cnum">＋</span><span class="clabel">One-page Summary · 한 장 정리</span></div>
+<h2 class="ch-title">이 논문을 한 장으로</h2>
+<div class="tldr"><div class="h">한눈에 요약</div><p>문제, 방법, 증거, 한계를 한 번에 다시 정리한다.</p></div>
+<div class="takeaways"><div class="take"><div class="n">01</div><div class="body">지식 그래프의 누락 링크를 <b>검증할 후보 가설</b>로 다룬다.</div></div><div class="take"><div class="n">02</div><div class="body">GNN이 쉬운 후보를 처리하고 평균 45.64%만 LLM에 보낸다.</div></div><div class="take"><div class="n">03</div><div class="body">R-GCN+Qwen3-4B의 최고 F1은 0.429였다.</div></div><div class="take"><div class="n">04</div><div class="body">양쪽 끝점 증거는 한쪽 증거보다 F1을 0.222·0.152 높였다.</div></div><div class="take"><div class="n">05</div><div class="body">증거를 더 많이 넣는다고 항상 좋아지지 않아 선택적 검색이 중요하다.</div></div><div class="take"><div class="n">06</div><div class="body">폐쇄세계 음성과 한 도메인 평가 때문에 과학적 참이나 일반성을 직접 증명하지는 않는다.</div></div></div>
+</section>

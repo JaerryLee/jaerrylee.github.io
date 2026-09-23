@@ -1,0 +1,89 @@
+<section class="ch" id="c1">
+<div class="ch-eyebrow"><span class="cnum">01</span><span class="clabel">Background · 배경</span></div>
+<h2 class="ch-title">책·규정·논문은 납작한 문장 목록이 아니다</h2>
+<div class="tldr"><div class="h">한눈에 요약</div><p>구조화 문서는 장–절–항–부록의 계층을 가진다. 단순 chunk 임베딩은 이 구조를 끊어 여러 곳에 흩어진 근거를 놓칠 수 있다.</p></div>
+<div class="call ar"><div class="ct">정말 쉽게 한 문장</div><p>책의 목차를 통째로 프롬프트에 넣지 않고, <strong>필요한 목차 조각만 찾아가며</strong> 답을 만드는 RAG다.</p></div><div class="call ar"><div class="ct">초등학생도 이해하는 설명</div><p>백과사전에서 답을 찾을 때 책 전체를 들고 오지 않고, 목차에서 3쪽·7쪽만 확인한 뒤 모자란 부분이 있으면 더 찾는 것이다.</p></div><p class="lead">VikingRAG의 차별점은 지식 그래프를 새로 만드는 것이 아니라, 원래 문서의 디렉터리 계층을 검색 가능한 상태로 보존하는 데 있다.</p><p>기존 DeepRead는 후보 문서의 전체 디렉터리를 LLM에 계속 보여줘 토큰이 커졌다. VikingRAG는 필요한 directory segment만 on-demand로 노출한다.</p><figure>
+<div class="fig-top"><span class="fnum">FIG 1</span><span class="ftitle">VikingRAG 구조 인식 저장·검색</span></div>
+<div class="imgbox"><img alt="VikingRAG 구조 인식 저장·검색" decoding="async" loading="lazy" src="/paper-assets/634b2b0c81b49a1d1538112671aba2054a7d75b7cee6d05643595399ff318e2d.png"/></div>
+<figcaption>문서 형식에서 계층을 추출하고, 각 계층의 요약·chunk를 URI로 저장한 뒤 search/read 도구로 필요한 부분만 노출한다.</figcaption>
+</figure>
+</section>
+<section class="ch" id="c2">
+<div class="ch-eyebrow"><span class="cnum">02</span><span class="clabel">Method · 방법</span></div>
+<h2 class="ch-title">한 번 찾고 끝내지 말고, 남은 빈칸을 보고 다시 찾는다</h2>
+<div class="tldr"><div class="h">한눈에 요약</div><p>에이전트는 첫 검색 결과를 읽고 어떤 사실이 부족한지 판단한다. 그 빈칸을 채우는 새 query로 다음 directory segment를 검색하는 multi-round loop를 수행한다.</p></div>
+<div class="call ar"><div class="ct">초등학생도 이해하는 설명</div><p>선생님이 “이름은 찾았는데 생일이 없다”고 말하면, 생일이 있을 법한 다른 페이지를 다시 펼쳐 보는 방식이다.</p></div><p class="lead">VikingRAG-E는 과거의 검색 trace를 query-conditioned experience edge로 저장하고, 비슷한 질문에서 그 경로를 재사용한다.</p><p>VikingRAG-E+는 한 번 검색한 증거가 충분한지 checker가 판단한 뒤 어려운 질문에만 agentic escalation을 켠다. 쉬운 질문에 매번 긴 대화를 시키지 않는 구조다.</p><div class="tbl-wrap"><div class="tbl-cap"><span class="tn">TABLE 1</span>구조 인식 RAG 비교</div>
+<div class="tbl-scroll"><table><thead><tr><th>방법</th><th>문서 디렉터리</th><th>증거 공백 반복 검색</th><th>디렉터리 부분 노출</th></tr></thead><tbody><tr><td>NaiveRAG / graph-RAG / SQL-RAG</td><td>×</td><td>×</td><td>×</td></tr><tr><td>MoDora / BookRAG / KohakuRAG</td><td>✓</td><td>×</td><td>×</td></tr><tr><td>DeepRead</td><td>✓</td><td>✓</td><td>×</td></tr><tr><td>VikingRAG</td><td>✓</td><td>✓</td><td>✓</td></tr></tbody></table></div></div><figure>
+<div class="fig-top"><span class="fnum">FIG 2</span><span class="ftitle">evidence-gap-driven retrieval 예시</span></div>
+<div class="imgbox"><img alt="evidence-gap-driven retrieval 예시" decoding="async" loading="lazy" src="/paper-assets/157289e21ee9ea2b73437064a5b4e6b2027eec79ac212877a412f4265db898db.png"/></div>
+<figcaption>중간 검색 결과에서 빠진 근거를 찾아 다음 라운드의 대상과 query가 바뀌는 흐름이다.</figcaption>
+</figure>
+</section>
+<section class="ch" id="c3">
+<div class="ch-eyebrow"><span class="cnum">03</span><span class="clabel">Results · 결과</span></div>
+<h2 class="ch-title">정확도를 크게 잃지 않고 토큰을 줄였다</h2>
+<div class="tldr"><div class="h">한눈에 요약</div><p>저자들은 여러 구조 문서 데이터셋에서 VikingRAG가 SOTA 대비 11.6–51.9% 토큰을 사용한다고 보고한다. trace 재사용과 선택적 escalation을 더하면 5.1–32.5%까지 내려간다.</p></div>
+<div class="call ar"><div class="ct">초등학생도 이해하는 설명</div><p>문제를 잘 풀던 친구의 풀이 순서를 메모해 두었다가, 비슷한 문제에서는 처음부터 다시 헤매지 않는 것이다.</p></div><p class="lead">경험 edge는 답을 저장하는 것이 아니라, “이 질문은 이 문서 조각을 이렇게 찾아가면 된다”는 경로를 저장한다.</p><p>문서 수를 너무 줄이면 근거가 부족해 재검색이 늘고, 너무 늘리면 관련 없는 토큰과 지연이 커진다. 저자들의 기본값 K=10, L=1000, B=15는 이 절충 위에 있다.</p><div class="stat-row"><div class="stat"><div class="v arb">11.6–51.9%</div><div class="l">SOTA 대비 기본 토큰</div></div><div class="stat"><div class="v">5.1–32.5%</div><div class="l">trace+escalation 토큰</div></div><div class="stat"><div class="v">K=10</div><div class="l">기본 검색 chunk 수</div></div></div><div class="tbl-wrap"><div class="tbl-cap"><span class="tn">TABLE 2</span>대표 데이터셋 성능 요약</div>
+<div class="tbl-scroll"><table><thead><tr><th>데이터셋</th><th>VikingRAG 계열의 관찰</th></tr></thead><tbody><tr><td>HotpotQA</td><td>구조·다중 문서 질문에서 높은 정확도와 낮은 토큰</td></tr><tr><td>VersionQA</td><td>경험 edge 재사용과 escalation이 비용을 더 낮춤</td></tr><tr><td>PaperQA / NovelQA</td><td>문서 계층과 evidence-gap 반복 검색의 이점</td></tr></tbody></table></div></div><figure>
+<div class="fig-top"><span class="fnum">FIG 3</span><span class="ftitle">종단 RAG 성능</span></div>
+<div class="imgbox"><img alt="종단 RAG 성능" decoding="async" loading="lazy" src="/paper-assets/4212400375d63b9cab29260a70ccc1226763c844e09d069fcd2b543a73604d84.png"/></div>
+<figcaption>VikingRAG·E·E+가 기존 방법과 비슷한 정확도를 유지하면서 토큰과 지연을 줄이는 비교다.</figcaption>
+</figure>
+</section>
+<section class="ch" id="c4">
+<div class="ch-eyebrow"><span class="cnum">04</span><span class="clabel">Trade-offs · 비용</span></div>
+<h2 class="ch-title">빠른 길을 미리 저장하려면 문서가 어느 정도 안정적이어야 한다</h2>
+<div class="tldr"><div class="h">한눈에 요약</div><p>experience edge 생성에는 몇 초의 오프라인 비용과 저장공간이 든다. 문서·질의 분포가 계속 바뀌면 오래된 경로가 덜 유용해질 수 있다.</p></div>
+<div class="call ar"><div class="ct">초등학생도 이해하는 설명</div><p>자주 가는 문구점까지 지름길을 지도에 표시하면 편하지만, 길이 공사로 바뀌면 지도를 다시 그려야 한다.</p></div><p class="lead">adaptive escalation은 오답 위험을 줄이지만, checker가 “충분하다”고 잘못 판단하면 필요한 재검색을 건너뛸 수 있다.</p><p>논문은 false-NoEscalation 비율이 여러 데이터셋에서 5%를 넘는다고 보고한다. 따라서 비용 절감률을 정확도와 함께 보고, 경험 edge의 신선도·삭제 정책·도메인 이동을 운영 지표로 삼아야 한다.</p><div class="tbl-wrap"><div class="tbl-cap"><span class="tn">TABLE 3</span>검색 trace 재사용 비용</div>
+<div class="tbl-scroll"><table><thead><tr><th>항목</th><th>관찰</th></tr></thead><tbody><tr><td>Experience edge 생성</td><td>질의당 수 초 수준</td></tr><tr><td>저장 형태</td><td>URI endpoint와 짧은 query-conditioned summary</td></tr><tr><td>효과</td><td>VikingRAG-E가 기본형보다 67.3–88.1% 토큰, 72.3–91.5% 지연</td></tr></tbody></table></div></div><figure>
+<div class="fig-top"><span class="fnum">FIG 4</span><span class="ftitle">문서 저장 성능</span></div>
+<div class="imgbox"><img alt="문서 저장 성능" decoding="async" loading="lazy" src="/paper-assets/6e0b4d92295ec21b25affa1b5f854b746468d4707ae991a5d8cacb811b19f37a.png"/></div>
+<figcaption>구조-aware URI와 abstract를 저장하는 방식의 성능·저장량 비교다.</figcaption>
+</figure>
+</section>
+<section class="ch" id="c5">
+<div class="ch-eyebrow"><span class="cnum">05</span><span class="clabel">Limits · 한계</span></div>
+<h2 class="ch-title">이 그래프는 지식 그래프보다 ‘문서 목차 그래프’에 가깝다</h2>
+<div class="tldr"><div class="h">한눈에 요약</div><p>VikingRAG의 그래프성은 entity–relation 지식 그래프보다 parent–child directory tree와 검색 trace edge에 있다. 따라서 GraphRAG의 개체 경로 추론과 같은 문제를 푸는 시스템으로 오해하면 안 된다.</p></div>
+<div class="call ar"><div class="ct">초등학생도 이해하는 설명</div><p>사람과 사물의 관계를 그린 친구 관계도가 아니라, 책의 목차와 “이 페이지에서 저 페이지로 갔다”는 이동 기록을 그린 지도다.</p></div><p class="lead">비교 기준선에 HippoRAG-2·LightRAG·BookRAG가 포함되지만, 핵심 기여는 계층 구조를 LLM 컨텍스트에서 분리하고 evidence gap을 따라 다시 찾는 것이다.</p><p>실제 배포에서는 문서 파싱 품질, 디렉터리 요약 오류, 경험 edge의 개인정보·문서 변경 전파를 검증해야 한다.</p><div class="call arb"><div class="ct">검색 경험칙</div><p>directory tree·evidence gap·experience edge가 보이면 구조 문서용 agentic RAG다. entity·relation·community/path가 중심이면 넓은 의미의 GraphRAG이고, HNSW/Vamana면 벡터 검색 내부 도로다.</p></div><figure>
+<div class="fig-top"><span class="fnum">TABLE 1</span><span class="ftitle">원문 표 1</span></div>
+<div class="imgbox"><img alt="원문 표 1" decoding="async" loading="lazy" src="/paper-assets/1bc1e1ea2463966dece4df243c42dfdd8caf68e73567052168bd46a841dddaa0.png"/></div>
+<figcaption>원문 PDF에서 추출한 표 이미지다. 수치와 열 이름은 원문을 기준으로 읽었다.</figcaption>
+</figure><figure>
+<div class="fig-top"><span class="fnum">TABLE 2</span><span class="ftitle">원문 표 2</span></div>
+<div class="imgbox"><img alt="원문 표 2" decoding="async" loading="lazy" src="/paper-assets/a6180f6386ae9bd2dcaa2f0f07bbf87c3b233a6d03dca8ac9bee26de6264ca95.png"/></div>
+<figcaption>원문 PDF에서 추출한 표 이미지다. 수치와 열 이름은 원문을 기준으로 읽었다.</figcaption>
+</figure><figure>
+<div class="fig-top"><span class="fnum">TABLE 3</span><span class="ftitle">원문 표 3</span></div>
+<div class="imgbox"><img alt="원문 표 3" decoding="async" loading="lazy" src="/paper-assets/e7235ebb33eefe76779fdec10b95910f93dee322ceaf1ec064530823b1d551fe.png"/></div>
+<figcaption>원문 PDF에서 추출한 표 이미지다. 수치와 열 이름은 원문을 기준으로 읽었다.</figcaption>
+</figure><figure>
+<div class="fig-top"><span class="fnum">TABLE 4</span><span class="ftitle">원문 표 4</span></div>
+<div class="imgbox"><img alt="원문 표 4" decoding="async" loading="lazy" src="/paper-assets/100b27af66d3cff7cef674678053e754e702a064b2146b4b094b500566e854ae.png"/></div>
+<figcaption>원문 PDF에서 추출한 표 이미지다. 수치와 열 이름은 원문을 기준으로 읽었다.</figcaption>
+</figure><figure>
+<div class="fig-top"><span class="fnum">TABLE 5</span><span class="ftitle">원문 표 5</span></div>
+<div class="imgbox"><img alt="원문 표 5" decoding="async" loading="lazy" src="/paper-assets/2ab2afd4b4e33b4f9b012ce7430eae52f497475984b69b100dd316c9b05e3cad.png"/></div>
+<figcaption>원문 PDF에서 추출한 표 이미지다. 수치와 열 이름은 원문을 기준으로 읽었다.</figcaption>
+</figure><figure>
+<div class="fig-top"><span class="fnum">TABLE 6</span><span class="ftitle">원문 표 6</span></div>
+<div class="imgbox"><img alt="원문 표 6" decoding="async" loading="lazy" src="/paper-assets/8936fb15df01a25263852a94c12f51abe5232495e3a202bb578b0fa2d25c1b9b.png"/></div>
+<figcaption>원문 PDF에서 추출한 표 이미지다. 수치와 열 이름은 원문을 기준으로 읽었다.</figcaption>
+</figure><figure>
+<div class="fig-top"><span class="fnum">TABLE 7</span><span class="ftitle">원문 표 7</span></div>
+<div class="imgbox"><img alt="원문 표 7" decoding="async" loading="lazy" src="/paper-assets/9b02c5d547e0d6f4cc5d79f0e39571725a3a636c9febd2ae9607457dab5449e1.png"/></div>
+<figcaption>원문 PDF에서 추출한 표 이미지다. 수치와 열 이름은 원문을 기준으로 읽었다.</figcaption>
+</figure>
+</section>
+<section class="ch" id="gloss">
+<div class="ch-eyebrow"><span class="cnum">＋</span><span class="clabel">Glossary · 핵심 용어</span></div>
+<h2 class="ch-title">핵심 용어 정리</h2>
+<div class="tldr"><div class="h">한눈에 요약</div><p>논문의 주장을 따라가는 데 필요한 용어만 간결하게 모았다.</p></div>
+<div class="gloss"><div class="gitem"><div class="term">Directory tree<span class="en">Directory tree</span></div><p>문서의 장·절·하위 절이 부모–자식으로 연결된 계층.</p></div><div class="gitem"><div class="term">Evidence gap<span class="en">Evidence gap</span></div><p>현재까지 찾은 근거로 답을 만들 때 아직 빠진 정보.</p></div><div class="gitem"><div class="term">Experience edge<span class="en">Experience edge</span></div><p>과거 질의의 검색 경로와 요약을 비슷한 질의에 재사용하는 경로 간선.</p></div><div class="gitem"><div class="term">Escalation<span class="en">Escalation</span></div><p>한 번 검색으로 부족할 때 추가 agentic 라운드를 켜는 단계.</p></div><div class="gitem"><div class="term">구조 인식 chunking<span class="en">Structure-aware chunking</span></div><p>문서 경계와 계층을 보존하면서 chunk를 나누는 방식.</p></div><div class="gitem"><div class="term">GraphRAG<span class="en">GraphRAG</span></div><p>개체·관계·커뮤니티 그래프를 이용해 근거를 찾는 넓은 계열.</p></div></div>
+</section>
+<section class="ch" id="take">
+<div class="ch-eyebrow"><span class="cnum">＋</span><span class="clabel">One-page Summary · 한 장 정리</span></div>
+<h2 class="ch-title">이 논문을 한 장으로</h2>
+<div class="tldr"><div class="h">한눈에 요약</div><p>문제, 방법, 증거, 한계를 한 번에 다시 정리한다.</p></div>
+<div class="takeaways"><div class="take"><div class="n">01</div><div class="body">VikingRAG의 그래프는 entity KG보다 문서 목차 트리와 검색 trace다.</div></div><div class="take"><div class="n">02</div><div class="body">필요한 directory segment만 노출해 구조 컨텍스트 토큰을 줄인다.</div></div><div class="take"><div class="n">03</div><div class="body">중간 결과에서 evidence gap을 찾아 다음 검색 query를 바꾼다.</div></div><div class="take"><div class="n">04</div><div class="body">기본형 토큰은 SOTA의 11.6–51.9%였다.</div></div><div class="take"><div class="n">05</div><div class="body">trace 재사용·adaptive escalation으로 5.1–32.5%까지 낮췄다.</div></div><div class="take"><div class="n">06</div><div class="body">checker의 false-NoEscalation과 문서 변경 시 edge 신선도가 운영 경계다.</div></div></div>
+</section>

@@ -1,0 +1,166 @@
+<section class="ch" id="c1">
+<div class="ch-eyebrow"><span class="cnum">01</span><span class="clabel">Problem · 문제</span></div>
+<h2 class="ch-title">LLM 코딩 에이전트가 관련 앱을 독립적으로 만들면 공통 로직을 매번 다시 쓰고, 변경도 앱마다 반복해야 한다.</h2>
+<div class="tldr"><div class="h">한눈에 요약</div><p>LLM 코딩 에이전트가 관련 앱을 독립적으로 만들면 공통 로직을 매번 다시 쓰고, 변경도 앱마다 반복해야 한다.</p></div>
+<p class="lead">논문은 앱 요청의 시퀀스를 처리하면서 공통 Super Library와 이전 앱을 함께 갱신하는 온라인 문제를 새로 정의한다.</p><p>이상적인 라이브러리는 최소 두 앱에서 쓰이는 컴포넌트를 담고, 앱 전용 코드는 로컬에 남긴다. 목표는 최종 앱 기능성과 전체 포트폴리오 유지보수성의 Pareto 균형이다.</p><figure>
+<div class="fig-top"><span class="fnum">FIG 1</span><span class="ftitle">애플리케이션별 생성과 Super Library의 차이</span></div>
+<div class="imgbox"><img alt="애플리케이션별 생성과 Super Library의 차이" decoding="async" loading="lazy" src="/paper-assets/e631e9548c74fa76b786bd62d3460e6be4f05d2f96b37a4634a7aee9eea56aef.png"/></div>
+<figcaption>각 코드베이스가 같은 UI·상태·폼 로직을 중복 생성하는 대신, 공통 라이브러리를 한 번 만들고 여러 앱에서 재사용하는 문제 설정이다.</figcaption>
+</figure>
+</section>
+<section class="ch" id="c2">
+<div class="ch-eyebrow"><span class="cnum">02</span><span class="clabel">Method · 방법</span></div>
+<h2 class="ch-title">단순 에이전트는 재사용 후보를 놓치고 추출 후 의존성까지 안전하게 바꾸지 못한다. SLA-FULL은 발견과 이주를 분리하고 구조화된 증거를 전달한다.</h2>
+<div class="tldr"><div class="h">한눈에 요약</div><p>단순 에이전트는 재사용 후보를 놓치고 추출 후 의존성까지 안전하게 바꾸지 못한다. SLA-FULL은 발견과 이주를 분리하고 구조화된 증거를 전달한다.</p></div>
+<p class="lead">AST 단위 코드 블록을 자연어로 요약해 “어떻게 생겼는가”가 아니라 “무엇을 하는가”로 후보를 찾는다.</p><p>추출 에이전트는 출처 블록·일반화 이유·교체 API를 extraction trace로 남긴다. 이주 에이전트는 관련 import, caller, callee를 담은 also-refactor 목록을 받아 호출부와 죽은 코드를 함께 수정한다. 신규 코드베이스 내부의 중복도 먼저 한 번 통합한다.</p><figure>
+<div class="fig-top"><span class="fnum">FIG 2</span><span class="ftitle">SLA-NAIVE와 SLA-FULL 워크플로</span></div>
+<div class="imgbox"><img alt="SLA-NAIVE와 SLA-FULL 워크플로" decoding="async" loading="lazy" src="/paper-assets/00bcdf0bab63a8ebb743c6b55f4cf5f6061e6ad5412f879d9907e1953f3410e1.png"/></div>
+<figcaption>SLA-FULL은 자연어 코드 요약 기반 후보 선택, 추출 흔적, 호출 그래프 정보를 별도 에이전트 사이의 구조화된 인계물로 사용한다.</figcaption>
+</figure>
+</section>
+<section class="ch" id="c3">
+<div class="ch-eyebrow"><span class="cnum">03</span><span class="clabel">Results · 결과</span></div>
+<h2 class="ch-title">WebGen-Bench와 PaperBench 모두에서 기능은 유지하면서 코드 크기와 중복 지표가 개선됐다.</h2>
+<div class="tldr"><div class="h">한눈에 요약</div><p>WebGen-Bench와 PaperBench 모두에서 기능은 유지하면서 코드 크기와 중복 지표가 개선됐다.</p></div>
+<p class="lead">WebGen-Bench에서 SLA-FULL 정확도는 77.21%로 Zero-Shot 76.04%와 비슷했고, LOC 9,393→8,552, 토큰 70,364→65,633, Verbosity 0.1603→0.0994였다.</p><div class="stat-row"><div class="stat"><div class="v">−9.0%</div><div class="l">WebGen LOC</div></div><div class="stat"><div class="v arb">−38.0%</div><div class="l">WebGen Verbosity</div></div><div class="stat"><div class="v">256 LOC</div><div class="l">공통 정책 패치 크기</div></div></div><p>PaperBench에서도 Code-Dev 0.4809를 유지하며 LOC 6,252, 토큰 63,514, MDL 29,489, Erosion 0.2291, Verbosity 0.8490으로 다섯 유지보수 지표 모두 최저였다. 공통 정책 변경의 추가 LOC는 Zero-Shot 936줄 대비 256줄이었다.</p><figure>
+<div class="fig-top"><span class="fnum">TABLE 1</span><span class="ftitle">원문 표 1</span></div>
+<div class="imgbox"><img alt="원문 표 1" decoding="async" loading="lazy" src="/paper-assets/2d2100a6c7b554230ead6141c6267d6bdd0e3772fa569327124b225636b3d88b.png"/></div>
+<figcaption>원문의 세부 실험 수치와 설정을 원문 표 형태 그대로 포함했다. 강조값과 비교 기준은 본문 해설과 함께 읽어야 한다.</figcaption>
+</figure><figure>
+<div class="fig-top"><span class="fnum">TABLE 2</span><span class="ftitle">원문 표 2</span></div>
+<div class="imgbox"><img alt="원문 표 2" decoding="async" loading="lazy" src="/paper-assets/dbab2d8018196af161b009ac56e7d3d523480a5876c212b8c0dae0e0b1a53e38.png"/></div>
+<figcaption>원문의 세부 실험 수치와 설정을 원문 표 형태 그대로 포함했다. 강조값과 비교 기준은 본문 해설과 함께 읽어야 한다.</figcaption>
+</figure><figure>
+<div class="fig-top"><span class="fnum">TABLE 3</span><span class="ftitle">원문 표 3</span></div>
+<div class="imgbox"><img alt="원문 표 3" decoding="async" loading="lazy" src="/paper-assets/d2e82ab7fc6d94bd7f968bb09265fb904b30d98e36aea729c3bf3bef190978ab.png"/></div>
+<figcaption>원문의 세부 실험 수치와 설정을 원문 표 형태 그대로 포함했다. 강조값과 비교 기준은 본문 해설과 함께 읽어야 한다.</figcaption>
+</figure><figure>
+<div class="fig-top"><span class="fnum">TABLE 4</span><span class="ftitle">원문 표 4</span></div>
+<div class="imgbox"><img alt="원문 표 4" decoding="async" loading="lazy" src="/paper-assets/fea02c16a7e40df7f96e60ce2c4e38fd93ec0a7223fd433143c41cdf15484701.png"/></div>
+<figcaption>원문의 세부 실험 수치와 설정을 원문 표 형태 그대로 포함했다. 강조값과 비교 기준은 본문 해설과 함께 읽어야 한다.</figcaption>
+</figure><figure>
+<div class="fig-top"><span class="fnum">TABLE 5</span><span class="ftitle">원문 표 5</span></div>
+<div class="imgbox"><img alt="원문 표 5" decoding="async" loading="lazy" src="/paper-assets/f6ce63602ee4e4d0324f3e64b2e6be2c1ed18d838c88fa0d3b362978df44d9f4.png"/></div>
+<figcaption>원문의 세부 실험 수치와 설정을 원문 표 형태 그대로 포함했다. 강조값과 비교 기준은 본문 해설과 함께 읽어야 한다.</figcaption>
+</figure><figure>
+<div class="fig-top"><span class="fnum">FIG 3</span><span class="ftitle">라운드가 진행될 때 애플리케이션 LOC 변화</span></div>
+<div class="imgbox"><img alt="라운드가 진행될 때 애플리케이션 LOC 변화" decoding="async" loading="lazy" src="/paper-assets/dcf67df36f73b34ba7458015f07ee432e60650ad8eb54c5fc357dc5039805170.png"/></div>
+<figcaption>신규 앱이 추가될수록 SLA-FULL의 앱 로컬 코드가 줄어드는 반면 단순 공유 라이브러리는 변화가 더 평평하다.</figcaption>
+</figure><figure>
+<div class="fig-top"><span class="fnum">FIG 4</span><span class="ftitle">높은 재사용률을 보인 심볼의 종류</span></div>
+<div class="imgbox"><img alt="높은 재사용률을 보인 심볼의 종류" decoding="async" loading="lazy" src="/paper-assets/253d452ab3728a62cd1bf65b50d9dc1efe0a190cbbcfd30e4ef1cc57e59a0e82.png"/></div>
+<figcaption>SLA-FULL은 Header 같은 단순 UI뿐 아니라 상태 훅과 페이지·도메인 패턴까지 더 많이 추출한다.</figcaption>
+</figure>
+</section>
+<section class="ch" id="c4">
+<div class="ch-eyebrow"><span class="cnum">04</span><span class="clabel">Analysis · 재사용의 질</span></div>
+<h2 class="ch-title">SLA-FULL은 단순 UI 조각뿐 아니라 상태·동작 훅과 페이지/도메인 패턴을 더 많이 재사용했다.</h2>
+<div class="tldr"><div class="h">한눈에 요약</div><p>SLA-FULL은 단순 UI 조각뿐 아니라 상태·동작 훅과 페이지/도메인 패턴을 더 많이 재사용했다.</p></div>
+<p class="lead">평균 export는 13.3개였고, 3–5개 앱에서 쓰인 심볼 6.0개, 6–8개 앱에서 쓰인 심볼 4.8개로 naive 변형보다 많았다.</p><p>완성 라이브러리를 신규 앱 생성의 prior로만 제공한 실험에서도 정확도는 80.95%에서 84.35%로 오르고 전체 LOC는 약 11% 줄었다. 호출 그래프 제거 시 정확도와 구조 지표가 나빠져 안전한 의존성 갱신의 중요성이 드러났다.</p><figure>
+<div class="fig-top"><span class="fnum">FIG 5</span><span class="ftitle">초기 구축 중복 사례</span></div>
+<div class="imgbox"><img alt="초기 구축 중복 사례" decoding="async" loading="lazy" src="/paper-assets/0cfb2f8c20ce2bb9c4b0729874553ab0e51a131ba459a988bee4e3f9c75e4d77.png"/></div>
+<figcaption>Zero-Shot은 같은 영속화 주기를 앱마다 반복하지만 SLA-FULL은 라이브러리에 한 번 정의한다.</figcaption>
+</figure><figure>
+<div class="fig-top"><span class="fnum">FIG 6</span><span class="ftitle">공통 정책 변경 사례</span></div>
+<div class="imgbox"><img alt="공통 정책 변경 사례" decoding="async" loading="lazy" src="/paper-assets/bf87b5fb8479b1c841abcd26833df3819873151820605dc6447b21a46926ac08.png"/></div>
+<figcaption>유지보수 단계에서도 공통 규칙을 앱별로 반복하는 대신 라이브러리 한 곳에서 갱신할 수 있음을 보여준다.</figcaption>
+</figure><figure>
+<div class="fig-top"><span class="fnum">FIG 7</span><span class="ftitle">라이브러리 유무에 따른 여덟 웹 앱</span></div>
+<div class="imgbox"><img alt="라이브러리 유무에 따른 여덟 웹 앱" decoding="async" loading="lazy" src="/paper-assets/f9c986768bbae19327ca2cfcaedcc03aa5d0b0927713a54ad8e74b71ca612766.png"/></div>
+<figcaption>동일 과제를 공유 라이브러리 없이/있이 생성한 화면과 기능 정확도·외관 등급을 나란히 보여주는 보충 비교다.</figcaption>
+</figure><figure>
+<div class="fig-top"><span class="fnum">TABLE 6</span><span class="ftitle">원문 표 6</span></div>
+<div class="imgbox"><img alt="원문 표 6" decoding="async" loading="lazy" src="/paper-assets/2b15cea9b58c4c5331efa1070de89ddf5855baad33658ce05633d12dcb898cd3.png"/></div>
+<figcaption>원문의 세부 실험 수치와 설정을 원문 표 형태 그대로 포함했다. 강조값과 비교 기준은 본문 해설과 함께 읽어야 한다.</figcaption>
+</figure><figure>
+<div class="fig-top"><span class="fnum">TABLE 7</span><span class="ftitle">원문 표 7</span></div>
+<div class="imgbox"><img alt="원문 표 7" decoding="async" loading="lazy" src="/paper-assets/32f58a770b6671b018ba1326e4ade8937b1ba1e227c9f296b935bb411aa869e9.png"/></div>
+<figcaption>원문의 세부 실험 수치와 설정을 원문 표 형태 그대로 포함했다. 강조값과 비교 기준은 본문 해설과 함께 읽어야 한다.</figcaption>
+</figure><figure>
+<div class="fig-top"><span class="fnum">TABLE 8</span><span class="ftitle">원문 표 8</span></div>
+<div class="imgbox"><img alt="원문 표 8" decoding="async" loading="lazy" src="/paper-assets/de1c6182e586ea107e837db9f6d0b3dbd8ba6c4a7fabebf236bc3cf6d6a3733a.png"/></div>
+<figcaption>원문의 세부 실험 수치와 설정을 원문 표 형태 그대로 포함했다. 강조값과 비교 기준은 본문 해설과 함께 읽어야 한다.</figcaption>
+</figure>
+</section>
+<section class="ch" id="c5">
+<div class="ch-eyebrow"><span class="cnum">05</span><span class="clabel">Appendix · 비용과 한계</span></div>
+<h2 class="ch-title">공유 라이브러리는 유지보수를 줄이지만 초기 생성 비용은 늘고, 벤치마크는 실제 장기 포트폴리오를 충분히 대변하지 못한다.</h2>
+<div class="tldr"><div class="h">한눈에 요약</div><p>공유 라이브러리는 유지보수를 줄이지만 초기 생성 비용은 늘고, 벤치마크는 실제 장기 포트폴리오를 충분히 대변하지 못한다.</p></div>
+<p class="lead">SLA-FULL의 포트폴리오 생성 비용은 Zero-Shot의 8.3배였다. 세션 재사용과 라운드 수 감소로 비용을 줄일 수 있지만, 라운드를 4회에서 1회로 줄이면 정확도·LOC·verbosity가 악화됐다.</p><p>N=16 저재사용 스트레스 테스트에서 SLA-FULL은 LOC·토큰·verbosity는 최저였지만 정확도는 Zero-Shot보다 낮았다. 저자들은 실제 사용자·커밋 이력이 없는 생성 벤치마크, 단 한 번의 유지보수 라운드, proxy 유지보수 지표, 공유 라이브러리 오류의 확산 위험을 한계로 적는다.</p><figure>
+<div class="fig-top"><span class="fnum">TABLE 9</span><span class="ftitle">원문 표 9</span></div>
+<div class="imgbox"><img alt="원문 표 9" decoding="async" loading="lazy" src="/paper-assets/db719a4b4eb9c5b81be0f0846fbd51126c6169ed53a22b0eead7148d428f5246.png"/></div>
+<figcaption>부록의 suite별 결과, 변경 테스트, 비용, 강건성, 재사용 inventory와 라이선스 표를 원문 그대로 보존했다.</figcaption>
+</figure><figure>
+<div class="fig-top"><span class="fnum">TABLE 10</span><span class="ftitle">원문 표 10</span></div>
+<div class="imgbox"><img alt="원문 표 10" decoding="async" loading="lazy" src="/paper-assets/2eb383d9f7250ba1303c4b8c25aaad6052562c773d090824d2c0be987d754e37.png"/></div>
+<figcaption>부록의 suite별 결과, 변경 테스트, 비용, 강건성, 재사용 inventory와 라이선스 표를 원문 그대로 보존했다.</figcaption>
+</figure><figure>
+<div class="fig-top"><span class="fnum">TABLE 11</span><span class="ftitle">원문 표 11</span></div>
+<div class="imgbox"><img alt="원문 표 11" decoding="async" loading="lazy" src="/paper-assets/b09b986800bb23402bba9e4e0c0d932877efe0b2dacddf3b7de1fd96eea023b0.png"/></div>
+<figcaption>부록의 suite별 결과, 변경 테스트, 비용, 강건성, 재사용 inventory와 라이선스 표를 원문 그대로 보존했다.</figcaption>
+</figure><figure>
+<div class="fig-top"><span class="fnum">TABLE 12</span><span class="ftitle">원문 표 12</span></div>
+<div class="imgbox"><img alt="원문 표 12" decoding="async" loading="lazy" src="/paper-assets/4a2c5c19675a227329c62b17cbcdad59fc9de097351ec7b3d1f24b3ef816fdd5.png"/></div>
+<figcaption>부록의 suite별 결과, 변경 테스트, 비용, 강건성, 재사용 inventory와 라이선스 표를 원문 그대로 보존했다.</figcaption>
+</figure><figure>
+<div class="fig-top"><span class="fnum">TABLE 13</span><span class="ftitle">원문 표 13</span></div>
+<div class="imgbox"><img alt="원문 표 13" decoding="async" loading="lazy" src="/paper-assets/e236d32eee7f9d3dd54a0a8fffc0e5cb8e078483d5af9cca1fc27517a597a67b.png"/></div>
+<figcaption>부록의 suite별 결과, 변경 테스트, 비용, 강건성, 재사용 inventory와 라이선스 표를 원문 그대로 보존했다.</figcaption>
+</figure><figure>
+<div class="fig-top"><span class="fnum">TABLE 14</span><span class="ftitle">원문 표 14</span></div>
+<div class="imgbox"><img alt="원문 표 14" decoding="async" loading="lazy" src="/paper-assets/b8ee27f2e205f79db192f35b4fcba40cb7ac69cf40eb9cc3ea44762f550de159.png"/></div>
+<figcaption>부록의 suite별 결과, 변경 테스트, 비용, 강건성, 재사용 inventory와 라이선스 표를 원문 그대로 보존했다.</figcaption>
+</figure><figure>
+<div class="fig-top"><span class="fnum">TABLE 15</span><span class="ftitle">원문 표 15</span></div>
+<div class="imgbox"><img alt="원문 표 15" decoding="async" loading="lazy" src="/paper-assets/f6fc5fb9558b659a29fe64ce02cc3887d3bda104cb92dd8d733c9c87ab392364.png"/></div>
+<figcaption>부록의 suite별 결과, 변경 테스트, 비용, 강건성, 재사용 inventory와 라이선스 표를 원문 그대로 보존했다.</figcaption>
+</figure><figure>
+<div class="fig-top"><span class="fnum">TABLE 16</span><span class="ftitle">원문 표 16</span></div>
+<div class="imgbox"><img alt="원문 표 16" decoding="async" loading="lazy" src="/paper-assets/96c0ba98c6a432fe4f4098378a008f946016259b2a6db405e76c158334a80cb6.png"/></div>
+<figcaption>부록의 suite별 결과, 변경 테스트, 비용, 강건성, 재사용 inventory와 라이선스 표를 원문 그대로 보존했다.</figcaption>
+</figure><figure>
+<div class="fig-top"><span class="fnum">TABLE 17</span><span class="ftitle">원문 표 17</span></div>
+<div class="imgbox"><img alt="원문 표 17" decoding="async" loading="lazy" src="/paper-assets/b55f49c662c1513f67148c99e9470bed9f36b48334a5223f8f12eac149f23e00.png"/></div>
+<figcaption>부록의 suite별 결과, 변경 테스트, 비용, 강건성, 재사용 inventory와 라이선스 표를 원문 그대로 보존했다.</figcaption>
+</figure><figure>
+<div class="fig-top"><span class="fnum">TABLE 18</span><span class="ftitle">원문 표 18</span></div>
+<div class="imgbox"><img alt="원문 표 18" decoding="async" loading="lazy" src="/paper-assets/eb80d275a1bb43813051c7095930aa01185bb1f840e71a5a6b8af2a715bc46e8.png"/></div>
+<figcaption>부록의 suite별 결과, 변경 테스트, 비용, 강건성, 재사용 inventory와 라이선스 표를 원문 그대로 보존했다.</figcaption>
+</figure><figure>
+<div class="fig-top"><span class="fnum">TABLE 19</span><span class="ftitle">원문 표 19</span></div>
+<div class="imgbox"><img alt="원문 표 19" decoding="async" loading="lazy" src="/paper-assets/5d498a1fcbc006e8556f904b3a12fefd7fbb1597ae920a395512d4a6df3221a5.png"/></div>
+<figcaption>부록의 suite별 결과, 변경 테스트, 비용, 강건성, 재사용 inventory와 라이선스 표를 원문 그대로 보존했다.</figcaption>
+</figure><figure>
+<div class="fig-top"><span class="fnum">TABLE 20</span><span class="ftitle">원문 표 20</span></div>
+<div class="imgbox"><img alt="원문 표 20" decoding="async" loading="lazy" src="/paper-assets/13a50dfc8ef19fb8e13cb22718224d05828d7e7289e5270b28b447840b8c7991.png"/></div>
+<figcaption>부록의 suite별 결과, 변경 테스트, 비용, 강건성, 재사용 inventory와 라이선스 표를 원문 그대로 보존했다.</figcaption>
+</figure><figure>
+<div class="fig-top"><span class="fnum">TABLE 21</span><span class="ftitle">원문 표 21</span></div>
+<div class="imgbox"><img alt="원문 표 21" decoding="async" loading="lazy" src="/paper-assets/833c564c8a699478e9c8b36e75d624540ab1fa1e38c81a18e44accb4bbc47c67.png"/></div>
+<figcaption>부록의 suite별 결과, 변경 테스트, 비용, 강건성, 재사용 inventory와 라이선스 표를 원문 그대로 보존했다.</figcaption>
+</figure><figure>
+<div class="fig-top"><span class="fnum">TABLE 22</span><span class="ftitle">원문 표 22</span></div>
+<div class="imgbox"><img alt="원문 표 22" decoding="async" loading="lazy" src="/paper-assets/de87af3acbd17b6595fd4bceef1a8e836aa872dc116d21ce3e90ee487377c8e8.png"/></div>
+<figcaption>부록의 suite별 결과, 변경 테스트, 비용, 강건성, 재사용 inventory와 라이선스 표를 원문 그대로 보존했다.</figcaption>
+</figure><figure>
+<div class="fig-top"><span class="fnum">TABLE 23</span><span class="ftitle">원문 표 23</span></div>
+<div class="imgbox"><img alt="원문 표 23" decoding="async" loading="lazy" src="/paper-assets/25a08b608e4c24e70c31436082faecfbba281e8046d1860671be35c849fd6460.png"/></div>
+<figcaption>부록의 suite별 결과, 변경 테스트, 비용, 강건성, 재사용 inventory와 라이선스 표를 원문 그대로 보존했다.</figcaption>
+</figure><figure>
+<div class="fig-top"><span class="fnum">TABLE 24</span><span class="ftitle">원문 표 24</span></div>
+<div class="imgbox"><img alt="원문 표 24" decoding="async" loading="lazy" src="/paper-assets/a5ede42aae8bd2d561484ec77032aef1c5749d6feacbda2eb8b6a3bdf2ff861f.png"/></div>
+<figcaption>부록의 suite별 결과, 변경 테스트, 비용, 강건성, 재사용 inventory와 라이선스 표를 원문 그대로 보존했다.</figcaption>
+</figure>
+</section>
+<section class="ch" id="gloss">
+<div class="ch-eyebrow"><span class="cnum">＋</span><span class="clabel">Glossary · 핵심 용어</span></div>
+<h2 class="ch-title">핵심 용어 정리</h2>
+<div class="tldr"><div class="h">한눈에 요약</div><p>논문의 주장을 따라가는 데 필요한 용어만 간결하게 모았다.</p></div>
+<div class="gloss"><div class="gitem"><div class="term">Super Library<span class="en">Shared library</span></div><p>서로 독립 배포되는 관련 앱들이 함께 가져다 쓰는 공통 컴포넌트 저장소.</p></div><div class="gitem"><div class="term">추출 흔적<span class="en">Extraction trace</span></div><p>공통 심볼의 출처, 일반화 이유, 대체 방법을 이주 에이전트에 넘기는 구조화 기록.</p></div><div class="gitem"><div class="term">호출 그래프 조건화<span class="en">Call-graph conditioning</span></div><p>교체 대상의 import와 caller/callee를 함께 보여줘 비국소 수정 누락을 줄이는 방법.</p></div><div class="gitem"><div class="term">구조적 침식<span class="en">Structural erosion</span></div><p>복잡도가 높은 함수에 코드 복잡성이 얼마나 몰려 있는지 나타내는 유지보수 proxy.</p></div><div class="gitem"><div class="term">MDL<span class="en">Minimum Description Length</span></div><p>참조 모델이 전체 코드를 설명하는 데 필요한 음의 로그확률 기반 크기 지표.</p></div></div>
+</section>
+<section class="ch" id="take">
+<div class="ch-eyebrow"><span class="cnum">＋</span><span class="clabel">One-page Summary · 한 장 정리</span></div>
+<h2 class="ch-title">이 논문을 한 장으로</h2>
+<div class="tldr"><div class="h">한눈에 요약</div><p>문제, 방법, 증거, 한계를 한 번에 다시 정리한다.</p></div>
+<div class="takeaways"><div class="take"><div class="n">01</div><div class="body">관련 앱을 독립 생성하면 공통 로직과 변경 비용이 포트폴리오 전체에 복제된다.</div></div><div class="take"><div class="n">02</div><div class="body">자연어 코드 요약은 표면 유사도보다 <b>기능적 재사용 후보</b>를 더 잘 찾는다.</div></div><div class="take"><div class="n">03</div><div class="body">추출 흔적과 호출 그래프가 안전한 cross-codebase migration의 핵심이다.</div></div><div class="take"><div class="n">04</div><div class="body">WebGen에서 LOC −9.0%, 토큰 −6.7%, Verbosity −38.0%였고 기능 정확도는 유지됐다.</div></div><div class="take"><div class="n">05</div><div class="body">초기 비용, 실제 장기 유지보수 검증 부족, 공유 오류의 확대 가능성을 함께 봐야 한다.</div></div></div>
+</section>

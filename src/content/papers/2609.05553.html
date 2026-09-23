@@ -1,0 +1,479 @@
+<section class="ch" id="c1"><div class="ch-eyebrow"><span class="cnum">01</span><span class="clabel">Motivation · 문제</span></div><h2 class="ch-title">미래 질문을 모르는데 지금 원문을 줄여 버리는 위험</h2><div class="tldr"><div class="h">한눈에 요약</div><p>생성형 요약은 비용이 들고, 나중에 필요한 조건을 미리 버릴 수 있다. EdgeMem은 원 대화 turn을 보존하고 검색용 주소만 로컬 도구로 만든다.</p></div><p>장기 대화는 매번 전체를 LLM에 넣기 어렵다. 그래서 보통 요약 노트·사건 노드·압축 chunk를 만들지만, 미래 질문에 필요한 작은 조건이 사라지면 검색 단계에서 복구할 방법이 없다.</p><p><figure><div class="fig-top"><span class="fnum">FIG 1</span><span class="ftitle">요약·LLM 탐색이 잃는 근거와 EdgeMem의 비용 비교</span></div><div class="imgbox"><img alt="기존 메모리와 EdgeMem의 증거 손실 및 비용 비교" decoding="async" loading="lazy" src="/paper-assets/a775d779c025b241642d3e4b50c9205dd9886123bf8aa983dd3021e15fcb0d59.png"/></div><figcaption>(a) 요약 과정이나 LLM 기반 탐색이 원문의 조건을 떨어뜨릴 수 있지만 EdgeMem은 원문 turn을 그대로 돌려준다. (b) 비교 시스템의 구축·질의 생성 토큰과 EdgeMem의 0-token 구축·검색을 로그 축으로 비교한다.</figcaption></figure></p><p>논문은 “좋은 메모리는 더 잘 써 놓은 요약”이라는 가정 대신 <strong>원문 보존 + 여러 접근 경로</strong>를 선택한다. 생성형 LLM은 마지막 답변 한 번에만 쓴다.</p><div class="call ar"><div class="ct">초등학생도 이해하는 설명</div><p>일기장을 짧게 요약해서 원본을 버리면 “호텔은 5층 아래” 같은 작은 약속이 사라질 수 있다. EdgeMem은 일기장은 그대로 두고 날짜·사람·사건 색인표만 붙인다.</p></div></section>
+<section class="ch" id="c2"><div class="ch-eyebrow"><span class="cnum">02</span><span class="clabel">Related Work · 대비</span></div><h2 class="ch-title">생성된 기억을 검색하는 대신 원문에 주소를 붙인다</h2><div class="tldr"><div class="h">한눈에 요약</div><p>기존 계열은 dense chunk 검색, LLM이 만든 메모리, 계층 요약, 그래프 탐색 등이다. EdgeMem은 질문 전에 사실을 다시 쓰지 않는 점이 핵심이다.</p></div><p>A-Mem·CAM·MemoryOS·CompassMem·MemGAS·SeCom은 노트 생성, 요약, 그래프 확장, LLM 탐색 통제 등 서로 다른 설계를 대표한다. 논문은 공개 구현을 고정 snapshot으로 재실행하고 비용도 호출별로 잰다.</p><p>하이퍼그래프를 쓰지만 Microsoft GraphRAG의 community report/global search도, HippoRAG의 Personalized PageRank·associative memory도 아니다. <strong>대화 turn을 시간·공통 key·episode 허브에 함께 묶는 agent-memory 검색 구조</strong>다.</p><div class="call ar"><div class="ct">초등학생도 이해하는 설명</div><p>다른 방법은 일기를 새 공책에 요약하거나 AI 비서가 매번 서랍을 고른다. EdgeMem은 원래 일기를 여러 색의 색인 카드에 동시에 연결한다.</p></div></section>
+<section class="ch" id="c3"><div class="ch-eyebrow"><span class="cnum">03</span><span class="clabel">Method · 구조</span></div><h2 class="ch-title">한 turn이 여러 바구니에 동시에 들어가는 세 갈래 주소</h2><div class="tldr"><div class="h">한눈에 요약</div><p>각 대화 turn은 정점이고, 같은 달·같은 entity/keyword·같은 session을 공유하는 turn 묶음이 hyperedge다. 한 사실을 복사하지 않고 여러 주소에서 찾게 한다.</p></div><p><figure><div class="fig-top"><span class="fnum">FIG 2</span><span class="ftitle">EdgeMem 전체 구조</span></div><div class="imgbox"><img alt="EdgeMem 다중 닻 하이퍼그래프 구축과 검색" decoding="async" loading="lazy" src="/paper-assets/3a5ef42ede4dc8fca0e122d6181604ca92844d2e3a4f6a05bec53e0b5c83d1b8.png"/></div><figcaption>위쪽은 원 대화에 로컬 entity·keyword를 붙이고 시간·공통 key·세션 hyperedge를 만드는 과정이다. 아래쪽은 질문의 단서를 세 채널에 보내 근거 묶음을 합치는 과정이다.</figcaption></figure></p><p>Time anchor는 transcript 날짜의 달, Co-occurrence anchor는 entity와 content key, Episode anchor는 원 세션이다. spaCy·BM25·dateparser 같은 로컬 도구만 쓴다.</p><p>보통 graph edge가 두 점을 잇는 선이라면 <strong>hyperedge는 여러 점을 한꺼번에 담는 바구니</strong>다. 예를 들어 “민수”라는 바구니에는 서로 다른 날의 민수 관련 turn 여러 개가 들어간다.</p><div class="call ar"><div class="ct">초등학생도 이해하는 설명</div><p>레고 블록 하나에 “9월”, “민수”, “호텔 여행” 스티커를 동시에 붙인다. 질문에 “민수”가 나오면 민수 스티커가 붙은 블록들을 바로 모을 수 있다.</p></div></section>
+<section class="ch" id="c4"><div class="ch-eyebrow"><span class="cnum">04</span><span class="clabel">Retrieval · 검색</span></div><h2 class="ch-title">episode를 중심으로 공통 key와 시간을 보충하다</h2><div class="tldr"><div class="h">한눈에 요약</div><p>BM25가 turn과 episode를 점수화한다. 먼저 episode 문맥을 최대 14개 담고, 공통 key 최대 4개와 명시적 날짜가 있을 때 시간 근거 최대 2개를 보태 총 18개·3,072 token으로 제한한다.</p></div><p>Episode 점수는 turn BM25와 episode BM25를 λ=0.5로 섞는다. 질의가 목록형이면 서로 다른 episode 수를 더 확보한다. 선택한 turn의 앞뒤 이웃도 함께 읽어 대명사와 문맥을 보존한다.</p><p>Co-occurrence는 너무 흔하지도 희귀하지도 않은 key(df 2~10)를 쓰고, Time 채널은 월·연도가 명시된 질의에서만 열린다. 최종 reader는 temperature 0, 최대 128 token으로 한 번 호출한다.</p><p><strong>장난감 예:</strong> “2025년 3월 민수의 호텔 조건?”이면 episode 검색이 호텔 대화를 가져오고, 민수 key가 다른 세션의 관련 turn을 보태며, 날짜 gate가 2025년 3월 turn을 우선한다.</p><div class="call ar"><div class="ct">초등학생도 이해하는 설명</div><p>먼저 같은 이야기 묶음을 찾고, 그다음 같은 이름 카드, 마지막으로 날짜 카드에서 빠진 조각을 보충한다. 가방에는 최대 18장만 넣는다.</p></div></section>
+<section class="ch" id="c5"><div class="ch-eyebrow"><span class="cnum">05</span><span class="clabel">Results · 결과</span></div><h2 class="ch-title">더 싼데 더 정확하고, 모를 때 더 잘 멈췄다</h2><div class="tldr"><div class="h">한눈에 요약</div><p>LoCoMo 동일 prompt에서 strict judge 61.01로 7개 시스템 중 최고였고, 구축 생성 token 0·질문당 약 1,000 token이었다. 근거 없는 질문은 92.57% 정확히 거절했다.</p></div><p><div class="tbl-wrap"><div class="tbl-cap"><span class="tn">TABLE 1</span>LoCoMo의 메모리 구축·질의 비용과 동일 답변 prompt 품질</div><div class="tbl-scroll"><table class="ltx_tabular ltx_figure_panel ltx_align_middle" id="S3.T1.7">
+<tr>
+<td><span>System</span></td>
+<td><span></span><span> <span>
+<span>
+<span>
+<span>Build</span></span>
+<span>
+<span>tokens <math><semantics><mo>↓</mo><annotation>\downarrow</annotation></semantics></math></span></span>
+</span></span><span></span></span></td>
+<td><span></span><span> <span>
+<span>
+<span>
+<span>Build</span></span>
+<span>
+<span>calls <math><semantics><mo>↓</mo><annotation>\downarrow</annotation></semantics></math></span></span>
+</span></span><span></span></span></td>
+<td><span></span><span> <span>
+<span>
+<span>
+<span>Build</span></span>
+<span>
+<span>time <math><semantics><mo>↓</mo><annotation>\downarrow</annotation></semantics></math></span></span>
+</span></span><span></span></span></td>
+<td><span></span><span> <span>
+<span>
+<span>
+<span>Tokens per</span></span>
+<span>
+<span>question <math><semantics><mo>↓</mo><annotation>\downarrow</annotation></semantics></math></span></span>
+</span></span><span></span></span></td>
+<td><span></span><span> <span>
+<span>
+<span>
+<span>Calls per</span></span>
+<span>
+<span>question <math><semantics><mo>↓</mo><annotation>\downarrow</annotation></semantics></math></span></span>
+</span></span><span></span></span></td>
+<td><span></span><span> <span>
+<span>
+<span>
+<span>Time per</span></span>
+<span>
+<span>question (s) <math><semantics><mo>↓</mo><annotation>\downarrow</annotation></semantics></math></span></span>
+</span></span><span></span></span></td></tr>
+<tr>
+<td><span>EdgeMem</span></td>
+<td><span>0</span></td>
+<td><span>0</span></td>
+<td><span>1.8 min</span></td>
+<td><span>1,000</span></td>
+<td><span>1</span></td>
+<td><span>1.3</span></td></tr>
+<tr>
+<td><span>CAM</span></td>
+<td><span>1.27M</span></td>
+<td><span>1,516</span></td>
+<td><span>75 min</span></td>
+<td><span>19,745</span></td>
+<td><span>4.9</span></td>
+<td><span>11.8</span></td></tr>
+<tr>
+<td><span>CompassMem</span></td>
+<td><span>1.76M</span></td>
+<td><span>1,500</span></td>
+<td><span>43 min</span></td>
+<td><span>41,348</span></td>
+<td><span>21.7</span></td>
+<td><span>45.8</span></td></tr>
+<tr>
+<td><span>MemGAS</span></td>
+<td><span>0.46M</span></td>
+<td><span>544</span></td>
+<td><span>17 min</span></td>
+<td><span>3,146</span></td>
+<td><span>2</span></td>
+<td><span>3.7</span></td></tr>
+<tr>
+<td><span>MemoryOS</span></td>
+<td><span>4.49M</span></td>
+<td><span>12,730</span></td>
+<td><math><semantics><mo>≥</mo><annotation>\geq</annotation></semantics></math><span>1.6 h</span></td>
+<td><span>5,116</span></td>
+<td><span>2</span></td>
+<td><span>4.7</span></td></tr>
+<tr>
+<td><span>A-Mem</span></td>
+<td><span>11.77M</span></td>
+<td><span>17,768</span></td>
+<td><span>10.1 h</span></td>
+<td><span>5,857</span></td>
+<td><span>2</span></td>
+<td><span>5.2</span></td></tr>
+<tr>
+<td><span>SeCom</span></td>
+<td><span>0.57M</span></td>
+<td><span>310</span></td>
+<td><math><semantics><mo>≈</mo><annotation>\approx</annotation></semantics></math><span>1.9 h<sup>†</sup></span></td>
+<td><span>1,061</span></td>
+<td><span>2</span></td>
+<td><span>2.1</span></td></tr>
+</table></div><div class="tbl-foot">수치와 표 구조는 원문 그대로 옮겼다.</div></div><div class="tbl-wrap"><div class="tbl-cap"><span class="tn">TABLE 2</span>근거 없는 446개 질문에서의 거절 정확도</div><div class="tbl-scroll"><table class="ltx_tabular ltx_centering ltx_align_middle" id="S4.T2.2">
+<tr>
+<td><span>System</span></td>
+<td><span></span><span> <span>
+<span>
+<span>
+<span>Judge</span></span>
+<span>
+<span>(all questions) <math><semantics><mo>↑</mo><annotation>\uparrow</annotation></semantics></math></span></span>
+</span></span><span></span></span></td>
+<td><span></span><span> <span>
+<span>
+<span>
+<span>Exact</span></span>
+<span>
+<span>refusal <math><semantics><mo>↑</mo><annotation>\uparrow</annotation></semantics></math></span></span>
+</span></span><span></span></span></td>
+<td><span></span><span> <span>
+<span>
+<span>
+<span>Lenient</span></span>
+<span>
+<span>refusal <math><semantics><mo>↑</mo><annotation>\uparrow</annotation></semantics></math></span></span>
+</span></span><span></span></span></td>
+<td><span></span><span> <span>
+<span>
+<span>
+<span>Matched</span></span>
+<span>
+<span>refusal <math><semantics><mo>↑</mo><annotation>\uparrow</annotation></semantics></math></span></span>
+</span></span><span></span></span></td></tr>
+<tr>
+<td><span>EdgeMem</span></td>
+<td><span>61.76</span></td>
+<td><span>92.57</span></td>
+<td><span>92.57</span></td>
+<td><span>92.57</span></td></tr>
+<tr>
+<td><span>CAM</span></td>
+<td><span>41.64</span></td>
+<td><span>n/a</span></td>
+<td><span>1.58</span></td>
+<td><span>38.96</span></td></tr>
+<tr>
+<td><span>CompassMem</span></td>
+<td><span>40.81</span></td>
+<td><span>n/a</span></td>
+<td><span>18.02</span></td>
+<td><span>79.28</span></td></tr>
+<tr>
+<td><span>MemGAS</span></td>
+<td><span>34.26</span></td>
+<td><span>n/a</span></td>
+<td><span>23.65</span></td>
+<td><span>74.77</span></td></tr>
+<tr>
+<td><span>MemoryOS</span></td>
+<td><span>31.37</span></td>
+<td><span>n/a</span></td>
+<td><span>12.61</span></td>
+<td><span>75.00</span></td></tr>
+<tr>
+<td><span>A-Mem</span></td>
+<td><span>25.19</span></td>
+<td><span>n/a</span></td>
+<td><span>2.93</span></td>
+<td><span>84.68</span></td></tr>
+<tr>
+<td><span>SeCom</span></td>
+<td><span>31.37</span></td>
+<td><span>n/a</span></td>
+<td><span>12.39</span></td>
+<td><span>75.00</span></td></tr>
+</table></div><div class="tbl-foot">수치와 표 구조는 원문 그대로 옮겼다.</div></div></p><p><figure><div class="fig-top"><span class="fnum">FIG 3</span><span class="ftitle">품질–token 비용과 anchor별 증가분</span></div><div class="imgbox"><img alt="EdgeMem의 비용 대비 품질과 anchor ablation" decoding="async" loading="lazy" src="/paper-assets/ae4538f178119fe30e735474cd750463ff82330ebda0c588a4b617ed54e6b632.png"/></div><figcaption>왼쪽은 질문당 token이 적고 품질이 높은 위치가 좋다. 오른쪽은 flat BM25에 episode, co-occurrence, time anchor를 차례로 넣은 효과다.</figcaption></figure></p><p><div class="tbl-wrap"><div class="tbl-cap"><span class="tn">TABLE 3</span>flat BM25에서 세 anchor를 더하는 ablation</div><div class="tbl-scroll"><table class="ltx_tabular ltx_centering ltx_align_middle" id="S4.T3.2">
+<tr>
+<td><span>Configuration</span></td>
+<td><span>SJ <math><semantics><mo>↑</mo><annotation>\uparrow</annotation></semantics></math></span></td>
+<td><span>F1 <math><semantics><mo>↑</mo><annotation>\uparrow</annotation></semantics></math></span></td>
+<td><span>BLEU-4 <math><semantics><mo>↑</mo><annotation>\uparrow</annotation></semantics></math></span></td>
+<td><span>ROUGE-L <math><semantics><mo>↑</mo><annotation>\uparrow</annotation></semantics></math></span></td>
+<td><span>BERTScore <math><semantics><mo>↑</mo><annotation>\uparrow</annotation></semantics></math></span></td></tr>
+<tr>
+<td><span>flat turn BM25</span></td>
+<td><span>49.74</span></td>
+<td><span>19.40</span></td>
+<td><span>4.14</span></td>
+<td><span>19.00</span></td>
+<td><span>85.38</span></td></tr>
+<tr>
+<td><span></span><span>
+<span>
+<span>
+<span><math><semantics><mo>+</mo><annotation>+</annotation></semantics></math> episode</span></span>
+<span>
+<span>Sub-Hypergraph</span></span>
+</span></span><span><span></span></span></td>
+<td><span>58.18</span></td>
+<td><span>21.94</span></td>
+<td><span>4.88</span></td>
+<td><span>21.41</span></td>
+<td><span>85.80</span></td></tr>
+<tr>
+<td><span></span><span>
+<span>
+<span>
+<span><math><semantics><mo>+</mo><annotation>+</annotation></semantics></math> co-occurrence</span></span>
+<span>
+<span>Sub-Hypergraph</span></span>
+</span></span><span><span></span></span></td>
+<td><span>60.43</span></td>
+<td><span>22.12</span></td>
+<td><span>4.92</span></td>
+<td><span>21.53</span></td>
+<td><span>85.83</span></td></tr>
+<tr>
+<td><span></span><span>
+<span>
+<span>
+<span><math><semantics><mo>+</mo><annotation>+</annotation></semantics></math> time</span></span>
+<span>
+<span>Sub-Hypergraph</span></span>
+</span></span><span><span></span></span></td>
+<td><span>61.01</span></td>
+<td><span>22.44</span></td>
+<td><span>5.03</span></td>
+<td><span>21.82</span></td>
+<td><span>85.90</span></td></tr>
+<tr>
+<td><span>co-occurrence only</span></td>
+<td><span>55.39</span></td>
+<td><span>20.66</span></td>
+<td><span>4.52</span></td>
+<td><span>20.07</span></td>
+<td><span>85.64</span></td></tr>
+<tr>
+<td><span>time only</span></td>
+<td><span>50.19</span></td>
+<td><span>19.54</span></td>
+<td><span>4.19</span></td>
+<td><span>19.16</span></td>
+<td><span>85.40</span></td></tr>
+<tr>
+<td><span>episode <math><semantics><mo>+</mo><annotation>+</annotation></semantics></math> time</span></td>
+<td><span>58.96</span></td>
+<td><span>22.23</span></td>
+<td><span>4.97</span></td>
+<td><span>21.69</span></td>
+<td><span>85.87</span></td></tr>
+</table></div><div class="tbl-foot">수치와 표 구조는 원문 그대로 옮겼다.</div></div><div class="tbl-wrap"><div class="tbl-cap"><span class="tn">TABLE 4</span>LongMemEval-S의 session-level 검색과 답변 품질</div><div class="tbl-scroll"><table class="ltx_tabular ltx_centering ltx_align_middle" id="S4.T4.2">
+<tr>
+<td></td>
+<td colspan="2"><span>@3</span></td>
+<td colspan="2"><span>@10</span></td>
+<td></td>
+<td></td></tr>
+<tr>
+<td><span>System</span></td>
+<td><span>R <math><semantics><mo>↑</mo><annotation>\uparrow</annotation></semantics></math></span></td>
+<td><span>N <math><semantics><mo>↑</mo><annotation>\uparrow</annotation></semantics></math></span></td>
+<td><span>R <math><semantics><mo>↑</mo><annotation>\uparrow</annotation></semantics></math></span></td>
+<td><span>N <math><semantics><mo>↑</mo><annotation>\uparrow</annotation></semantics></math></span></td>
+<td><span>SJ <math><semantics><mo>↑</mo><annotation>\uparrow</annotation></semantics></math></span></td>
+<td><span></span><span> <span>
+<span>
+<span>
+<span>Tokens per</span></span>
+<span>
+<span>question <math><semantics><mo>↓</mo><annotation>\downarrow</annotation></semantics></math></span></span>
+</span></span><span></span></span></td></tr>
+<tr>
+<td><span>Full History<sup>†</sup></span></td>
+<td><span>n/a</span></td>
+<td><span>n/a</span></td>
+<td><span>n/a</span></td>
+<td><span>n/a</span></td>
+<td><span>50.60</span></td>
+<td><span>103,137</span></td></tr>
+<tr>
+<td><span>MPNet<sup>†</sup></span></td>
+<td><span>66.17</span></td>
+<td><span>75.47</span></td>
+<td><span>85.11</span></td>
+<td><span>80.63</span></td>
+<td><span>53.20</span></td>
+<td><span>8,173</span></td></tr>
+<tr>
+<td><span>Contriever<sup>†</sup></span></td>
+<td><span>71.06</span></td>
+<td><span>79.72</span></td>
+<td><span>90.00</span></td>
+<td><span>84.29</span></td>
+<td><span>55.40</span></td>
+<td><span>8,286</span></td></tr>
+<tr>
+<td><span>MPC<sup>†</sup></span></td>
+<td><span>60.00</span></td>
+<td><span>70.90</span></td>
+<td><span>80.00</span></td>
+<td><span>76.59</span></td>
+<td><span>53.80</span></td>
+<td><span>8,457</span></td></tr>
+<tr>
+<td><span>RecurSum<sup>†</sup></span></td>
+<td><span>67.23</span></td>
+<td><span>78.33</span></td>
+<td><span>87.66</span></td>
+<td><span>83.28</span></td>
+<td><span>35.40</span></td>
+<td><span>8,853</span></td></tr>
+<tr>
+<td><span>SeCom<sup>†</sup></span></td>
+<td><span>71.06</span></td>
+<td><span>80.88</span></td>
+<td><span>89.15</span></td>
+<td><span>85.11</span></td>
+<td><span>56.00</span></td>
+<td><span>2,741</span></td></tr>
+<tr>
+<td><span>HippoRAG 2<sup>†</sup></span></td>
+<td><span>75.53</span></td>
+<td><span>85.44</span></td>
+<td><span>91.28</span></td>
+<td><span>88.73</span></td>
+<td><span>57.60</span></td>
+<td><span>8,530</span></td></tr>
+<tr>
+<td><span>A-Mem<sup>†</sup></span></td>
+<td><span>n/a</span></td>
+<td><span>n/a</span></td>
+<td><span>n/a</span></td>
+<td><span>n/a</span></td>
+<td><span>55.60</span></td>
+<td><span>9,018</span></td></tr>
+<tr>
+<td><span>MemGAS<sup>†</sup></span></td>
+<td><span>78.51</span></td>
+<td><span>86.83</span></td>
+<td><span>94.47</span></td>
+<td><span>89.96</span></td>
+<td><span>60.20</span></td>
+<td><span>8,829</span></td></tr>
+<tr>
+<td><span>EdgeMem</span></td>
+<td><span>81.49</span></td>
+<td><span>90.49</span></td>
+<td><span>93.83</span></td>
+<td><span>92.80</span></td>
+<td><span>60.00</span></td>
+<td><span>3,202</span></td></tr>
+</table></div><div class="tbl-foot">수치와 표 구조는 원문 그대로 옮겼다.</div></div></p><p>가장 큰 성능 증가는 episode context에서 +8.44포인트였다. co-occurrence는 +2.21, time은 +0.58을 더했고 세 신뢰구간 모두 0을 제외했다. 즉 큰 문맥, 교차 세션 연결, 명시적 시간은 서로 다른 역할을 한다.</p><p>LongMemEval-S에서 Recall@3 81.49, NDCG@3 90.49로 가장 높았고 답변 strict score 60.00은 MemGAS 60.20과 근접했다. 입력 token은 3,202로 MemGAS 8,829의 약 3분의 1이다.</p><div class="call ar"><div class="ct">초등학생도 이해하는 설명</div><p>원본 일기를 그대로 둔 색인표가, AI가 비싸게 써 준 요약 노트보다 질문을 더 잘 맞혔다. 답이 없을 때 “없다”고 말하는 능력도 좋았다.</p></div></section>
+<section class="ch" id="c6"><div class="ch-eyebrow"><span class="cnum">06</span><span class="clabel">Transfer &amp; Audit · 일반화</span></div><h2 class="ch-title">실패가 쓰기·찾기·읽기 중 어디서 생겼는지 추적하다</h2><div class="tldr"><div class="h">한눈에 요약</div><p>설정을 바꾸지 않고 LongMemEval-S에 옮겨도 검색 순위가 강했다. 27개 실패 감사에서는 요약 중 사실 삭제, 불완전 검색, LLM 탐색 miss가 반복됐다.</p></div><p><div class="tbl-wrap"><div class="tbl-cap"><span class="tn">TABLE 5</span>세 종류의 실패를 원문→검색→답변으로 추적한 감사 사례</div><div class="tbl-scroll"><table class="ltx_tabular ltx_centering ltx_align_middle" id="S4.T5.6">
+<tr>
+<td></td>
+<td>
+<span>
+<span><span>Memory / summary</span></span>
+</span></td>
+<td>
+<span>
+<span><span>Retrieved evidence</span></span>
+</span></td>
+<td>
+<span>
+<span><span>Final answer</span></span>
+</span></td></tr>
+<tr>
+<td colspan="4"><em>Q1: What gaming equipment did John buy or
+refurbish?</em><span> gold: <em>Sennheiser headphones, Logitech mouse, gaming desk</em></span></td></tr>
+<tr>
+<td><span>A-Mem</span></td>
+<td>
+<span>
+<span><span>✓</span><span> notes faithfully retain headphones, </span><span>mouse</span><span>, and the
+refurbished </span><span>desk</span></span>
+</span></td>
+<td>
+<span>
+<span><math><semantics><mo>×</mo><annotation>\times</annotation></semantics></math><span> partial retrieval: D23:10 omitted;
+</span><span>mouse and desk</span><span> never reach the reader</span></span>
+</span></td>
+<td>
+<span>
+<span><math><semantics><mo>×</mo><annotation>\times</annotation></semantics></math><span> “new devices and
+headphones”—misses </span><span>mouse and desk</span></span>
+</span></td></tr>
+<tr>
+<td><span>EdgeMem</span></td>
+<td>
+<span>
+<span><span>✓</span><span> original turns kept: “gaming desk”,
+“headphones”, “Sennheiser + Logitech mouse”</span></span>
+</span></td>
+<td>
+<span>
+<span><span>✓</span><span> </span><span>D20:9, D23:8,
+D23:10</span><span> packed (all gold)</span></span>
+</span></td>
+<td>
+<span>
+<span><span>✓</span><span> “headphones, </span><span>mouse</span><span>, and refurbished
+</span><span>desk</span><span>”</span></span>
+</span></td></tr>
+<tr>
+<td colspan="4"><em>Q2: What kind of beer does McGee’s bar
+serve?</em><span> gold: <em>stout, lager</em></span></td></tr>
+<tr>
+<td><span>CAM</span></td>
+<td>
+<span>
+<span><math><semantics><mo>×</mo><annotation>\times</annotation></semantics></math><span> key fact dropped: gist layer omits </span><span>“McGee’s” and
+“lager”</span><span>; the exact leaf is pruned</span></span>
+</span></td>
+<td>
+<span>
+<span><math><semantics><mo>×</mo><annotation>\times</annotation></semantics></math><span> cannot recover what construction
+discarded</span></span>
+</span></td>
+<td>
+<span>
+<span><math><semantics><mo>×</mo><annotation>\times</annotation></semantics></math><span> “stout and light beers”—misses </span><span>lager</span></span>
+</span></td></tr>
+<tr>
+<td><span>EdgeMem</span></td>
+<td>
+<span>
+<span><span>✓</span><span> original turns kept: D21:15 (great stout),
+D23:3 (“good </span><span>lager</span><span> at McGee’s”)</span></span>
+</span></td>
+<td>
+<span>
+<span><span>✓</span><span> </span><span>D21:15, D23:3</span><span> packed</span></span>
+</span></td>
+<td>
+<span>
+<span><span>✓</span><span> “great stout and </span><span>lager</span><span> beer”</span></span>
+</span></td></tr>
+<tr>
+<td colspan="4"><em>Q3: Who was the new addition to Nate’s family in
+May 2022?</em><span> gold: <em>Max</em></span></td></tr>
+<tr>
+<td><span>CompassMem</span></td>
+<td>
+<span>
+<span><span>✓</span><span> faithful event node: “Nate introduces his new dog,
+</span><span>Max</span><span>”</span></span>
+</span></td>
+<td>
+<span>
+<span><math><semantics><mo>×</mo><annotation>\times</annotation></semantics></math><span> retrieval miss: agentic navigation selects </span><span>zero
+nodes</span><span>; N10 never enters the reader</span></span>
+</span></td>
+<td>
+<span>
+<span><math><semantics><mo>×</mo><annotation>\times</annotation></semantics></math><span> </span><span>“not mentioned”</span></span>
+</span></td></tr>
+<tr>
+<td><span>EdgeMem</span></td>
+<td>
+<span>
+<span><span>✓</span><span> original turn kept: D12:3 (“new addition to
+the family, this is </span><span>Max</span><span>!”)</span></span>
+</span></td>
+<td>
+<span>
+<span><span>✓</span><span> gold evidence </span><span>D12:3</span><span> packed</span></span>
+</span></td>
+<td>
+<span>
+<span><span>✓</span><span> </span><span>“Max”</span></span>
+</span></td></tr>
+</table></div><div class="tbl-foot">수치와 표 구조는 원문 그대로 옮겼다.</div></div></p><p>CAM 사례는 요약 단계에서 “lager”가 사라져 이후 검색으로 복구 불가능했다. A-Mem은 원 정보는 남았지만 일부만 검색했고, CompassMem은 충실한 event node가 있어도 agent navigation이 0개를 골랐다.</p><p>원문 보존은 write-time 비가역 손실을 막는다. 다만 원문을 그대로 저장하므로 실제 서비스에서는 동의, 접근통제, 삭제, 보존기간 정책이 필수다.</p><div class="call ar"><div class="ct">초등학생도 이해하는 설명</div><p>틀린 답이 나오면 “일기에서 지웠나?”, “있는데 못 찾았나?”, “찾고도 잘못 읽었나?”를 따로 조사한다. EdgeMem은 첫 번째 위험을 원천적으로 줄인다.</p></div></section>
+<section class="ch" id="c7"><div class="ch-eyebrow"><span class="cnum">07</span><span class="clabel">Decision · 결론</span></div><h2 class="ch-title">LLM-Wiki를 모두 만들기 전의 값싼 메모리 층</h2><div class="tldr"><div class="h">한눈에 요약</div><p>반복 대화 기억에는 원문 보존형 local index를 기본으로 두고, 질의 후 다단계 관계 추론이 필요할 때만 HippoRAG·LLM-Wiki 같은 더 비싼 층으로 승격할 수 있다.</p></div><p>이 결과는 “모든 지식을 미리 LLM으로 구조화해야 한다”는 전제를 약화한다. 질문 전에 필요한 것은 완벽한 재서술보다 <strong>원문 provenance와 여러 단서로 들어가는 주소</strong>일 수 있다.</p><p>그러나 LoCoMo 대화 10개와 LongMemEval-S 중심이며, 언어·도메인 다양성, graph가 계속 커질 때의 저장·삭제 비용, 개인정보 운영은 검증되지 않았다. 최종 답변에는 여전히 gpt-4o-mini 한 번이 필요하다.</p><div class="call ar"><div class="ct">초등학생도 이해하는 설명</div><p>모든 일기를 백과사전으로 다시 쓰기 전에, 원본과 좋은 색인표만으로 충분한지 먼저 시험한다. 여러 단서를 따라 오래 추리해야 할 때만 더 복잡한 지도를 만든다.</p></div></section>
+<section class="ch" id="gloss"><div class="ch-eyebrow"><span class="cnum">＋</span><span class="clabel">Glossary · 핵심 용어</span></div><h2 class="ch-title">핵심 용어 정리</h2><div class="gloss"><div class="gitem"><div class="term">하이퍼그래프<span class="en">Hypergraph</span></div><p>한 edge가 두 점이 아니라 여러 turn을 동시에 묶을 수 있는 그래프.</p></div><div class="gitem"><div class="term">원문 보존<span class="en">Evidence preservation</span></div><p>생성 요약으로 바꾸지 않고 원 대화 turn을 그대로 저장하는 원칙.</p></div><div class="gitem"><div class="term">Episode anchor<span class="en">Episode anchor</span></div><p>한 세션의 순서와 주변 문맥으로 turn을 묶는 주소.</p></div><div class="gitem"><div class="term">공통발생 anchor<span class="en">Co-occurrence anchor</span></div><p>같은 entity·keyword를 공유하는 turn을 세션 밖에서도 잇는 주소.</p></div><div class="gitem"><div class="term">근거 묶음<span class="en">Evidence Pack</span></div><p>reader에게 넘기는 최대 18개·3,072-token 원문 turn 묶음.</p></div><div class="gitem"><div class="term">절제<span class="en">Abstention</span></div><p>근거가 없을 때 추측하지 않고 답이 없다고 말하는 동작.</p></div></div></section>
+<section class="ch" id="take"><div class="ch-eyebrow"><span class="cnum">＋</span><span class="clabel">One-page Summary · 한 장 정리</span></div><h2 class="ch-title">이 논문을 한 장으로</h2><div class="takeaways"><div class="take"><div class="n">01</div><div class="body"><b>기억은 다시 쓰기보다 원문과 주소를 보존하는 것이 먼저다.</b></div></div><div class="take"><div class="n">02</div><div class="body">세 anchor 중 가장 큰 효과는 episode context(+8.44포인트)였다.</div></div><div class="take"><div class="n">03</div><div class="body">LoCoMo 동일 prompt에서 strict judge 61.01, 구축 생성 token 0이었다.</div></div><div class="take"><div class="n">04</div><div class="body">LongMemEval-S Recall@3 81.49로 작은 evidence budget에서도 강했다.</div></div><div class="take"><div class="n">05</div><div class="body">이는 Microsoft GraphRAG나 HippoRAG PPR가 아닌 <b>agent-memory hypergraph</b>다.</div></div><div class="take"><div class="n">06</div><div class="body">실서비스에서는 개인정보 보존·삭제·접근통제가 필수다.</div></div></div></section>

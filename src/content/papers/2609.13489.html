@@ -1,0 +1,56 @@
+<section class="ch" id="c1">
+<div class="ch-eyebrow"><span class="cnum">01</span><span class="clabel">Problem · 문제</span></div>
+<h2 class="ch-title">모든 질문에 같은 문서 수를 주면 양쪽으로 틀린다</h2>
+<div class="tldr"><div class="h">한눈에 요약</div><p>쉬운 질문은 문서가 너무 많이 들어와 토큰과 잡음이 늘고, 어려운 질문은 너무 적게 들어와 핵심 근거를 놓친다. QCAR는 검색 전에 질문의 난이도를 보고 top-k를 정한다.</p></div>
+<p class="lead">법률·의료·기업 검색처럼 질문 유형이 반복되는 영역에서는 “이 질문은 보통 몇 문서가 필요한가”를 과거 로그로 배울 수 있다.</p><p>QCAR는 검색 결과를 보고 나중에 자르는 CAR와 달리, 검색 전에 예산을 정하는 <strong>prior</strong>다.</p><div class="call ar"><div class="ct">초등학생도 이해하는 설명</div><p>짧은 질문에는 책 한 권, 복잡한 질문에는 책 열 권이 필요할 수 있다. 그런데 항상 열 권을 주면 쉬운 질문은 책 더미에 묻힌다.</p></div><figure>
+<div class="fig-top"><span class="fnum">FIG 1</span><span class="ftitle">QCAR의 오프라인 학습과 온라인 검색 흐름</span></div>
+<div class="imgbox"><img alt="QCAR의 오프라인 학습과 온라인 검색 흐름" decoding="async" loading="lazy" src="/paper-assets/6d41716204bba10b150d01eaf142d239b921f47aec7622825c5ce54877f6dc5a.png"/></div>
+<figcaption>과거 질문을 임베딩·클러스터링하고, 각 클러스터의 필요한 k를 미리 계산한 뒤 실시간 질문에 적용한다.</figcaption>
+</figure>
+</section>
+<section class="ch" id="c2">
+<div class="ch-eyebrow"><span class="cnum">02</span><span class="clabel">Method · 방법</span></div>
+<h2 class="ch-title">질문을 비슷한 무리로 묶고, 각 무리에 검색 깊이를 붙인다</h2>
+<div class="tldr"><div class="h">한눈에 요약</div><p>과거 질문을 1536차원 임베딩으로 바꾸고 UMAP으로 의미 공간을 정리한다. 각 질문의 NDCG 곡선이 평평해지는 지점 k*를 구한 뒤, 클러스터마다 평균+2표준편차를 권장 k로 저장한다.</p></div>
+<p class="lead">온라인 단계는 lexical 예외 확인 → 임베딩·UMAP → 가장 가까운 클러스터 조회 → 해당 top-k 검색 순서다.</p><p>최종 설정은 UMAP 190차원, 이웃 200개, 80개 클러스터였다. 숫자상 2차원이 더 예뻐도 서로 다른 법률 주제를 뭉개므로 질적 검토로 거절했다.</p><div class="call ar"><div class="ct">초등학생도 이해하는 설명</div><p>질문 카드를 비슷한 바구니에 넣고, 바구니마다 “이 정도 책을 꺼내세요”라는 메모를 붙이는 과정이다.</p></div><figure>
+<div class="fig-top"><span class="fnum">FIG 2</span><span class="ftitle">쉬운 질문과 어려운 질문의 NDCG 곡선</span></div>
+<div class="imgbox"><img alt="쉬운 질문과 어려운 질문의 NDCG 곡선" decoding="async" loading="lazy" src="/paper-assets/a2f57c7c0f5d448ebc355fc811323d7502a4003f07ddf7d44a0949581de33557.png"/></div>
+<figcaption>쉬운 질문은 앞부분에서 점수가 빨리 포화되고, 어려운 질문은 100개까지 관련 문서가 계속 늘어난다.</figcaption>
+</figure><figure>
+<div class="fig-top"><span class="fnum">FIG 3</span><span class="ftitle">적응형 k와 무작위 k의 비교</span></div>
+<div class="imgbox"><img alt="적응형 k와 무작위 k의 비교" decoding="async" loading="lazy" src="/paper-assets/95d836629e50f6b428489ca8ad83495600dc26391a2e649c6442d0c39dc3a1d4.png"/></div>
+<figcaption>질문 난이도를 반영한 k 선택이 무작위 선택보다 안정적인 NDCG를 보인다.</figcaption>
+</figure><div class="tbl-wrap"><div class="tbl-cap"><span class="tn">TABLE 1</span>정적 top-k 대비 적응형 top-k</div>
+<div class="tbl-scroll"><table><thead><tr><th>기준 top_k</th><th>복잡 질의 ΔF1</th><th>복잡 질의 Δ토큰</th><th>단순 질의 ΔF1</th><th>단순 질의 Δ토큰</th></tr></thead><tbody><tr><td>25</td><td>+.94</td><td>+244.88%</td><td>+.25</td><td>−27.68%</td></tr><tr><td>50</td><td>+.37</td><td>+85.95%</td><td>+.37</td><td>−35.95%</td></tr><tr><td>75</td><td>+.15</td><td>+32.24%</td><td>+.40</td><td>−38.42%</td></tr><tr><td>100</td><td>—</td><td>—</td><td>+.46</td><td>−40.77%</td></tr></tbody></table></div><div class="tbl-foot">논문 표의 ΔF1은 절대 F1 차이, Δ토큰은 정적 기준 대비 변화율이다.</div></div>
+</section>
+<section class="ch" id="c3">
+<div class="ch-eyebrow"><span class="cnum">03</span><span class="clabel">Results · 결과</span></div>
+<h2 class="ch-title">단순 질문은 덜 찾고, 복잡 질문은 더 찾아 F1이 올랐다</h2>
+<div class="tldr"><div class="h">한눈에 요약</div><p>전체 트래픽 A/B에서 F1이 36.64% 개선됐다. 단순 클러스터는 최대 40.77% 토큰을 줄이면서 품질을 유지했고, 복잡 클러스터는 더 많은 문서를 가져와 누락을 줄였다.</p></div>
+<p class="lead">전체 평균 토큰은 +51.19%였다는 점도 함께 봐야 한다. 복잡 질의에 쓰는 추가 토큰이 단순 질의 절약보다 컸다.</p><p>논문 본문은 단순 질의에서 최대 23% 토큰 감소, 종합 질의에서 최대 17% 증거 커버리지를 보고한다. 표의 부분집합 변화율과 전체 A/B 평균을 섞어 읽지 않아야 한다.</p><div class="call ar"><div class="ct">초등학생도 이해하는 설명</div><p>쉬운 문제는 연필 한 자루만 꺼내고, 어려운 문제는 자료 상자를 더 여는 방식이다. 그래서 쉬운 문제의 비용은 내려가지만 어려운 문제의 비용은 올라간다.</p></div><div class="tbl-wrap"><div class="tbl-cap"><span class="tn">TABLE 1</span>정적 top-k 대비 적응형 top-k</div>
+<div class="tbl-scroll"><table><thead><tr><th>기준 top_k</th><th>복잡 질의 ΔF1</th><th>복잡 질의 Δ토큰</th><th>단순 질의 ΔF1</th><th>단순 질의 Δ토큰</th></tr></thead><tbody><tr><td>25</td><td>+.94</td><td>+244.88%</td><td>+.25</td><td>−27.68%</td></tr><tr><td>50</td><td>+.37</td><td>+85.95%</td><td>+.37</td><td>−35.95%</td></tr><tr><td>75</td><td>+.15</td><td>+32.24%</td><td>+.40</td><td>−38.42%</td></tr><tr><td>100</td><td>—</td><td>—</td><td>+.46</td><td>−40.77%</td></tr></tbody></table></div><div class="tbl-foot">논문 표의 ΔF1은 절대 F1 차이, Δ토큰은 정적 기준 대비 변화율이다.</div></div>
+</section>
+<section class="ch" id="c4">
+<div class="ch-eyebrow"><span class="cnum">04</span><span class="clabel">Operations · 운영</span></div>
+<h2 class="ch-title">오프라인의 비싼 일을 온라인의 빠른 조회로 바꾼다</h2>
+<div class="tldr"><div class="h">한눈에 요약</div><p>질문 라우팅은 lexical 검사 1ms 미만, 임베딩 30–50ms, UMAP 약 1ms, 클러스터 조회 1ms 미만 수준이다. 무거운 LLM 라벨링과 NDCG 계산은 데이터베이스 구축 때 한 번만 한다.</p></div>
+<p class="lead">정적 top-k를 없애는 것이 아니라, 질문별 초기 예산을 더 똑똑하게 정하는 것이다.</p><p>새 도메인은 과거 로그·관련성 라벨·주기적 재학습이 필요하다. 질문 분포가 계속 바뀌면 클러스터와 k 매핑도 다시 만들어야 한다.</p><div class="call ar"><div class="ct">초등학생도 이해하는 설명</div><p>매번 선생님에게 “몇 문제 풀까요?”라고 묻지 않고, 비슷한 숙제를 모아 두었다가 바구니별로 문제 수를 정해 놓는 것이다.</p></div><div class="call ar"><div class="ct">RAG 설계 포인트</div><p>QCAR는 CAR 같은 post-retrieval trimming과 결합할 수 있다. 먼저 query-centric prior로 예산을 정하고, 결과를 본 뒤 후처리로 다듬는 두 단계가 자연스럽다.</p></div>
+</section>
+<section class="ch" id="c5">
+<div class="ch-eyebrow"><span class="cnum">05</span><span class="clabel">Limits · 해석 경계</span></div>
+<h2 class="ch-title">질문이 반복되는 닫힌 도메인에서 가장 강하다</h2>
+<div class="tldr"><div class="h">한눈에 요약</div><p>QCAR의 전제는 과거 질문과 미래 질문의 의미 분포가 어느 정도 닮았다는 것이다. 오픈 도메인처럼 새 의도가 계속 생기면 기본 k나 사후 방법으로 넘겨야 한다.</p></div>
+<p class="lead">따라서 “모든 RAG에 자동으로 최적 k”가 아니라 <strong>로그가 쌓이는 업무형 RAG의 운영 최적화</strong>로 읽는 편이 정확하다.</p><p>LLM-as-a-Judge 라벨과 100개 상한에 의존하며, 다른 도메인·검색기·드리프트 조건의 일반화는 더 검증해야 한다.</p><div class="call ar"><div class="ct">초등학생도 이해하는 설명</div><p>처음 보는 질문은 어느 바구니에 넣을지 모르므로, 안전하게 기본 규칙을 쓰거나 더 많이 찾아봐야 한다.</p></div><div class="call arb"><div class="ct">실전 판독법</div><p>top-k, NDCG, query clustering, UMAP이 보이면 검색 전 질문 난이도 조절 논문이다. 그래프 구조를 답변 근거로 쓰는 GraphRAG와는 층위가 다르다.</p></div>
+</section>
+<section class="ch" id="gloss">
+<div class="ch-eyebrow"><span class="cnum">＋</span><span class="clabel">Glossary · 핵심 용어</span></div>
+<h2 class="ch-title">핵심 용어 정리</h2>
+<div class="tldr"><div class="h">한눈에 요약</div><p>논문의 주장을 따라가는 데 필요한 용어만 간결하게 모았다.</p></div>
+<div class="gloss"><div class="gitem"><div class="term">top-k<span class="en">top-k</span></div><p>검색 결과 중 상위 k개 문서를 LLM에 넘기는 수.</p></div><div class="gitem"><div class="term">NDCG<span class="en">Normalized Discounted Cumulative Gain</span></div><p>관련성이 높은 문서가 앞에 잘 나왔는지 재는 점수. 1에 가까울수록 이상적.</p></div><div class="gitem"><div class="term">UMAP<span class="en">Uniform Manifold Approximation and Projection</span></div><p>고차원 임베딩을 의미 구조가 보이도록 낮은 차원으로 옮기는 방법.</p></div><div class="gitem"><div class="term">QPP<span class="en">Query Performance Prediction</span></div><p>검색 전에 질문의 검색 성공이나 난이도를 예측하는 분야.</p></div><div class="gitem"><div class="term">A/B 테스트<span class="en">online A/B test</span></div><p>실제 트래픽을 두 방식으로 나눠 품질과 비용을 비교하는 실험.</p></div></div>
+</section>
+<section class="ch" id="take">
+<div class="ch-eyebrow"><span class="cnum">＋</span><span class="clabel">One-page Summary · 한 장 정리</span></div>
+<h2 class="ch-title">이 논문을 한 장으로</h2>
+<div class="tldr"><div class="h">한눈에 요약</div><p>문제, 방법, 증거, 한계를 한 번에 다시 정리한다.</p></div>
+<div class="takeaways"><div class="take"><div class="n">01</div><div class="body"><b>질문마다 필요한 문서 수가 다르다.</b></div></div><div class="take"><div class="n">02</div><div class="body">QCAR는 과거 질문 임베딩·클러스터와 NDCG 포화점을 이용해 검색 전 k를 정한다.</div></div><div class="take"><div class="n">03</div><div class="body">전체 A/B F1은 +36.64%, 단순 질의는 최대 40.77% 토큰 감소였다.</div></div><div class="take"><div class="n">04</div><div class="body">복잡 질의에 문서를 더 주면서 전체 토큰은 +51.19% 증가했다.</div></div><div class="take"><div class="n">05</div><div class="body">로그가 안정적인 법률·의료·기업 RAG에 적합하고, 오픈 도메인 드리프트에는 fallback이 필요하다.</div></div></div>
+</section>

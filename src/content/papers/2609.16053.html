@@ -1,0 +1,72 @@
+<section class="ch" id="c1">
+<div class="ch-eyebrow"><span class="cnum">01</span><span class="clabel">Problem · 문제</span></div>
+<h2 class="ch-title">에이전트가 오래 기억해도, 기억을 찾는 길은 낡을 수 있다</h2>
+<div class="tldr"><div class="h">한눈에 요약</div><p>기존 장기기억은 새 대화를 더하거나 합치고 지우는 일에 집중했다. REALM은 기억을 꺼내 쓴 뒤 어떤 조각이 정답에 도움이 됐는지 되돌아보고, 다음 검색을 위해 연결을 고친다.</p></div>
+<p class="lead">핵심 변화는 기억의 양을 늘리는 것이 아니라, <strong>사용 후 기억 사이의 관계를 다시 정리</strong>하는 것이다.</p><p>논문은 이를 사람의 기억 재통합(memory reconsolidation)에 빗댄다. 무언가를 떠올린 뒤 기존 연결이 굳어지거나 약해질 수 있듯, 에이전트도 검색 결과와 답변 피드백을 이용해 로컬 그래프를 조정한다.</p><div class="call ar"><div class="ct">초등학생도 이해하는 설명</div><p>책을 읽고 문제를 푼 다음, 어떤 책과 메모가 도움이 됐는지 표시해 두면 다음번에 더 빨리 찾을 수 있다.</p></div><figure>
+<div class="fig-top"><span class="fnum">FIG 1</span><span class="ftitle">기억을 저장하는 방식에서 사용 후 고치는 방식으로</span></div>
+<div class="imgbox"><img alt="기억을 저장하는 방식에서 사용 후 고치는 방식으로" decoding="async" loading="lazy" src="/paper-assets/a67baf74a6e274f1b7a24a6e5cc4eb24dfb3db5ce269c5a5cce56ec72c2e274c.png"/></div>
+<figcaption>기존 시스템은 새 정보가 들어올 때 주로 기억을 바꾸지만, REALM은 검색해 사용한 기억의 연결도 다시 정리한다.</figcaption>
+</figure><div class="call arb"><div class="ct">구조 구분</div><p>여기서 graph는 HNSW처럼 벡터를 빨리 찾기 위한 내부 길이 아니다. 사람·사건·사실 같은 기억 단위와 그 사이의 의미 관계를 담는 에이전트 장기기억 구조다.</p></div>
+</section>
+<section class="ch" id="c2">
+<div class="ch-eyebrow"><span class="cnum">02</span><span class="clabel">Memory graph · 기억 그래프</span></div>
+<h2 class="ch-title">기억을 네 종류의 조각과 네 종류의 연결로 나눈다</h2>
+<div class="tldr"><div class="h">한눈에 요약</div><p>노드는 entity, event, episode, fact이고 연결은 logical, causal, hierarchical, associative다. 각 조각에는 원문, 짧은 뜻풀이, 검색용 이름·키워드, 필요할 경우 시간 정보가 붙는다.</p></div>
+<p class="lead">새 관찰은 기존 이웃 기억을 찾아 새 노드로 추가하거나, 기존 기억과 합치거나, 중복이면 저장하지 않는 세 방식으로 통합된다.</p><p>중요한 점은 미리 정해 놓은 거대한 온톨로지에 억지로 끼우기보다, LLM이 타입과 국소 관계를 만들어 그래프를 키운다는 것이다. 논문에서는 관계의 신뢰도도 0~1 가중치로 저장한다.</p><div class="call ar"><div class="ct">초등학생도 이해하는 설명</div><p>사람, 일어난 일, 여러 일이 모인 경험, 확인한 사실을 카드로 만들고 “누가 했나”, “무슨 원인인가” 같은 선으로 연결한다.</p></div><figure>
+<div class="fig-top"><span class="fnum">FIG 2</span><span class="ftitle">저장·검색·갱신이 한 바퀴로 연결되는 구조</span></div>
+<div class="imgbox"><img alt="저장·검색·갱신이 한 바퀴로 연결되는 구조" decoding="async" loading="lazy" src="/paper-assets/c119d2c0350ec7e48d306d8c708774dbad1d10d22a6f639681b54257e6b01c82.png"/></div>
+<figcaption>질문에 맞는 기억을 그래프에서 찾고, 그때 활성화된 부분 그래프를 답변 후 갱신한다.</figcaption>
+</figure>
+</section>
+<section class="ch" id="c3">
+<div class="ch-eyebrow"><span class="cnum">03</span><span class="clabel">Retrieval · 검색</span></div>
+<h2 class="ch-title">정답 단서에서 시작해 필요한 관계만 따라간다</h2>
+<div class="tldr"><div class="h">한눈에 요약</div><p>REALM은 질의·키워드·혼합 검색으로 시작 노드를 찾고, 근거가 모자라면 LLM이 다음에 따라갈 관계 종류와 시간 조건을 고른다. 모은 증거는 질문 관련성·관계 신뢰도·시간 적합도로 다시 순위를 매긴다.</p></div>
+<p class="lead">논문은 검색을 씨앗 찾기 → 관계 따라 확장하기 → 최종 증거 다시 정렬하기의 세 단계로 설명한다.</p><p>확장은 무제한이 아니다. 그래프 깊이와 메모리 예산이 끝나거나 답에 필요한 근거가 모이면 멈춘다. 이 구조는 단순 의미 유사도만으로 멀리 떨어진 기억이 누락되는 문제를 줄이려는 설계다.</p><div class="call ar"><div class="ct">초등학생도 이해하는 설명</div><p>문제와 비슷한 메모지 몇 장을 먼저 찾고, 그 메모지에 적힌 화살표를 따라가며 필요한 것만 더 읽는다.</p></div><figure>
+<div class="fig-top"><span class="fnum">FIG 3</span><span class="ftitle">질문 순서를 섞어도 성능이 비슷한지 확인</span></div>
+<div class="imgbox"><img alt="질문 순서를 섞어도 성능이 비슷한지 확인" decoding="async" loading="lazy" src="/paper-assets/26eb20251f56061ab519eb5446ebd5aaed32e043ad4b86b865bd50fa85dc1731.png"/></div>
+<figcaption>무작위 질문 순서에서도 성능 변동이 작아, 특정 순서에만 맞춰 기억을 고친 것은 아니라는 분석이다.</figcaption>
+</figure><figure>
+<div class="fig-top"><span class="fnum">FIG 5</span><span class="ftitle">정답 근거를 찾기까지 필요한 그래프 깊이</span></div>
+<div class="imgbox"><img alt="정답 근거를 찾기까지 필요한 그래프 깊이" decoding="async" loading="lazy" src="/paper-assets/d642cb7020ffeb6e7c2ddcf520eb8520363f9e5ede0100cbbdb950ac761a5829.png"/></div>
+<figcaption>LoCoMo 근거의 84.87%는 시작 노드에서 바로 찾았고, LongMemEval은 더 많은 근거가 깊은 확장을 필요로 했다.</figcaption>
+</figure><div class="tbl-wrap"><div class="tbl-cap"><span class="tn">TABLE 4</span>그래프를 넓히는 방식 비교</div>
+<div class="tbl-scroll"><table><thead><tr><th>확장 방식</th><th>정확도(%)</th><th>정답 수</th></tr></thead><tbody><tr><td>경로 탐색만</td><td>39.84</td><td>147</td></tr><tr><td>부분그래프 빔 탐색만</td><td>43.09</td><td>159</td></tr><tr><td>상황에 맞춰 선택</td><td>43.36</td><td>160</td></tr></tbody></table></div><div class="tbl-foot">적응 선택의 향상 폭은 작다(+0.27%p 대 부분그래프 빔 탐색).</div></div>
+</section>
+<section class="ch" id="c4">
+<div class="ch-eyebrow"><span class="cnum">04</span><span class="clabel">Reconsolidation · 다시 정리</span></div>
+<h2 class="ch-title">답을 내고 난 뒤 연결을 더하거나 강화하거나 약하게 만든다</h2>
+<div class="tldr"><div class="h">한눈에 요약</div><p>REALM은 검색한 조각과 사용자·평가 피드백을 보고 어떤 기억 관계가 질문에 유용했는지 판단한다. 유용한 관계는 강화하고, 반복해서 무관하거나 헷갈리게 한 연결은 약화하며, 자주 함께 쓰인 기억끼리는 새 연결을 만든다.</p></div>
+<p class="lead">이 갱신은 원문 기억 내용을 다시 쓰는 것이 아니라, 기억 노드 사이의 <strong>그래프 구조와 연결 강도</strong>를 바꾸는 방식이다.</p><p>실험에서 그래프 갱신은 근거를 새로 찾는 비율을 조금만 늘렸지만, 이미 찾은 근거를 사용해 정답을 내는 비율은 더 크게 늘렸다. 즉 좋아진 지점은 검색량보다 기억 정리와 추론 활용에 가깝다.</p><div class="call ar"><div class="ct">초등학생도 이해하는 설명</div><p>답을 맞힌 뒤에는 쓴 메모 사이에 “이 둘은 같이 보면 도움이 된다”는 선을 굵게 그리고, 헷갈린 선은 흐리게 한다.</p></div><figure>
+<div class="fig-top"><span class="fnum">FIG 4</span><span class="ftitle">저장된 기억 종류와 실제 검색에서 쓰인 종류</span></div>
+<div class="imgbox"><img alt="저장된 기억 종류와 실제 검색에서 쓰인 종류" decoding="async" loading="lazy" src="/paper-assets/4d3b759fbff66d2ec25eb404f431b15b022c3fe0f5159c076b560bd2699d316e.png"/></div>
+<figcaption>기억 노드 유형은 저장 비율과 검색 비율이 비슷하지만, 인과·논리 관계는 추론 때 더 자주 활용됐다.</figcaption>
+</figure><figure>
+<div class="fig-top"><span class="fnum">FIG 6</span><span class="ftitle">그래프 갱신은 근거 활용을 더 크게 높였다</span></div>
+<div class="imgbox"><img alt="그래프 갱신은 근거 활용을 더 크게 높였다" decoding="async" loading="lazy" src="/paper-assets/c4c05c8b16a6f7638110a1aa0143a02cc99bff82ace1a05585be1bfe0d7b3a44.png"/></div>
+<figcaption>근거 발견 자체는 3.70%·5.41% 늘었지만, 발견한 근거로 정답을 낸 비율은 20.83%·19.23% 증가했다.</figcaption>
+</figure><div class="tbl-wrap"><div class="tbl-cap"><span class="tn">TABLE 3</span>검색 후 그래프 갱신을 켜고 끈 결과</div>
+<div class="tbl-scroll"><table><thead><tr><th>데이터셋·질문</th><th>갱신 없음</th><th>갱신 사용</th><th>증가</th></tr></thead><tbody><tr><td>LoCoMo · 다중 홉</td><td>59.57</td><td>64.54</td><td>+4.97</td></tr><tr><td>LoCoMo · 시간</td><td>74.14</td><td>76.64</td><td>+2.50</td></tr><tr><td>LoCoMo · 단일/선호</td><td>81.09</td><td>81.57</td><td>+0.48</td></tr><tr><td>LoCoMo · 개방형/갱신</td><td>53.12</td><td>58.33</td><td>+5.21</td></tr><tr><td>LoCoMo · 평균</td><td>73.96</td><td>75.97</td><td>+2.01</td></tr><tr><td>LongMemEval · 다중 세션</td><td>43.8</td><td>46.28</td><td>+2.48</td></tr><tr><td>LongMemEval · 시간 추론</td><td>55.12</td><td>56.69</td><td>+1.57</td></tr><tr><td>LongMemEval · 선호</td><td>30.0</td><td>36.66</td><td>+6.66</td></tr><tr><td>LongMemEval · 지식 갱신</td><td>84.72</td><td>88.89</td><td>+4.17</td></tr><tr><td>LongMemEval · 평균</td><td>62.98</td><td>65.11</td><td>+2.13</td></tr></tbody></table></div><div class="tbl-foot">정확도는 %이며 증가는 절대 percentage point다.</div></div>
+</section>
+<section class="ch" id="c5">
+<div class="ch-eyebrow"><span class="cnum">05</span><span class="clabel">Evidence &amp; limits · 근거와 한계</span></div>
+<h2 class="ch-title">두 벤치마크에서는 앞섰지만, 모든 기억 질문에서 이기는 것은 아니다</h2>
+<div class="tldr"><div class="h">한눈에 요약</div><p>LoCoMo 평균 75.97%, LongMemEval 평균 65.11%로 비교 대상 중 가장 높았다. 그러나 LongMemEval의 선호 질문은 36.66%였고, 저자들도 적응형 검색 전략 선택의 추가 이득이 작다고 보고한다.</p></div>
+<p class="lead">결과는 유망하지만, LLM 판정 기반 두 장기대화 벤치마크에서 얻은 결과이지 실제 개인비서 운영의 비용·오류율 보증은 아니다.</p><p>평가 백본과 판정자는 GPT-4o-mini로 통일했다. 반복적인 검색 후 그래프 수정은 기억 저장·검색 비용을 높일 수 있으며, 논문은 이런 장기 운영 비용을 상세히 비교하지 않는다. 따라서 위키 구현에 가져올 때는 갱신 비용과 잘못된 관계 추가를 따로 측정해야 한다.</p><div class="tbl-wrap"><div class="tbl-cap"><span class="tn">TABLE 1</span>LoCoMo 질문 종류별 정확도(%)</div>
+<div class="tbl-scroll"><table><thead><tr><th>방법</th><th>다중 홉</th><th>시간</th><th>개방형</th><th>단일 홉</th><th>평균</th></tr></thead><tbody><tr><td>MIRIX</td><td>54.26</td><td>68.54</td><td>46.88</td><td>68.22</td><td>64.33</td></tr><tr><td>Mem0</td><td>58.75</td><td>52.34</td><td>45.83</td><td>73.33</td><td>64.57</td></tr><tr><td>Zep</td><td>52.12</td><td>54.82</td><td>33.33</td><td>66.23</td><td>59.22</td></tr><tr><td>MAGMA</td><td>52.8</td><td>65.0</td><td>51.7</td><td>77.6</td><td>68.8</td></tr><tr><td>Nemori</td><td>56.9</td><td>64.9</td><td>48.5</td><td>76.4</td><td>68.7</td></tr><tr><td>A-Mem</td><td>53.55</td><td>50.16</td><td>41.67</td><td>61.83</td><td>56.62</td></tr><tr><td>REALM (제안)</td><td>64.54</td><td>76.64</td><td>58.33</td><td>81.57</td><td>75.97</td></tr></tbody></table></div><div class="tbl-foot">GPT-4o-mini를 시스템 백본과 평가 판정자로 모두 사용했다.</div></div><div class="tbl-wrap"><div class="tbl-cap"><span class="tn">TABLE 2</span>LongMemEval 질문 종류별 정확도(%)</div>
+<div class="tbl-scroll"><table><thead><tr><th>방법</th><th>선호</th><th>도우미</th><th>시간 추론</th><th>다중 세션</th><th>지식 갱신</th><th>사용자 단일 세션</th><th>평균</th></tr></thead><tbody><tr><td>MIRIX</td><td>53.3</td><td>63.6</td><td>25.6</td><td>30.1</td><td>52.6</td><td>72.9</td><td>43.49</td></tr><tr><td>Zep</td><td>53.3</td><td>75.0</td><td>54.1</td><td>47.4</td><td>74.4</td><td>92.9</td><td>63.8</td></tr><tr><td>MAGMA</td><td>73.3</td><td>83.9</td><td>45.1</td><td>50.4</td><td>66.7</td><td>72.9</td><td>61.2</td></tr><tr><td>Nemori</td><td>62.7</td><td>73.2</td><td>43.0</td><td>51.4</td><td>52.6</td><td>77.7</td><td>56.2</td></tr><tr><td>REALM (제안)</td><td>36.66</td><td>82.14</td><td>56.69</td><td>46.28</td><td>88.89</td><td>89.06</td><td>65.11</td></tr></tbody></table></div><div class="tbl-foot">REALM이 평균 최고지만, 선호 질문은 36.66%로 약한 영역이다.</div></div><div class="call ar"><div class="ct">초등학생도 이해하는 설명</div><p>성적표 평균은 좋아졌지만, 과목마다 점수가 다르다. 실제로 쓸 때는 잘하는 질문과 약한 질문을 따로 확인해야 한다.</p></div><div class="call arb"><div class="ct">오늘의 판독</div><p>REALM은 “LLM이 위키 문서를 요약해 저장”하는 구성과 다르다. 대화 기억을 그래프 단위로 저장하고, 검색 피드백으로 그래프 관계를 계속 바꾸는 장기 에이전트 메모리 연구다.</p></div>
+</section>
+<section class="ch" id="gloss">
+<div class="ch-eyebrow"><span class="cnum">＋</span><span class="clabel">Glossary · 핵심 용어</span></div>
+<h2 class="ch-title">핵심 용어 정리</h2>
+<div class="tldr"><div class="h">한눈에 요약</div><p>논문의 주장을 따라가는 데 필요한 용어만 간결하게 모았다.</p></div>
+<div class="gloss"><div class="gitem"><div class="term">기억 재통합<span class="en">Memory reconsolidation</span></div><p>꺼내 쓴 기억에 새 경험을 반영해 관계를 다시 정리하는 과정.</p></div><div class="gitem"><div class="term">이종 그래프<span class="en">Heterogeneous graph</span></div><p>사람·사건·사실처럼 종류가 다른 노드와 여러 관계 유형이 함께 있는 그래프.</p></div><div class="gitem"><div class="term">씨앗 노드<span class="en">Seed node</span></div><p>질문과 직접 닮아 그래프 검색의 출발점이 되는 기억.</p></div><div class="gitem"><div class="term">부분그래프<span class="en">Subgraph</span></div><p>전체 기억 그래프 가운데 이번 질문에 관련 있다고 모은 작은 부분.</p></div><div class="gitem"><div class="term">관계 신뢰도<span class="en">Edge confidence</span></div><p>두 기억 사이 관계가 맞을 가능성을 0~1 값으로 나타낸 것.</p></div></div>
+</section>
+<div class="call ar"><div class="ct">초등학생도 이해하는 설명</div><p>이 용어들을 알면 논문의 핵심 주장과 실험 결과를 더 쉽게 따라갈 수 있다.</p></div>
+<section class="ch" id="take">
+<div class="ch-eyebrow"><span class="cnum">＋</span><span class="clabel">One-page Summary · 한 장 정리</span></div>
+<h2 class="ch-title">이 논문을 한 장으로</h2>
+<div class="tldr"><div class="h">한눈에 요약</div><p>문제, 방법, 증거, 한계를 한 번에 다시 정리한다.</p></div>
+<div class="takeaways"><div class="take"><div class="n">01</div><div class="body"><b>REALM의 graph는 벡터 검색 엔진의 길이 아니라 에이전트의 기억 지도다.</b></div></div><div class="take"><div class="n">02</div><div class="body">노드는 사람·사건·경험·사실, 연결은 논리·인과·계층·연상 관계다.</div></div><div class="take"><div class="n">03</div><div class="body">질문에 맞는 기억을 찾고, 관계를 따라 확장한 뒤 근거를 다시 정렬한다.</div></div><div class="take"><div class="n">04</div><div class="body">검색 후 활성화된 관계를 추가·강화·약화해 다음 검색의 길을 바꾼다.</div></div><div class="take"><div class="n">05</div><div class="body">평균 정확도는 LoCoMo 75.97%, LongMemEval 65.11%; 갱신만의 효과는 각각 +2.01·+2.13%p였다.</div></div><div class="take"><div class="n">06</div><div class="body">저장된 근거의 양보다 찾아낸 근거를 답에 잘 연결하는 과정이 핵심 기여다.</div></div></div>
+</section>
+<div class="call ar"><div class="ct">초등학생도 이해하는 설명</div><p>이 요점만 기억해도 논문이 무엇을 했고 무엇까지 증명했는지 다시 설명할 수 있다.</p></div>

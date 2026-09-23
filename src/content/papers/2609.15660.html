@@ -1,0 +1,56 @@
+<section class="ch" id="c1">
+<div class="ch-eyebrow"><span class="cnum">01</span><span class="clabel">Threat · 위협</span></div>
+<h2 class="ch-title">RAG의 인용표시도 공격 표면이 된다</h2>
+<div class="tldr"><div class="h">한눈에 요약</div><p>RAG는 외부 문서를 찾아 답하고 출처 표시를 붙인다. 지금까지는 답을 틀리게 만드는 poisoning을 주로 봤지만, CiteShade는 답을 틀리게 하면서도 인용은 믿을 만한 문서를 가리키게 만든다.</p></div>
+<p class="lead">정답 문서가 컨텍스트에 그대로 남아 있어도, 악성 문서가 답을 만들고 신뢰 문서가 인용되는 <strong>citation laundering</strong>이 가능하다는 주장이다.</p><p>인용된 문서가 답을 지지하는지와 그 문서가 실제로 답을 유발했는지는 다른 질문이다.</p><div class="call ar"><div class="ct">초등학생도 이해하는 설명</div><p>범인이 거짓말을 했는데, 경찰 기록에는 무고한 사람의 주소가 적혀 있는 상황이다. 기록만 보면 출처가 있어 보여도 실제 원인은 숨겨져 있다.</p></div><figure>
+<div class="fig-top"><span class="fnum">FIG 1</span><span class="ftitle">일반적인 인용 RAG 흐름</span></div>
+<div class="imgbox"><img alt="일반적인 인용 RAG 흐름" decoding="async" loading="lazy" src="/paper-assets/3bdbbd8f9fa565bf5d0846b934de339de3d5ed40d91f82347ce5293c122a7eeb.png"/></div>
+<figcaption>retriever가 문서를 고르고 LLM이 답과 인용 마커를 함께 출력한다. CiteShade는 답을 만든 문서와 마커가 가리키는 문서를 분리한다.</figcaption>
+</figure>
+</section>
+<section class="ch" id="c2">
+<div class="ch-eyebrow"><span class="cnum">02</span><span class="clabel">Method · 방법</span></div>
+<h2 class="ch-title">검색·생성·인용 세 조건을 동시에 맞춘다</h2>
+<div class="tldr"><div class="h">한눈에 요약</div><p>공격 문서는 검색되어야 하고, 모델이 표적 오답 y*를 내야 하며, 인용 마커는 신뢰 문서 Sb를 가리켜야 한다. 세 조건은 서로 긴장하므로 자연스러운 LLM 작성 문서와 위치·echo 장치를 조합한다.</p></div>
+<p class="lead">공격자는 질문·모델·검색기·프롬프트·다른 문서를 바꾸지 않고 한 문서만 제어한다.</p><p>평가는 MultiModalQA와 HotpotQA의 고정 3문서 컨텍스트, 6개 open-weight 생성기에서 수행했다.</p><div class="call ar"><div class="ct">초등학생도 이해하는 설명</div><p>한 장의 가짜 쪽지를 책 사이에 넣되, 내용은 자연스럽고 쪽지 번호는 진짜 책 번호처럼 보이게 만드는 것이다.</p></div><figure>
+<div class="fig-top"><span class="fnum">FIG 2</span><span class="ftitle">정상과 공격 상황의 비교</span></div>
+<div class="imgbox"><img alt="정상과 공격 상황의 비교" decoding="async" loading="lazy" src="/paper-assets/d94481669d13f935bb568d0c2a0420c01b89b834f22c4ed178a0de0e45c7bbdb.png"/></div>
+<figcaption>정상에서는 답을 지지한 문서가 인용된다. 공격에서는 악성 문서가 답을 바꾸지만 인용은 신뢰 문서로 향한다.</figcaption>
+</figure><div class="tbl-wrap"><div class="tbl-cap"><span class="tn">TABLE 4</span>공격 대상 질문 예시의 구조</div>
+<div class="tbl-scroll"><table><thead><tr><th>요소</th><th>설명</th></tr></thead><tbody><tr><td>질문</td><td>여러 문서와 표를 조합해야 하는 multi-hop 질문</td></tr><tr><td>정답</td><td>그럴듯하지만 틀린 표적 답 y*</td></tr><tr><td>신뢰 출처 Sb</td><td>질문에는 관련 있지만 y* 근거는 없음</td></tr><tr><td>공격 출처 Sa</td><td>검색된 컨텍스트 안에서 y*를 유도하도록 작성</td></tr></tbody></table></div></div><div class="tbl-wrap"><div class="tbl-cap"><span class="tn">TABLE 5</span>악성 문서 구성의 핵심</div>
+<div class="tbl-scroll"><table><thead><tr><th>구성</th><th>목적</th></tr></thead><tbody><tr><td>사실처럼 자연스러운 본문</td><td>perplexity 필터 회피</td></tr><tr><td>표적 답 반복·연결</td><td>모델이 y*를 생성하게 함</td></tr><tr><td>인용 echo 문장</td><td>신뢰 출처 Sb 마커를 붙이게 함</td></tr><tr><td>선호 위치 배치</td><td>모델의 citation slot 편향 활용</td></tr></tbody></table></div></div>
+</section>
+<section class="ch" id="c3">
+<div class="ch-eyebrow"><span class="cnum">03</span><span class="clabel">Results · 결과</span></div>
+<h2 class="ch-title">답을 틀리게 하는 것보다 인용을 속이는 것이 더 어렵다</h2>
+<div class="tldr"><div class="h">한눈에 요약</div><p>가장 강한 hybrid 공격은 wrong-answer rate를 .01에서 .68로 올렸고, 가장 citation-prone한 Gemma-4-E4B에서는 explicit CLR .84에 도달했다. 공격 문서가 답의 최대 영향인 경우는 측정된 모든 성공에서 100%였다.</p></div>
+<p class="lead">모델 크기보다 “표준 형식 인용을 얼마나 자주 내는가”가 취약성과 더 관련됐다.</p><p>인용을 전혀 내지 않는 모델은 laundering이 불가능하지만 감사 가능성도 낮다.</p><div class="call ar"><div class="ct">초등학생도 이해하는 설명</div><p>가짜 쪽지가 사람을 속이는 데 성공해도, 경찰이 그 쪽지 대신 진짜 책을 인용하면 공격은 완성되지 않는다. 이 논문은 그 마지막 속임수까지 측정한다.</p></div><div class="tbl-wrap"><div class="tbl-cap"><span class="tn">TABLE 1</span>6개 생성기×2개 데이터셋의 공격률(대표 행)</div>
+<div class="tbl-scroll"><table><thead><tr><th>모델·데이터</th><th>clean</th><th>hybrid ASR</th><th>hybrid CLR</th><th>explicit CLR</th></tr></thead><tbody><tr><td>Qwen2.5-VL-3B·MultiModalQA</td><td>.46</td><td>.68</td><td>.13</td><td>.13</td></tr><tr><td>Qwen3-4B·MultiModalQA</td><td>.85</td><td>.91</td><td>.30</td><td>.32</td></tr><tr><td>Gemma-4-E4B·MultiModalQA</td><td>.61</td><td>.85</td><td>.64</td><td>.84</td></tr><tr><td>Phi-4-mini·HotpotQA</td><td>.74</td><td>.76</td><td>.42</td><td>.18</td></tr></tbody></table></div><div class="tbl-foot">ASR은 공격자가 고른 오답 생성률, CLR은 그 오답이 신뢰 출처를 인용한 비율이다.</div></div><div class="tbl-wrap"><div class="tbl-cap"><span class="tn">TABLE 2</span>출처 삭제로 본 인과 영향</div>
+<div class="tbl-scroll"><table><thead><tr><th>공격 변형</th><th>공격 문서가 최대 영향인 비율</th><th>공격 문서 영향 Δ</th><th>다른 문서 영향 Δ</th></tr></thead><tbody><tr><td>Random corruption</td><td>1.00</td><td>.62</td><td>.27</td></tr><tr><td>Wrong evidence</td><td>1.00</td><td>4.77</td><td>−.03</td></tr><tr><td>Explicit injection</td><td>1.00</td><td>4.55</td><td>.09</td></tr><tr><td>Hybrid</td><td>1.00</td><td>3.94</td><td>.02</td></tr></tbody></table></div></div>
+</section>
+<section class="ch" id="c4">
+<div class="ch-eyebrow"><span class="cnum">04</span><span class="clabel">Defense · 방어</span></div>
+<h2 class="ch-title">perplexity와 인용 지지 검사만으로는 막히지 않는다</h2>
+<div class="tldr"><div class="h">한눈에 요약</div><p>템플릿 문서는 perplexity가 높아 쉽게 걸러지지만, LLM이 쓴 악성 문서는 clean 10.3 대비 12.2로 자연스러워 필터 안에 들어온다. 인용 지지 검사는 신뢰 문서만 읽으므로 악성 문서가 원인인지 볼 수 없다.</p></div>
+<p class="lead">제안한 counterfactual 방어는 각 출처를 하나씩 빼고 답의 log-likelihood 변화를 비교해 <strong>실제 원인 문서</strong>를 찾는다.</p><p>reference 모델에서는 laundering을 .13→.03, hybrid는 .13→.07로 낮췄지만 false positive와 적응형 공격에 취약하다.</p><div class="call ar"><div class="ct">초등학생도 이해하는 설명</div><p>인용된 책만 읽지 말고, 책을 한 권씩 치워 봤을 때 답이 바뀌는지 확인하는 것이다. 답을 바꾼 책이 진짜 원인일 가능성이 크다.</p></div><div class="tbl-wrap"><div class="tbl-cap"><span class="tn">TABLE 3</span>인과 출처 검증 방어(MultiModalQA)</div>
+<div class="tbl-scroll"><table><thead><tr><th>변형</th><th>recall</th><th>FPR</th><th>빠른 recall</th><th>빠른 FPR</th><th>방어 후 CLR</th></tr></thead><tbody><tr><td>Wrong evidence</td><td>.333</td><td>.114</td><td>.333</td><td>.114</td><td>.04</td></tr><tr><td>Explicit injection</td><td>.769</td><td>.064</td><td>.462</td><td>.021</td><td>.03</td></tr><tr><td>Hybrid</td><td>.462</td><td>.152</td><td>.385</td><td>.152</td><td>.07</td></tr></tbody></table></div></div><div class="call arb"><div class="ct">오탐–탐지 절충</div><p>explicit 공격은 낮은 오탐에서 잘 분리되지만 자연스러운 hybrid 공격은 본질적으로 더 어렵다.</p></div><div class="tbl-wrap"><div class="tbl-cap"><span class="tn">APPENDIX TABLES 6–18</span>부록 실험 표의 범위</div>
+<div class="tbl-scroll"><table><thead><tr><th>표</th><th>검증 내용</th></tr></thead><tbody><tr><td>6–7</td><td>MultiModalQA·HotpotQA 전체 모델·변형 ASR/TCR/CLR</td></tr><tr><td>8–9</td><td>nominal/causal CLR 및 벤치마크 통계</td></tr><tr><td>10–12</td><td>출처 위치·라벨 순열·시스템 프롬프트 효과</td></tr><tr><td>13–15</td><td>perplexity·변형 목록·공격 비용</td></tr><tr><td>16–18</td><td>적응형 공격·검색 가능성·citation-support 검사</td></tr></tbody></table></div></div>
+</section>
+<section class="ch" id="c5">
+<div class="ch-eyebrow"><span class="cnum">05</span><span class="clabel">Limits · 해석 경계</span></div>
+<h2 class="ch-title">인용 정확도와 인용 무결성은 별개의 품질이다</h2>
+<div class="tldr"><div class="h">한눈에 요약</div><p>방어는 정상 인용이 원인과 잘 맞는 모델에서 가장 유용하고, 오히려 취약한 모델에서는 clean citation도 비인과적이라 성능이 떨어진다. 적응형 공격은 laundering을 .13→.21로 다시 높였다.</p></div>
+<p class="lead">논문의 핵심 경고는 “출처가 붙어 있다”가 “그 출처가 답을 만들었다”를 뜻하지 않는다는 것이다.</p><p>실험은 passage/table 중심, greedy decoding, 단일 표적 답, 100개 항목 셀에 한정된다. 여러 출처가 공동으로 답을 만드는 경우 leave-one-out 검증은 약해질 수 있다.</p><div class="call ar"><div class="ct">초등학생도 이해하는 설명</div><p>답지에 참고서 이름이 적혀 있어도, 실제로 그 참고서를 보고 풀었는지는 별도 문제다. 진짜 공부한 책을 알아내려면 책을 치워 보는 실험이 필요하다.</p></div><div class="call arb"><div class="ct">실전 판독법</div><p>출처 support만 검사하면 citation correctness는 확인할 수 있어도 causal integrity는 놓친다. 삭제·counterfactual·influence 검사가 보이면 “무엇이 답을 유발했나”를 묻는 계열이다.</p></div>
+</section>
+<section class="ch" id="gloss">
+<div class="ch-eyebrow"><span class="cnum">＋</span><span class="clabel">Glossary · 핵심 용어</span></div>
+<h2 class="ch-title">핵심 용어 정리</h2>
+<div class="tldr"><div class="h">한눈에 요약</div><p>논문의 주장을 따라가는 데 필요한 용어만 간결하게 모았다.</p></div>
+<div class="gloss"><div class="gitem"><div class="term">citation laundering<span class="en">인용 세탁</span></div><p>악성 문서가 답을 만들지만 인용 마커는 신뢰 문서를 가리키는 현상.</p></div><div class="gitem"><div class="term">ASR<span class="en">Attack Success Rate</span></div><p>공격자가 고른 오답이 생성된 비율.</p></div><div class="gitem"><div class="term">CLR<span class="en">Citation Laundering Rate</span></div><p>오답이 신뢰 문서를 인용하는 비율.</p></div><div class="gitem"><div class="term">TCR<span class="en">Target Citation Rate</span></div><p>공격자가 목표로 한 출처가 인용되는 비율.</p></div><div class="gitem"><div class="term">counterfactual verification<span class="en">반사실 검증</span></div><p>출처를 하나씩 제거해 답의 변화로 실제 원인 문서를 찾는 방법.</p></div></div>
+</section>
+<section class="ch" id="take">
+<div class="ch-eyebrow"><span class="cnum">＋</span><span class="clabel">One-page Summary · 한 장 정리</span></div>
+<h2 class="ch-title">이 논문을 한 장으로</h2>
+<div class="tldr"><div class="h">한눈에 요약</div><p>문제, 방법, 증거, 한계를 한 번에 다시 정리한다.</p></div>
+<div class="takeaways"><div class="take"><div class="n">01</div><div class="body"><b>인용이 있다고 해서 그 인용 문서가 답의 원인은 아니다.</b></div></div><div class="take"><div class="n">02</div><div class="body">hybrid 공격은 wrong-answer rate .01→.68, 모델별 CLR 최대 .84를 기록했다.</div></div><div class="take"><div class="n">03</div><div class="body">공격 문서는 성공 사례 모두에서 답의 최대 영향 문서였지만, 인용은 다른 신뢰 문서를 가리켰다.</div></div><div class="take"><div class="n">04</div><div class="body">perplexity와 cited-source support 검사만으로는 자연스러운 악성 문서를 막을 수 없다.</div></div><div class="take"><div class="n">05</div><div class="body">반사실 출처 검증은 laundering을 줄였지만 오탐과 적응형 공격이라는 비용이 있다.</div></div><div class="take"><div class="n">06</div><div class="body">인용 정확도(citation correctness)와 인용 무결성(citation integrity)을 별도 지표로 운영해야 한다.</div></div></div>
+</section>

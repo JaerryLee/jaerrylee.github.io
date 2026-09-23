@@ -1,0 +1,112 @@
+<section class="ch" id="c1">
+<div class="ch-eyebrow"><span class="cnum">01</span><span class="clabel">Threat model · 문제</span></div>
+<h2 class="ch-title">API의 모델 이름과 실제 백본이 같은지 텍스트 없이 감사한다</h2>
+<div class="tldr"><div class="h">한눈에 요약</div><p>에이전트형 API는 자연어 답변을 버리고 구조화된 도구 호출만 노출할 수 있다. 기존 모델 신원 감사는 텍스트 토큰에 의존하므로 이 환경에서는 취약하다.</p></div>
+<p class="lead">서빙 사업자는 비용 절감을 위해 광고한 모델을 더 싼 모델, 양자화 변형, 라우터로 바꿀 수 있다.</p><p>반대로 정상 사업자가 숨겨진 시스템 프롬프트를 추가한 것만으로 텍스트 분포가 바뀌어 기존 감사가 오탐을 낼 수 있다. AgentProv는 후학습으로 가중치에 내재화된 <strong>도구 선택 분포</strong>를 대신 피거프린트로 사용한다.</p><figure>
+<div class="fig-top"><span class="fnum">FIG 1</span><span class="ftitle">요청한 모델과 서빙 모델의 행동 정책 비교</span></div>
+<div class="imgbox"><img alt="요청한 모델과 서빙 모델의 행동 정책 비교" decoding="async" loading="lazy" src="/paper-assets/14bed89bc90cda63a44fba15af22317912eeeb134ebdc1646f642d46d69340cc.png"/></div>
+<figcaption>감사자가 특정 상태를 질의하고 도구 선택 분포를 신뢰 참조와 비교해 조용한 백본 교체를 찾는다.</figcaption>
+</figure>
+</section>
+<section class="ch" id="c2">
+<div class="ch-eyebrow"><span class="cnum">02</span><span class="clabel">Method · 행동 프로브</span></div>
+<h2 class="ch-title">동일한 기능의 도구 여러 개를 보여주고 선택 편향을 분포로 만든다</h2>
+<div class="tldr"><div class="h">한눈에 요약</div><p>각 템플릿은 메일·캘린더처럼 같은 작업을 하는 복수의 도구를 제시한다. 모델이 고른 도구, 호출 없음, 형식 오류까지 모두 버킷에 넣어 원-핫 행렬로 바꾼다.</p></div>
+<p class="lead">주 설정은 20개 템플릿에서 각 50번, 엔드포인트당 1,000회 질의다.</p><p>참조와 의심 엔드포인트의 블록별 행동 평균 백터를 만들고 제곱 L2 거리, 즉 델타 커널의 MMD²를 검정통계량으로 쓴다. 라벨을 같은 템플릿 안에서만 1,000번 섞어 유의수준 0.05의 정확한 순열 p값을 계산한다.</p><figure>
+<div class="fig-top"><span class="fnum">FIG 2</span><span class="ftitle">프로브에서 원-핫 피거프린트로</span></div>
+<div class="imgbox"><img alt="프로브에서 원-핫 피거프린트로" decoding="async" loading="lazy" src="/paper-assets/7f55e96022cab98941f3bea6ff386e51b3f0faa5a4f2aaca61172c1f740f87cb.png"/></div>
+<figcaption>각 작업의 동등한 도구 선택을 원-핫으로 누적하고 템플릿별 평균를 연결해 행동 피거프린트를 만든다.</figcaption>
+</figure><figure>
+<div class="fig-top"><span class="fnum">TABLE 10</span><span class="ftitle">원문 표 10</span></div>
+<div class="imgbox"><img alt="원문 표 10" decoding="async" loading="lazy" src="/paper-assets/ac440f2d196444ed931d0ac8a115a90434b01710fd36d4588c82c53b5b4038e8.png"/></div>
+<figcaption>일반 도구와 MCP 서버 영역의 대표 프로브와 가능한 행동 집합을 보인다.</figcaption>
+</figure>
+</section>
+<section class="ch" id="c3">
+<div class="ch-eyebrow"><span class="cnum">03</span><span class="clabel">Controlled evaluation · 통제 평가</span></div>
+<h2 class="ch-title">36개 체크포인트의 630개 다른 쌍을 모두 탐지했다</h2>
+<div class="tldr"><div class="h">한눈에 요약</div><p>오픈 체크포인트 36개의 다른 모델 쌍 630개를 100% 거부했고, 같은 모델의 독립 표본 36개는 모두 수용했다. 9개 OpenAI 모델도 9개 자기 비교를 모두 수용하고 36개 교차 비교를 모두 거부했다.</p></div>
+<p class="lead">패밀리 내 거리는 패밀리 간 거리보다 대체로 1.8–3.0배 작았다.</p><p>예외는 서로 다른 베이스에 Hermes SFT를 적용한 경우다. 이들은 Hermes 동료보다 자신의 베이스에 더 가까웠다. 반대로 Qwen3 thinking 후학습은 같은 베이스의 다른 Qwen3보다 약 14배 멀리 이동해 행동 정책이 후학습에 민감함을 보였다.</p><figure>
+<div class="fig-top"><span class="fnum">FIG 3</span><span class="ftitle">15개 모델의 쌍별 MMD²</span></div>
+<div class="imgbox"><img alt="15개 모델의 쌍별 MMD²" decoding="async" loading="lazy" src="/paper-assets/51d1168786736b9eac6c2c29b9f8bff9a3869b7aac137e91a86f82248cbc6543.png"/></div>
+<figcaption>대각선 근처의 같은 패밀리 블록이 더 짙어 거리가 작고, 모든 비대각 쌍은 유의수준 0.05에서 거부됐다.</figcaption>
+</figure><figure>
+<div class="fig-top"><span class="fnum">TABLE 1</span><span class="ftitle">원문 표 1</span></div>
+<div class="imgbox"><img alt="원문 표 1" decoding="async" loading="lazy" src="/paper-assets/e4565ae10d61c3df10544efd594770819d274e8b4d5808527c9aad9cc0365f9f.png"/></div>
+<figcaption>36개 체크포인트의 교차 630쌍을 모두 거부하고 자기 비교 36개를 모두 수용한다.</figcaption>
+</figure><div class="tbl-wrap"><div class="tbl-cap"><span class="tn">TABLE 2</span>도구 선택 행동 공간의 패밀리 결집도</div>
+<div class="tbl-scroll"><table><thead><tr><th>Family</th><th>Tintra</th><th>Tcross</th><th>Cross/Intra</th></tr></thead><tbody><tr><td>R1-Distill</td><td>5.43</td><td>15.32</td><td>2.8x</td></tr><tr><td>DeepSeek</td><td>5.57</td><td>16.62</td><td>3.0x</td></tr><tr><td>Qwen3</td><td>6.49</td><td>17.28</td><td>2.7x</td></tr><tr><td>Hammer-2.1</td><td>6.8</td><td>15.99</td><td>2.4x</td></tr><tr><td>Qwen2.5</td><td>7.29</td><td>15.13</td><td>2.1x</td></tr><tr><td>Llama</td><td>7.4</td><td>15.43</td><td>2.1x</td></tr><tr><td>Mistral</td><td>8.04</td><td>14.54</td><td>1.8x</td></tr><tr><td>Hermes</td><td>27.2</td><td>22.89</td><td>0.8x</td></tr><tr><td>Qwen3-Think</td><td>–</td><td>107.04</td><td>–</td></tr></tbody></table></div><div class="tbl-foot">Tintra/Tcross는 1e-4 단위의 평균 MMD². Qwen3-Think는 단일 멤버라 내부 거리가 정의되지 않는다.</div></div><figure>
+<div class="fig-top"><span class="fnum">TABLE 3</span><span class="ftitle">원문 표 3</span></div>
+<div class="imgbox"><img alt="원문 표 3" decoding="async" loading="lazy" src="/paper-assets/cd55a9f7a6fc902041e9c74506d4562a840d54b167f1dea318262843b7fcb8d8.png"/></div>
+<figcaption>시스템 프롬프트만 바꾼 15개 통제 비교에서 AgentProv의 오탐은 1/15이다.</figcaption>
+</figure>
+</section>
+<section class="ch" id="c4">
+<div class="ch-eyebrow"><span class="cnum">04</span><span class="clabel">Deployment · 실제 API와 회피</span></div>
+<h2 class="ch-title">텍스트 감사는 숨겨진 프롬프트를 모델 교체로 오인하기 쉽다</h2>
+<div class="tldr"><div class="h">한눈에 요약</div><p>가중치는 같고 시스템 메시지만 바꾼 15개 통제 실험에서 MET는 10/15, RUT는 8/15, 적응한 LLMmap은 3/15를 잘못 거부했다. AgentProv의 오탐은 1/15였다.</p></div>
+<p class="lead">OpenRouter 9개 엔드포인트에서 AgentProv는 7개를 수용했지만 MET는 1개, RUT는 2개만 수용했다.</p><p>이 엔드포인트의 진짜 백본은 공개되지 않았다. 저자들은 공급자가 보고한 prompt token 수와 로컬 챗 템플릿 계산값의 항상적 양의 차이를 숨겨진 프롬프트 사이드채널로 써 결과를 해석했다. 그러므로 실제 API 결과는 인과적 진실판정이 아니라 상관 근거다.</p><figure>
+<div class="fig-top"><span class="fnum">TABLE 4</span><span class="ftitle">원문 표 4</span></div>
+<div class="imgbox"><img alt="원문 표 4" decoding="async" loading="lazy" src="/paper-assets/d0f990cbfdabf33d8c23b3ea1614784a464b9f6c9c9d795f8cbbbd2bbfad7a4c.png"/></div>
+<figcaption>9개 OpenRouter 엔드포인트에서 토큰 수 사이드채널로 숨겨진 프롬프트 가능성을 구분한 결과다.</figcaption>
+</figure><figure>
+<div class="fig-top"><span class="fnum">TABLE 5</span><span class="ftitle">원문 표 5</span></div>
+<div class="imgbox"><img alt="원문 표 5" decoding="async" loading="lazy" src="/paper-assets/57ea3229b7b41448d5ca2070fbd0979aaa7b3b61597eb98c02b8101389228029.png"/></div>
+<figcaption>템플릿 K와 템플릿당 샘플 N을 늘리면 거부 정확도가 포화하며, K=20,N=50에서 100%다.</figcaption>
+</figure><figure>
+<div class="fig-top"><span class="fnum">TABLE 6</span><span class="ftitle">원문 표 6</span></div>
+<div class="imgbox"><img alt="원문 표 6" decoding="async" loading="lazy" src="/paper-assets/ad95f787a974938ffdfe579846087d89b59d7a257615acfd199c243633f79d76.png"/></div>
+<figcaption>도구 이름 무작위 치환과 설명 패러프레이징에서도 12/12 자기비교 수용, 66/66 교차비교 거부다.</figcaption>
+</figure><figure>
+<div class="fig-top"><span class="fnum">TABLE 7</span><span class="ftitle">원문 표 7</span></div>
+<div class="imgbox"><img alt="원문 표 7" decoding="async" loading="lazy" src="/paper-assets/7daf8d357908e79e3aab22bb91508f6faa76fa2bd8153fa2ea7327fb477a4405.png"/></div>
+<figcaption>신원·프로필·퓨샷 예시를 시스템 프롬프트로 주어도 두 대체 모델을 모두 거부한다.</figcaption>
+</figure><figure>
+<div class="fig-top"><span class="fnum">TABLE 8</span><span class="ftitle">원문 표 8</span></div>
+<div class="imgbox"><img alt="원문 표 8" decoding="async" loading="lazy" src="/paper-assets/aa6d0972dec6e1422b875e3dbfe887ff9a7458f03217603ce211fc7de993ac89.png"/></div>
+<figcaption>LoRA로 학습한 프로브는 회피하지만 보지 못한 프로브에서는 거부된다.</figcaption>
+</figure><figure>
+<div class="fig-top"><span class="fnum">TABLE 9</span><span class="ftitle">원문 표 9</span></div>
+<div class="imgbox"><img alt="원문 표 9" decoding="async" loading="lazy" src="/paper-assets/00a1df9f466068090bf5bf23c9b2eb792f7148c5d06f5435bae4ab8a8bb67f4f.png"/></div>
+<figcaption>진짜 모델을 섞어 서빙할 때 탐지를 피하려면 요청의 상당 비율에서 진짜를 서빙해야 한다.</figcaption>
+</figure>
+</section>
+<section class="ch" id="c5">
+<div class="ch-eyebrow"><span class="cnum">05</span><span class="clabel">Appendix &amp; limits · 부록과 한계</span></div>
+<h2 class="ch-title">AgentProv는 신뢰할 수 있는 참조가 있어야 하며, 완전한 신원 증명서가 아니다</h2>
+<div class="tldr"><div class="h">한눈에 요약</div><p>검정이 보여주는 것은 프로브 상의 도구 선택 분포가 다르다는 사실이지, 서빙 가중치가 정확히 무엇인지는 아니다. 신뢰할 참조 API나 로컬 체크포인트가 없는 완전 폐쇄형 모델에는 적용할 수 없다.</p></div>
+<p class="lead">정품 모델과 프로브별 분포까지 알고 프로브를 정확히 식별하는 적응적 서빙자는 재연을 할 수 있다.</p><p>저자들은 비공개 프로브 집합을 순환시켜 이 요구를 높이라고 제안한다. 8비트 양자화는 수용했지만 4비트는 모델별로 결과가 달랐고, 에이전트 래퍼 프롬프트는 AgentProv에서도 2/6 오탐을 만들었다.</p><figure>
+<div class="fig-top"><span class="fnum">FIG 4</span><span class="ftitle">36×36 전체 MMD² 행렬</span></div>
+<div class="imgbox"><img alt="36×36 전체 MMD² 행렬" decoding="async" loading="lazy" src="/paper-assets/e909cbce963128d559d0db2165e09a5bdad3d36fbcf45c97f49ef92bededc896.png"/></div>
+<figcaption>패밀리 경계를 표시한 전체 행렬으로, 630개 다른 체크포인트 쌍이 모두 유의수준 0.05에서 거부됐다.</figcaption>
+</figure><figure>
+<div class="fig-top"><span class="fnum">TABLE 11</span><span class="ftitle">원문 표 11</span></div>
+<div class="imgbox"><img alt="원문 표 11" decoding="async" loading="lazy" src="/paper-assets/5d2d950e51efb29bfe405a4d1e6c2072bab53a0942fc842c0c2bfbdcb4ad9864.png"/></div>
+<figcaption>36개 오픈 체크포인트와 9개 OpenAI 폐쇄형 모델의 전체 패널이다.</figcaption>
+</figure><figure>
+<div class="fig-top"><span class="fnum">TABLE 12</span><span class="ftitle">원문 표 12</span></div>
+<div class="imgbox"><img alt="원문 표 12" decoding="async" loading="lazy" src="/paper-assets/73651f8574a5ff5db19961af955c1da30d6b10f006c2e28e828f3d9559a8fbec.png"/></div>
+<figcaption>공식 OpenAI와 OpenRouter의 9개 동일 라우트를 모두 수용하고, 서로 다른 OpenAI와 로컬 체크포인트를 모두 거부한다.</figcaption>
+</figure><div class="tbl-wrap"><div class="tbl-cap"><span class="tn">TABLE 13</span>K×N 그리드의 분할-표본 자기검정 오탐</div>
+<div class="tbl-scroll"><table><thead><tr><th>K / N</th><th>5</th><th>10</th><th>25</th><th>50</th></tr></thead><tbody><tr><td>5</td><td>0/36</td><td>0/36</td><td>0/36</td><td>0/36</td></tr><tr><td>10</td><td>0/36</td><td>1/36</td><td>0/36</td><td>0/36</td></tr><tr><td>20</td><td>0/36</td><td>0/36</td><td>0/36</td><td>0/36</td></tr><tr><td>30</td><td>0/36</td><td>0/36</td><td>0/36</td><td>0/36</td></tr><tr><td>40</td><td>0/36</td><td>0/36</td><td>0/36</td><td>0/36</td></tr><tr><td>60</td><td>0/36</td><td>0/36</td><td>0/36</td><td>0/36</td></tr></tbody></table></div><div class="tbl-foot">24개 셀 중 K=10,N=10에서만 1개 모델을 잘못 거부했다.</div></div><figure>
+<div class="fig-top"><span class="fnum">TABLE 14</span><span class="ftitle">원문 표 14</span></div>
+<div class="imgbox"><img alt="원문 표 14" decoding="async" loading="lazy" src="/paper-assets/07f6266589012463d8cf6e90a1a252f4031d8efa37de2f0c5f4fb890685196f9.png"/></div>
+<figcaption>8비트는 두 모델 모두 수용하지만 4비트는 모델에 따라 다른 결과를 보인다.</figcaption>
+</figure><figure>
+<div class="fig-top"><span class="fnum">TABLE 15</span><span class="ftitle">원문 표 15</span></div>
+<div class="imgbox"><img alt="원문 표 15" decoding="async" loading="lazy" src="/paper-assets/0a4bc2d64de92d803b12a1b121f47af034c38b85dac21c2f136a7ce27acd5668.png"/></div>
+<figcaption>안전 정책과 에이전트 래퍼 프롬프트에서의 오탐 수로, AgentProv도 래퍼에서 2/6 오탐을 낸다.</figcaption>
+</figure>
+</section>
+<section class="ch" id="gloss">
+<div class="ch-eyebrow"><span class="cnum">＋</span><span class="clabel">Glossary · 핵심 용어</span></div>
+<h2 class="ch-title">핵심 용어 정리</h2>
+<div class="tldr"><div class="h">한눈에 요약</div><p>논문의 주장을 따라가는 데 필요한 용어만 간결하게 모았다.</p></div>
+<div class="gloss"><div class="gitem"><div class="term">행동 정책<span class="en">Action policy</span></div><p>주어진 상태에서 각 도구 호출을 선택할 확률 분포.</p></div><div class="gitem"><div class="term">프로브<span class="en">Probe</span></div><p>동일한 기능의 도구 여러 개와 중립적 요청으로 구성한 감사 테스트 상황.</p></div><div class="gitem"><div class="term">MMD<span class="en">Maximum Mean Discrepancy</span></div><p>두 표본 분포가 같은지 커널 공간에서 비교하는 이표본 검정 통계량.</p></div><div class="gitem"><div class="term">순열 검정<span class="en">Permutation test</span></div><p>참조와 의심 라벨을 동일 템플릿 안에서 섞어 귀무분포를 만드는 검정.</p></div><div class="gitem"><div class="term">오탐<span class="en">False positive</span></div><p>실제 모델이 같은데도 다르다고 판정하는 오류.</p></div><div class="gitem"><div class="term">숨겨진 프롬프트<span class="en">Hidden system prompt</span></div><p>API 공급자가 사용자에게 보이지 않게 추가하는 시스템 메시지.</p></div></div>
+</section>
+<section class="ch" id="take">
+<div class="ch-eyebrow"><span class="cnum">＋</span><span class="clabel">One-page Summary · 한 장 정리</span></div>
+<h2 class="ch-title">이 논문을 한 장으로</h2>
+<div class="tldr"><div class="h">한눈에 요약</div><p>문제, 방법, 증거, 한계를 한 번에 다시 정리한다.</p></div>
+<div class="takeaways"><div class="take"><div class="n">01</div><div class="body"><b>텍스트가 아니라 도구 선택 분포</b>로 API 모델 신원을 비교한다.</div></div><div class="take"><div class="n">02</div><div class="body">20개 템플릿×50회로 엔드포인특 1,000개 행동 표본을 만든다.</div></div><div class="take"><div class="n">03</div><div class="body">36개 체크포인트의 630개 다른 쌍을 모두 거부했고 36개 자기 비교를 모두 수용했다.</div></div><div class="take"><div class="n">04</div><div class="body">시스템 프롬프트만 바꾼 통제에서 오탐은 AgentProv 7%, MET 67%, RUT 53%였다.</div></div><div class="take"><div class="n">05</div><div class="body">실제 9개 제3자 API 결과는 백본 진실값이 없으므로 <b>상관 근거로만 해석</b>해야 한다.</div></div><div class="take"><div class="n">06</div><div class="body">신뢰할 수 있는 참조가 없는 완전 폐쇄형 모델에는 적용할 수 없고, 결과는 완전한 신원 증명서가 아니다.</div></div></div>
+</section>

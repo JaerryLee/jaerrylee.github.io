@@ -1,0 +1,137 @@
+<section class="ch" id="c1">
+<div class="ch-eyebrow"><span class="cnum">01</span><span class="clabel">Motivation · 왜 RCA를 두 단계로 나누나</span></div>
+<h2 class="ch-title">증거를 찾는 일과 증거를 해석하는 일을 한 LLM 루프에 섞지 않는다</h2>
+<div class="tldr"><div class="h">한눈에 요약</div>
+<p>기존 RCA-Agent는 LLM이 Python을 쓰고 실행하면서 원시 telemetry를 탐색합니다. 유연하지만 데이터 양·도구 호출·코드 오류가 누적되고, 이상 탐지·원인 후보 선택·원인 해석을 동시에 잘해야 합니다.</p>
+<p>EviRCA는 메트릭/trace/log를 코드 기반 처리로 요약하고, LLM에게는 이미 추출한 구조화 근거만 보여 줍니다. 즉, 모델의 역할을 ‘찾기’에서 ‘판단하기’로 좁힙니다.</p>
+</div>
+<p class="lead">논문이 겨냥하는 RCA는 장애 시간, 장애가 시작된 component, 장애 원인(reason) 중 질문이 요구하는 일부 또는 전부를 맞히는 작업입니다.</p>
+<p>현대의 마이크로서비스에서는 하나의 근본 장애가 여러 계층에 증상을 남깁니다. 예를 들어 노드의 CPU 압박은 그 노드 위 여러 pod의 trace 지연으로 보일 수 있고, 반대로 한 pod만 느리다면 node-wide 원인보다 pod 안의 문제일 가능성이 높습니다. 메트릭은 수치 시계열, trace는 호출 관계와 지연, 로그는 사건 메시지라 형태도 제각각입니다.</p>
+<p>RCA-Agent 방식은 LLM에 raw telemetry를 보여 주고 반복해서 코드를 작성·실행하게 합니다. 저자들은 이 방식이 토큰과 지연시간을 많이 쓰며, 모델이 실제 데이터에 없는 값이나 schema를 잘못 만들어낼 위험이 있다고 봅니다. EviRCA의 핵심 가설은 탐지와 evidence retrieval은 재현 가능한 규칙·신호처리로 맡기고, 상관된 근거 중 root cause를 판단하는 마지막 단계에만 언어모델이 필요하다는 것입니다.</p>
+<figure><div class="fig-top"><span class="fnum">FIG 1</span><span class="ftitle">결정적 evidence extraction과 제한된 LLM reasoning의 분리</span></div><div class="imgbox"><img alt="원시 메트릭·trace·log가 결정적 추출 단계를 거쳐 구조화 근거 카드가 되고 제한된 LLM 추론으로 이어지는 EviRCA 전체 구조" decoding="async" loading="lazy" src="/paper-assets/74f316baa5995233c88c5f0ecca1690fd05ba32a6692f29e3131f64896558f1c.png"/></div><figcaption>원문 Figure 1. 첫 단계가 여러 telemetry 형태에서 구조화 근거를 만들고, 두 번째 단계는 정의된 읽기 전용 도구와 진단 원칙으로 시간·component·reason을 예측합니다. 선언형 adapter가 시스템별 telemetry 규격·토폴로지·후보를 제공합니다.</figcaption></figure>
+<div class="tbl-wrap"><div class="tbl-cap"><span class="tn">TABLE I</span>세 OpenRCA 시스템이 서로 다른 구조적 조건</div><div class="tbl-scroll"><table><thead><tr><th>항목</th><th>Bank</th><th>Telecom</th><th>Market</th></tr></thead><tbody>
+<tr><td>사례 수</td><td>136</td><td>51</td><td>148</td></tr>
+<tr><td>후보 계층</td><td>pod</td><td>node, pod, service</td><td>node, pod, service</td></tr>
+<tr><td>후보 component</td><td>14 pod (6 service)</td><td>22 node, 8 pod, 13 service</td><td>6 node, 40 pod, 10 service</td></tr>
+<tr><td>수직 토폴로지</td><td>없음</td><td>node–pod co-location</td><td>pod 이름에 인코딩, failover</td></tr>
+<tr><td>자료 형태</td><td>metric, trace, log</td><td>metric, trace (log 없음)</td><td>metric, trace, log</td></tr>
+<tr><td>서비스 건강 신호</td><td>합성 서비스 테스트</td><td>단일 gateway (OSB)</td><td>서비스별</td></tr>
+<tr><td>reason 종류</td><td>8</td><td>5</td><td>15</td></tr>
+<tr><td>시간 단위</td><td>metric 초, trace ms, log 초</td><td>모두 ms</td><td>metric 초, trace ms, log 초</td></tr>
+</tbody></table></div><div class="tbl-foot">원문 Table I 재구성. 같은 task라도 후보 계층·사용 가능한 modality·timestamp 단위가 달라 시스템별 가정을 코드에 박아 넣으면 다른 환경으로 옮기기 어렵습니다.</div></div>
+<div class="call ar"><div class="ct">생활 속 비유 · 작은 예 · 논문 대응</div><p><b>비유:</b> 응급실에서 체온계·심전도·검사 결과를 먼저 정돈한 뒤 의사가 원인을 판단하는 흐름입니다. <b>작은 예:</b> CPU 수치가 튀고 trace latency도 늘었지만, 함께 배치된 다른 pod는 멀쩡할 수 있습니다. <b>논문 대응:</b> EviRCA는 raw signal을 먼저 정리하고 상관관계 해석만 LLM에 맡깁니다.</p></div>
+</section>
+
+
+<section class="ch" id="c2">
+<div class="ch-eyebrow"><span class="cnum">02</span><span class="clabel">Design · 근거 카드와 제한된 LLM 도구</span></div>
+<h2 class="ch-title">높은 재현성의 신호 처리와 읽기 전용 진단을 adapter로 연결한다</h2>
+<div class="tldr"><div class="h">한눈에 요약</div>
+<p>1단계는 각 시계열의 모양에 맞춰 이상을 찾고, 메트릭·trace·log 결과를 근거 카드로 합치며, 배치 topology에 따라 node/pod/service 보고 수준을 조정합니다. 탐지 임계값을 넘는 신호가 하나도 없으면 약한 후보를 safety net으로 내보냅니다.</p>
+<p>2단계 LLM은 원시 시계열에 접근하거나 코드를 실행하지 않습니다. 8개의 도구로 카드와 호출 관계를 확인하고, 원인과 증상, 시간, 후보 reason을 선택해 검증기에 제출합니다.</p>
+</div>
+<p class="lead">system-specific 설정은 선언형 adapter에 모으고, 공통 엔진은 Bank·Telecom·Market에 맞춘 분기 없이 돌아가도록 하는 것이 이식성 목표입니다.</p>
+<h3 class="sub">Stage 1: 시계열의 모양과 modality를 고려한 추출 <span class="en">Deterministic evidence extraction</span></h3>
+<p>각 component·KPI는 하루의 robust baseline과 질문에 주어진 30분 구간을 비교합니다. detector는 dead(변동 없는) series, 상단에 붙어 있는 saturated series, 거의 0에서 드물게 움직이는 low-baseline series, 일반 series를 구분합니다. 예를 들어 saturated KPI는 평소부터 꼭대기에 있어 절대 상한선으로 이상을 찾을 수 없으므로 fallback으로 보냅니다. low-baseline은 0에서 아주 작은 값으로 뛴 것을 큰 상대 변화로 오인하지 않도록 절대 크기 기준도 요구합니다.</p>
+<p>메트릭·trace·log에는 각각 맞는 detector를 적용합니다. trace에서 느린 call, 로그에서 GC burst, 메트릭에서 CPU 변화처럼 modality마다 근거를 카드화합니다. 이어 adapter가 선언한 topology에 따라 여러 pod의 동시 저하를 host node로 올리거나, 한 pod만 이상이면 pod 수준에 남깁니다. 같은 service의 pod들이 함께 흔들리는 경우에는 service로 묶습니다. 마지막 safety net은 본 임계값을 넘지 못한 가장 가까운 series를 낮은 우선순위 lead로 제공해, LLM 입력이 빈 상태가 되지 않게 합니다.</p>
+<h3 class="sub">Stage 2: 모든 데이터를 보지 않고 필요한 증거를 조회 <span class="en">Reasoning over structured evidence</span></h3>
+<p>추론 단계에는 사용 가능한 modality에 따라 도구가 열립니다. 모델은 가장 큰 상대 이상을 우선 보되, call graph에서 loudest victim을 upstream source까지 따라가고, golden signal(서비스 전체 건강도)의 시작 시각과 맞지 않는 일시적 후보는 버릴 수 있습니다. 최종 시각은 모델이 임의로 만들지 않고 근거 카드의 onset에서 가져옵니다. 결과는 OpenRCA 검증기에 제출되며, 고장 건수·후보 집합·정답 허용 시간까지 확인됩니다.</p>
+<div class="tbl-wrap"><div class="tbl-cap"><span class="tn">TABLE II</span>LLM reasoning 단계에서 제공하는 도구</div><div class="tbl-scroll"><table><thead><tr><th>도구</th><th>입력</th><th>출력 / 역할</th></tr></thead><tbody>
+<tr><td>list_entries</td><td>없음</td><td>감지된 component·유형·시작시각·KPI lead; 없으면 약한 후보</td></tr>
+<tr><td>get_component</td><td>component</td><td>그 component의 evidence, blind/saturated 유형, topology, 사용 KPI</td></tr>
+<tr><td>get_kpi_series</td><td>component, KPI</td><td>하루 baseline과 함께 downsample한 구간 시계열</td></tr>
+<tr><td>get_golden_signal</td><td>없음</td><td>서비스 KPI 이상과 시작 시각; 장애 시점은 알려도 위치는 알려주지 않음</td></tr>
+<tr><td>get_call_graph</td><td>없음</td><td>지연/실패율 기준 서비스 순위와 trace call edges</td></tr>
+<tr><td>get_log_summary</td><td>component</td><td>로그 이름별 빈도를 하루 baseline과 비교</td></tr>
+<tr><td>get_log_sample</td><td>component, log name</td><td>reason 구분을 위한 일부 원시 로그 행</td></tr>
+<tr><td>submit_answer</td><td>root causes</td><td>정답 수용 또는 수정 가능한 검증 오류</td></tr>
+</tbody></table></div><div class="tbl-foot">원문 Table II. 로그나 trace가 존재하지 않는 시스템에는 해당 modality 도구 자체를 노출하지 않습니다. 모델은 raw metric series를 직접 읽거나 Python 코드를 실행하지 않습니다.</div></div>
+<figure><div class="fig-top"><span class="fnum">FIG 2</span><span class="ftitle">Telecom 예시: 다중 신호 중 실제 pod 원인을 좁혀 가는 과정</span></div><div class="imgbox"><img alt="Telecom 장애 사례에서 CPU 메트릭, trace와 로그 신호를 카드화하고 golden signal, call graph, co-location으로 진짜 원인을 찾는 예시" decoding="async" loading="lazy" src="/paper-assets/e3b76b273293101b706116e2e64a82fdfbe2495d57937ab668dcf8ce4c747246.png"/></div><figcaption>원문 Figure 2. 데이터베이스의 이른 transient spike와 node CPU 증상을 배제하고, 04:19 golden signal과 3.9배 trace latency, 건강한 co-located 이웃을 근거로 docker_006의 CPU fault를 선택합니다.</figcaption></figure>
+<div class="call arb"><div class="ct">생활 속 비유 · 작은 예 · 논문 대응</div><p><b>비유:</b> LLM은 전체 CCTV 원본을 무한히 뒤지는 조사관이 아니라, 시간·위치가 붙은 사건 카드를 조회하는 분석가에 가깝습니다. <b>작은 예:</b> 같은 node의 pod 여러 개가 느리면 node 원인을 의심하고, 이웃이 정상이라면 단일 pod 원인 쪽으로 좁힙니다. <b>논문 대응:</b> topology 기반 co-location과 읽기 전용 도구가 이 비교를 지원합니다.</p></div>
+</section>
+
+
+<section class="ch" id="c3">
+<div class="ch-eyebrow"><span class="cnum">03</span><span class="clabel">Evaluation · 비교 실험과 정확도</span></div>
+<h2 class="ch-title">335개 OpenRCA 사례에서 두 기존 방식보다 strict 정답률이 높았다</h2>
+<div class="tldr"><div class="h">한눈에 요약</div>
+<p>비교 대상은 OpenRCA의 RCA-Agent(원시 telemetry를 반복 탐색)와 Oracle Sampling(전문가가 골라 준 KPI 조각만 한 번에 제시)입니다. 두 방법과 EviRCA에 같은 두 LLM을 연결해 Bank 136건, Telecom 51건, Market 148건, 총 335건을 평가했습니다.</p>
+<p>전체 Correct는 EviRCA 43.9%/40.6%로, 같은 LLM을 쓴 두 baseline 중 최고 15.2%보다 높았습니다. 단, 이는 벤치마크의 exact-match 정의에 따른 것으로 실제 incident 대응 성공률을 뜻하지 않습니다.</p>
+</div>
+<p class="lead">Correct는 질문이 요청한 모든 필드가 맞고 root cause 개수도 주입된 fault 개수와 같으며, 시간은 ±60초 이내여야 성공입니다. Partial은 질문 필드 중 일부를 맞힌 비율을 따로 봅니다.</p>
+<p>비교 기준은 같은 OpenRCA 데이터와 같은 DeepSeek V4 Pro·Qwen 3.7 Plus backend입니다. RCA-Agent는 planner/executor가 상태를 유지하는 Python kernel에서 raw telemetry를 탐색합니다. Oracle Sampling은 domain engineer가 진단에 유용하다고 미리 선별한 KPI를 샘플링해 한 번의 LLM 호출에 넣는 privileged upper bound에 가까운 baseline입니다. 따라서 Oracle은 단순히 “보통의 수작업 방식”이 아니라 시작할 신호를 미리 알고 있는 강한 비교군입니다.</p>
+<p>EviRCA의 전체 strict Correct는 DeepSeek에서 43.9%, Qwen에서 40.6%였습니다. 비교군 최고는 Oracle Sampling + Qwen의 15.2%입니다. Telecom은 EviRCA DeepSeek 62.7%였고, RCA-Agent DeepSeek 11.8%, Oracle Sampling DeepSeek 19.6%였습니다. 반면 Market은 EviRCA도 약 28–30%라, 모든 시스템을 해결한 것은 아닙니다. Full tuple(시간+component+reason)을 함께 묻는 hard 문제에서도 일부 baseline이 0%에서 벗어난 경우가 있지만, EviRCA의 최고 hard cell은 Telecom에서 55.6%였습니다.</p>
+<div class="tbl-wrap"><div class="tbl-cap"><span class="tn">TABLE III</span>LLM backend·시스템별 root-cause 정확도 (%)</div><div class="tbl-scroll"><table><thead><tr><th>방법</th><th>LLM</th><th>Bank Correct</th><th>Bank Partial</th><th>Telecom Correct</th><th>Telecom Partial</th><th>Market Correct</th><th>Market Partial</th><th>Overall Correct</th><th>Overall Partial</th></tr></thead><tbody>
+<tr><td rowspan="2">Oracle Sampling</td><td>DeepSeek V4 Pro</td><td>12.5</td><td>20.7</td><td>19.6</td><td>25.1</td><td>14.9</td><td>22.3</td><td>14.6</td><td>22.1</td></tr>
+<tr><td>Qwen 3.7 Plus</td><td>9.6</td><td>17.6</td><td>29.4</td><td>36.6</td><td>15.5</td><td>32.4</td><td>15.2</td><td>27.0</td></tr>
+<tr><td rowspan="2">RCA-Agent</td><td>DeepSeek V4 Pro</td><td>17.6</td><td>23.1</td><td>11.8</td><td>19.6</td><td>9.5</td><td>19.1</td><td>13.1</td><td>20.8</td></tr>
+<tr><td>Qwen 3.7 Plus</td><td>22.1</td><td>29.1</td><td>9.8</td><td>16.0</td><td>6.8</td><td>16.3</td><td>13.4</td><td>21.5</td></tr>
+<tr class="hl"><td rowspan="2">EviRCA</td><td>DeepSeek V4 Pro</td><td>52.2</td><td>63.2</td><td>62.7</td><td>65.4</td><td>29.7</td><td>46.7</td><td>43.9</td><td>56.2</td></tr>
+<tr class="hl"><td>Qwen 3.7 Plus</td><td>47.8</td><td>60.8</td><td>56.9</td><td>60.8</td><td>28.4</td><td>46.2</td><td>40.6</td><td>54.4</td></tr>
+</tbody></table></div><div class="tbl-foot">원문 Table III. Overall은 사례 수(136/51/148)로 가중했습니다. Correct는 모든 질의 필드와 고장 수가 맞아야 하는 all-or-nothing 지표이고, Partial은 필드별 부분 일치입니다.</div></div>
+<figure><div class="fig-top"><span class="fnum">FIG 3</span><span class="ftitle">쉬움·중간·어려움별 정답률: 모든 시스템에서 EviRCA가 위에 있음</span></div><div class="imgbox"><img alt="두 LLM과 세 RCA 방식에 대해 Bank, Telecom, Market 데이터의 난이도별 strict correct accuracy를 그린 막대 그래프" decoding="async" loading="lazy" src="/paper-assets/4abbf89cf1ccf68a2514fbadcfa061537a7b8b60685fdf00191188a6704fe291.png"/></div><figcaption>원문 Figure 3. 모든 방법에서 문제가 어려워질수록 점수가 떨어지지만 EviRCA가 전반적으로 더 높은 분포를 유지합니다. hard는 시간·component·reason 세 필드를 함께 복구하는 문제입니다.</figcaption></figure>
+<div class="call"><div class="ct">생활 속 비유 · 작은 예 · 논문 대응</div><p><b>비유:</b> 실험실 진단에서 검사 항목을 미리 골라 준 사람과, 모든 원자료를 뒤지는 사람을 같은 의사에게 맡겨 비교하는 것과 같습니다. <b>작은 예:</b> 답이 component만 맞아도 전체 정답으로 치지 않는 strict 지표라면, 시간·reason 중 하나가 틀려도 Correct는 아닙니다. <b>논문 대응:</b> OpenRCA Correct 정의를 기준으로 세 방법의 모든 LLM backend를 비교했습니다.</p></div>
+</section>
+
+
+<section class="ch" id="c4">
+<div class="ch-eyebrow"><span class="cnum">04</span><span class="clabel">Analysis · 비용·절제 실험·실패 유형</span></div>
+<h2 class="ch-title">토큰·시간은 크게 줄었지만, 어떤 신호가 중요하고 어떤 한계가 남는지는 시스템마다 다르다</h2>
+<div class="tldr"><div class="h">한눈에 요약</div>
+<p>DeepSeek 설정에서 EviRCA는 RCA-Agent보다 건당 15.0–25.7배 적은 token을 썼고, wall-clock time은 3.2–19.6배 짧았습니다. Bank trace 재구성 때문에 시간 절감이 가장 작았습니다.</p>
+<p>절제 실험에서는 Telecom에서 trace와 topology rollup이 특히 중요했고, 오류 분석에서는 “근거를 못 찾음”뿐 아니라 이미 보인 근거 중 원인·증상을 잘못 고르는 판단 오류가 컸습니다.</p>
+</div>
+<p class="lead">비용 수치는 DeepSeek V4 Pro에서 원인 사례 1건당 잰 값입니다. 토큰 수 감소와 정확도 증가는 같은 설계에서 함께 관측됐지만, 표의 측정만으로 정확도 향상이 비용 절감 때문에 생겼다는 인과를 주장할 수는 없습니다.</p>
+<div class="tbl-wrap"><div class="tbl-cap"><span class="tn">TABLE IV</span>RCA-Agent 대비 건당 token과 실행 시간 (DeepSeek V4 Pro)</div><div class="tbl-scroll"><table><thead><tr><th>측정값</th><th>Bank</th><th>Telecom</th><th>Market</th></tr></thead><tbody>
+<tr><td>EviRCA tokens/case</td><td>101.8K</td><td>48.3K</td><td>66.4K</td></tr><tr><td>RCA-Agent tokens/case</td><td>1.53M</td><td>1.24M</td><td>1.54M</td></tr><tr class="hl"><td>token 비율 (Agent/EviRCA)</td><td>15.0×</td><td>25.7×</td><td>23.3×</td></tr>
+<tr><td>EviRCA time/case</td><td>182.3초</td><td>31.7초</td><td>40.8초</td></tr><tr><td>RCA-Agent time/case</td><td>577초</td><td>622초</td><td>685초</td></tr><tr class="hl"><td>시간 비율 (Agent/EviRCA)</td><td>3.2×</td><td>19.6×</td><td>16.8×</td></tr>
+</tbody></table></div><div class="tbl-foot">원문 Table IV. Bank trace는 span parent 링크에서 호출 그래프를 사례별로 재구성해야 해 EviRCA도 상대적으로 느립니다. Telecom·Market은 trace 요약을 공통으로 재사용합니다.</div></div>
+<h3 class="sub">절제 실험: 각 모듈을 하나씩 빼면 무엇이 달라지나 <span class="en">Leave-one-out ablation</span></h3>
+<p>저자들은 DeepSeek V4 Pro에서 모듈을 하나씩 제거하고 Correct 변화를 percentage point로 기록했습니다. Telecom은 trace modality를 빼면 −45.1점, co-location rollup을 빼면 −37.3점으로 크게 무너집니다. trace 지연이 node fault의 흔적을 여러 co-located pod에서 보여주고, rollup이 그 pod 증상을 node 원인으로 다시 모으기 때문입니다. Bank는 증거가 modality별로 흩어져 있어 특정 하나를 빼는 영향이 비교적 작습니다. Per-system guidance는 짧은 수기 문단이며, 표에 따르면 Telecom에서는 −11.8점인데 Bank는 +0.7점입니다. 따라서 “모든 모듈이 모든 환경에서 똑같이 중요하다”고 읽으면 안 됩니다.</p>
+<div class="tbl-wrap"><div class="tbl-cap"><span class="tn">TABLE V</span>모듈 제거 시 Correct 변화 (percentage points)</div><div class="tbl-scroll"><table><thead><tr><th>제거한 모듈</th><th>Bank</th><th>Telecom</th><th>Market</th></tr></thead><tbody>
+<tr><td>Trace</td><td>−3.7</td><td>−45.1</td><td>−0.7</td></tr><tr><td>Co-location rollup</td><td>—</td><td>−37.3</td><td>−1.4</td></tr><tr><td>Per-system guidance</td><td>+0.7</td><td>−11.8</td><td>0.0</td></tr><tr><td>Golden signal</td><td>0.0</td><td>−3.9</td><td>0.0</td></tr><tr><td>Safety net</td><td>−2.9</td><td>0.0</td><td>−3.4</td></tr><tr><td>Log modality</td><td>−1.5</td><td>—</td><td>—</td></tr>
+</tbody></table></div><div class="tbl-foot">원문 Table V. 양수 +0.7은 Bank에서 해당 guidance를 뺐을 때 점수가 소폭 올랐음을 뜻합니다. —는 해당 구성에 모듈이 없거나 비교하지 않은 경우입니다.</div></div>
+<h3 class="sub">실패 분석: 추출 누락과 추론 오판을 분리해서 본다 <span class="en">Failure taxonomy</span></h3>
+<p>실패 사례 중 single-fault에 한정하면 약 22.5%에서 정답 component 자체가 evidence에 나타나지 않았습니다. 나머지는 이미 드러난 단서를 두고 downstream victim을 root로 고르거나(35%), reason을 잘못 고르거나(21%), propagation chain을 틀리게 따라가는(14%) 식으로 판정했습니다. 즉, EviRCA 내부 분석에서 마지막 LLM 판단이 중요한 병목이지만, 모든 미해결 사례가 더 똑똑한 LLM만으로 해결되는 것은 아닙니다.</p>
+<p>두 LLM 모두 같은 사례를 실패하는 비율은 시스템별 81–86%입니다. Telecom 실패는 대부분 후보 선택 문제(약 61%)인 반면, Market은 multi-fault와 근거 미노출이 큽니다. 특히 Market network-reason 실패 중 89.6%는 true component가 아예 evidence에 나타나지 않았습니다(Bank 8.5%, Telecom 0%). 이 경우 reasoning을 개선해도 관측 단계가 원인을 제공하지 않으므로 ceiling이 생깁니다.</p>
+<figure><div class="fig-top"><span class="fnum">FIG 4</span><span class="ftitle">시스템별 실패가 pipeline의 어느 단계에서 생기는가</span></div><div class="imgbox"><img alt="Bank, Telecom, Market의 실패를 evidence 미노출, 후보 선택, attribution, reasoning, onset, multi-fault 단계로 구분한 100퍼센트 누적 막대 그래프" decoding="async" loading="lazy" src="/paper-assets/4e59110136babf851f5ed93182261b25527b09b7339ce863644b934fe455d64b.png"/></div><figcaption>원문 Figure 4. 실패 범주 중 not surfaced는 true component가 evidence에 전혀 들어오지 않은 recall gap입니다. Selection·attribution·reasoning은 이미 드러난 단서에서 잘못 판단한 경우이며, multi-fault는 여러 고장을 함께 처리하는 오류를 따로 셉니다.</figcaption></figure>
+<div class="tbl-wrap"><div class="tbl-cap"><span class="tn">TABLE VI</span>두 LLM 사이 실패 사례의 겹침</div><div class="tbl-scroll"><table><thead><tr><th>시스템</th><th>둘 다 실패</th><th>한 모델만 실패</th><th>둘 다 정답</th><th>실패 중 공통 비율</th></tr></thead><tbody>
+<tr><td>Bank</td><td>61</td><td>14</td><td>61</td><td>81.3%</td></tr><tr><td>Telecom</td><td>19</td><td>3</td><td>29</td><td>86.4%</td></tr><tr><td>Market</td><td>97</td><td>16</td><td>35</td><td>85.8%</td></tr>
+</tbody></table></div><div class="tbl-foot">원문 Table VI. “공통”은 하나 이상의 모델이 실패한 사례 가운데 두 모델이 모두 실패한 비율입니다. 실패가 상당히 겹친다는 사실은 같은 계열 모델 교체만으로 근본 모호함이 사라지지 않을 수 있음을 시사합니다.</div></div>
+<div class="call ar"><div class="ct">생활 속 비유 · 작은 예 · 논문 대응</div><p><b>비유:</b> CCTV 카메라가 골목을 찍지 못했다면 조사관의 추론력을 높여도 그 구간의 증거는 생기지 않습니다. <b>작은 예:</b> Market의 네트워크 사례에서 true component가 근거 카드에 없으면 잘못된 답은 추론 오류가 아니라 coverage gap일 수 있습니다. <b>논문 대응:</b> 저자들은 미노출·선택·reason·multi-fault를 구분해 다음 개선 대상을 찾습니다.</p></div>
+</section>
+
+
+<section class="ch" id="c5">
+<div class="ch-eyebrow"><span class="cnum">05</span><span class="clabel">Discussion · 무엇을 가져오고 어디서 조심할까</span></div>
+<h2 class="ch-title">좋은 설계 원칙은 분업과 출처 추적이며, 성능 수치를 그대로 일반화하는 것은 아니다</h2>
+<div class="tldr"><div class="h">한눈에 요약</div>
+<p>유용한 구조적 아이디어는 (1) 재현 가능한 추출과 의미 해석을 분리하고, (2) 모든 판단을 근거 카드로 되짚게 하며, (3) 시스템별 차이를 adapter로 명시하고, (4) “못 봄”과 “잘못 판단함”을 별도 실패로 측정하는 것입니다.</p>
+<p>다만 OpenRCA는 세 시스템, 알려진 후보 목록과 topology, 닫힌 reason set, 주입 fault 개수, 특정 telemetry 구성의 benchmark입니다. 신규 시스템의 adapter 품질과 완전히 새로운 장애유형에 대한 일반화는 별도 확인이 필요합니다.</p>
+</div>
+<p class="lead">이 논문은 “LLM이 운영 장애의 근본 원인을 실제 서비스에서 몇 % 맞혔다”는 현장 배포 보고라기보다, 분업형 아키텍처를 OpenRCA benchmark에서 시험한 연구로 보는 편이 정확합니다.</p>
+<p>강점은 raw telemetry 탐색을 bounded interface로 바꾸고, 근거 추출을 반복 가능하게 만든 점입니다. Evidence card는 어떤 signal에서 출발했는지 보여주고, tool call은 component 관계를 확인하게 합니다. adapter는 시간 단위·컬럼·candidate hierarchy·topology 같은 차이를 밖으로 분리합니다. 또 출력의 시각을 근거 onset에서 가져오고 제출 전에 answer validator를 둬 모델이 임의 시각이나 불가능한 후보를 제출하는 것을 줄입니다.</p>
+<p>반면 detector와 adapter가 제공하는 후보 공간의 품질이 한계가 됩니다. 논문도 Market 네트워크 장애에서 89.6%의 실패 원인이 정답 component가 evidence에 나오지 않는 데 있음을 보입니다. 평가 역시 OpenRCA의 세 enterprise system에서 수행됐고, 정답 후보와 injected fault 수를 알 수 있는 benchmark 조건을 사용합니다. 실제 서비스에서 미등록 component, 여러 원인이 얽힌 incident, adapter 누락, sampling gap이 생기면 결과가 달라질 수 있습니다. Oracle Sampling도 engineer-curated KPI라는 사전 지식을 받으므로 baseline의 의미를 함께 고려해야 합니다.</p>
+<p>실무로 가져온다면 먼저 raw data 접근을 제한할지보다, 어떤 신호·시간창·topology를 정답 근거로 할지 결정해야 합니다. 추출된 모든 카드의 원본 출처와 시간 단위를 보존하고, 별도 검증 세트에서는 후보 누락률(recall)과 후보 중 원인 선택 정확도(precision)를 분리해서 측정해야 합니다. 운영 경보에 바로 자동조치하기보다는 사람 검토 또는 shadow-mode로 적합성을 먼저 확인하는 편이 안전합니다.</p>
+<div class="call arb"><div class="ct">운영 적용 전 체크리스트</div><p>새 환경에서 metric·trace·log timestamp 단위와 topology mapping이 실제 배치와 일치하는지 확인합니다. 감지 임계값 아래로 빠지는 장애, 네트워크·multi-fault 사례를 별도 recall test에 둡니다. 모델 출력에는 근거 카드 ID·시각·candidate path를 함께 남기고, “근거 없음”과 “근거는 있으나 선택이 틀림”을 서로 다른 지표로 봅니다. 자동 remediation은 답 정확도만으로 켜지 말고, shadow evaluation과 human approval 경계를 먼저 둡니다.</p></div>
+<div class="call"><div class="ct">생활 속 비유 · 작은 예 · 논문 대응</div><p><b>비유:</b> 검사실은 병원마다 장비와 단위가 다르므로 결과지를 표준 형식으로 바꾸되 원래 수치를 보존해야 합니다. <b>작은 예:</b> 한 시스템의 ms timestamp를 초라고 잘못 읽으면 메트릭과 trace의 장애 순서가 뒤집힙니다. <b>논문 대응:</b> adapter와 증거 카드가 변환 규칙·근거를 명시하지만, 신규 환경에서 그 설정이 맞는지는 운영자가 검증해야 합니다.</p></div>
+</section>
+
+
+<section class="ch" id="gloss"><div class="ch-eyebrow"><span class="cnum">＋</span><span class="clabel">Glossary · 핵심 용어</span></div><h2 class="ch-title">핵심 용어 정리</h2><div class="gloss">
+<div class="gitem"><div class="term">근본 원인 분석<span class="en">Root-cause analysis, RCA</span></div><p>서비스 저하나 장애를 촉발한 원인 component와 이유를 찾아내는 과정.</p></div>
+<div class="gitem"><div class="term">근거 카드<span class="en">Evidence card</span></div><p>component·resource type·이상 시작 시각·뒷받침하는 KPI와 reason 후보를 담은 구조화 신호 요약.</p></div>
+<div class="gitem"><div class="term">분산 추적<span class="en">Distributed trace</span></div><p>요청이 여러 서비스/pod를 거치는 호출 관계와 span별 지연을 이어서 기록한 데이터.</p></div>
+<div class="gitem"><div class="term">공동 배치 요약<span class="en">Co-location rollup</span></div><p>함께 배치된 pod들의 신호를 토폴로지에 따라 host node 또는 service의 원인 후보로 묶는 처리.</p></div>
+<div class="gitem"><div class="term">서비스 건강 신호<span class="en">Golden signal</span></div><p>요청 성공률·처리율·응답시간 같은 사용자 관점 KPI. 장애 시점을 잡지만 원인 위치를 직접 알려주지는 않음.</p></div>
+<div class="gitem"><div class="term">선언형 adapter<span class="en">Declarative adapter</span></div><p>telemetry schema·단위·candidate hierarchy·deployment topology를 공통 엔진에 알려주는 시스템별 설정.</p></div>
+</div></section>
+
+
+<section class="ch" id="take"><div class="ch-eyebrow"><span class="cnum">＋</span><span class="clabel">One-page Summary · 한 장 정리</span></div><h2 class="ch-title">이 논문을 한 장으로</h2><div class="takeaways">
+<div class="take"><div class="n">01</div><div class="body">문제는 하나의 LLM에게 대량 telemetry <b>검색·이상 감지·원인 해석</b>을 한 번에 맡기는 비용과 불안정성이다.</div></div>
+<div class="take"><div class="n">02</div><div class="body">EviRCA는 metric/trace/log에서 결정적으로 evidence를 만들고, LLM은 읽기 전용 도구로 root cause를 고르는 2단계 구조다.</div></div>
+<div class="take"><div class="n">03</div><div class="body">OpenRCA 335건에서 두 LLM의 overall Correct가 40.6–43.9%였고 matched baseline 최고 15.2%를 넘었으며, 토큰은 15–25.7배 적고 시간은 3.2–19.6배 짧았다.</div></div>
+<div class="take"><div class="n">04</div><div class="body">성능은 시스템별로 달랐다. Telecom은 trace와 co-location이 중요했고, Market network fault는 정답 component가 evidence에 노출되지 않는 coverage 한계가 컸다.</div></div>
+<div class="take"><div class="n">05</div><div class="body">핵심 적용 원칙은 adapter와 근거 출처를 명시하고 “후보를 놓침”과 “후보를 잘못 고름”을 따로 측정하는 것. benchmark 성능을 production 정확도로 바로 읽지 않는다.</div></div>
+</div></section>

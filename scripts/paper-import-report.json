@@ -1,0 +1,47 @@
+{
+  "published": 107,
+  "figures": 786,
+  "figureBytes": 158759779,
+  "skipped": [
+    {
+      "id": "2609.15230",
+      "reason": "invalid-pdf"
+    },
+    {
+      "id": "2609.15381",
+      "reason": "invalid-pdf"
+    },
+    {
+      "id": "2609.15397",
+      "reason": "invalid-pdf"
+    },
+    {
+      "id": "2609.16818",
+      "reason": "missing-explanation"
+    },
+    {
+      "id": "2609.17346",
+      "reason": "missing-explanation"
+    },
+    {
+      "id": "2609.17709",
+      "reason": "missing-explanation"
+    },
+    {
+      "id": "2609.17983",
+      "reason": "missing-explanation"
+    },
+    {
+      "id": "2609.18099",
+      "reason": "missing-explanation"
+    },
+    {
+      "id": "2609.18461",
+      "reason": "missing-explanation"
+    },
+    {
+      "id": "2609.19942",
+      "reason": "missing-explanation"
+    }
+  ]
+}

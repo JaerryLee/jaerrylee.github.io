@@ -1,0 +1,139 @@
+<section class="ch" id="c1">
+<div class="ch-eyebrow"><span class="cnum">01</span><span class="clabel">Motivation · VPA가 HPC에서 놓치는 변화</span></div>
+<h2 class="ch-title">기록된 과거의 평균으로는 다음 메모리 급증을 막기 어렵다</h2>
+<div class="tldr"><div class="h">한눈에 요약</div>
+<p>기본 VPA는 과거 관측치를 모아 90번째 백분위수에 15% 여유를 더해 limit을 추천합니다. 첫 실행이거나 메모리가 단계별로 급증하는 HPC 작업은 아직 기록에 없는 peak를 만나 OOM이 나거나, 반대로 큰 limit을 계속 잡아 자원을 낭비할 수 있습니다.</p>
+<p>VERA는 Prometheus 신호를 읽는 별도 RL 추천기를 VPA 옆에 두고, 현재 limit을 낮추거나 높이는 방향과 크기를 제안합니다.</p>
+</div>
+<p class="lead">이 논문이 다루는 것은 “pod를 몇 개 띄울까?”가 아니라, 실행 중인 pod의 메모리 상한(limit)을 어떻게 바꿀까 하는 수직 조정입니다.</p>
+<p>Kubernetes의 <b>request</b>는 스케줄러가 노드 자리를 잡을 때 쓰는 보장량이고, <b>limit</b>은 cgroup이 실제로 강제하는 상한입니다. 작업의 working set이 limit을 넘으면 Linux OOM killer가 컨테이너를 종료할 수 있습니다. MPI 등으로 묶인 HPC 작업은 한 프로세스의 실패가 전체 작업의 계산을 버리게 할 수 있어, 서버리스 웹 replica보다 OOM 비용이 큽니다.</p>
+<p>기본 VPA 추천기는 Prometheus 기반 사용 이력을 최대 8일 rolling histogram으로 모아 P90에 15% margin을 더합니다. 이 방식은 반복적이고 안정적인 웹 workload에는 유용하지만, 처음 보는 batch 작업에는 과거 이력이 없고, 짧은 초기화 burst나 실행 중 누적 증가 같은 phase 전환을 미리 알기 어렵습니다.</p>
+<figure><div class="fig-top"><span class="fnum">FIG 1</span><span class="ftitle">Kubernetes VPA 옆에 붙는 VERA 추천 흐름</span></div><div class="imgbox"><img alt="VPA와 RL agent가 cAdvisor 및 Prometheus 메트릭을 받아 Kubernetes의 VPA 설정에 limit을 추천하는 구조" decoding="async" loading="lazy" src="/paper-assets/399176f8cd98b0f2b314bd2a4c5fefe7e4b91f6c68f135b36d0ce7b9bef0de1e.png"/></div><figcaption>원문 Figure 1. workload는 cgroup에 사용량을 기록하고 cAdvisor가 이를 수집합니다. VPA 추천기와 VERA agent가 각각 메트릭을 바탕으로 권고를 만들며, VERA는 Prometheus에서 더 촘촘한 관측을 직접 읽습니다.</figcaption></figure>
+<div class="call ar"><div class="ct">생활 속 비유 · 작은 예 · 논문 대응</div><p><b>비유:</b> 예전 숙제 평균 분량만 보고 가방 크기를 정하면, 이번 주에 갑자기 두꺼운 교재를 받았을 때 공간이 모자랄 수 있습니다. <b>작은 예:</b> 메모리가 평소 8GiB여도 그래프를 처음 읽는 순간 12GiB로 튈 수 있습니다. <b>논문 대응:</b> VPA는 과거 histogram을, VERA는 현재의 사용량·증가 추세·실패 압력을 보고 limit을 추천합니다.</p></div>
+</section>
+
+
+<section class="ch" id="c2">
+<div class="ch-eyebrow"><span class="cnum">02</span><span class="clabel">Design · VERA의 상태·행동·보상</span></div>
+<h2 class="ch-title">안전 여유를 지키면서, 필요할 때만 limit을 줄이도록 학습한다</h2>
+<div class="tldr"><div class="h">한눈에 요약</div>
+<p>VERA는 14개 메트릭을 상태로 보고, 매 시점 limit을 최대 ±10% 조정하는 연속 행동을 선택합니다. OOM 회피를 낭비 절감보다 더 무겁게 보상에 반영하며, 작업이 시작되기 전에는 limit을 줄이지 않도록 cold-start guard를 둡니다.</p>
+<p>보상은 “사용량만 낮추면 좋다”로 단순화하지 않고 초기화·효율·위험·추세를 구분합니다.</p>
+</div>
+<p class="lead">HPC 작업은 시작 전, 메모리 증가 중, 안정적인 계산 중, 메모리 압박 직전의 국면이 다릅니다. VERA는 그 국면을 읽어 손실이 큰 선택을 피하도록 설계합니다.</p>
+<h3 class="sub">관측과 행동 <span class="en">State and action</span></h3>
+<p>관측은 working set, RSS, page cache 비율, Kubernetes limit/request, allocation failure 신호, 직전 limit과 사용량 추세, utilization, CPU 신호, idle step 수, episode 최고 사용량 등 14개 값으로 구성됩니다. 단일 메모리 샘플만으로는 “아직 시작 전이라 사용량이 낮음”과 “작업이 끝나 메모리를 줄여도 됨”을 구분하기 어렵기 때문에, 추세·idle·peak 이력도 같이 넣습니다.</p>
+<p>행동값은 −1에서 +1 사이이고, 현재 limit의 최대 10%만큼 낮추거나 높입니다. limit은 64MB 아래로 내려가지 않으며 operator의 원래 limit 두 배를 넘지 않습니다. 설계상 2초 관측 간격의 MDP를 사용합니다. 실제 live evaluation에서 추천기를 조회한 주기는 5초라고 적혀 있어, 두 간격은 구분해서 봐야 합니다.</p>
+<h3 class="sub">보상은 네 상태의 이동을 다룬다 <span class="en">Phase-aware reward</span></h3>
+<p>논문은 초기화(init), 적정 사용(active efficient, 대략 85–87% 활용), 과할당(over-provisioned), 위험(active dangerous, limit에 거의 닿음), OOM 상태를 나눕니다. OOM 또는 실패 압력이 보이면 공격적인 trim을 강하게 벌하고, limit이 수요보다 너무 크면 조금씩 줄이며, 초기화 중에는 현재 limit을 유지하는 것이 바람직하도록 보상합니다. 초기 trim penalty의 크기 Y가 네 모델 간 안전성·절감 trade-off를 조절합니다.</p>
+<figure><div class="fig-top"><span class="fnum">FIG 2</span><span class="ftitle">상태 전이별 보상: OOM 위험은 크게 벌하고 과할당은 점진적으로 줄임</span></div><div class="imgbox"><img alt="초기화, 적정 활용, 과할당, 위험, OOM 상태 사이의 행동과 보상 전이를 표시한 다이어그램" decoding="async" loading="lazy" src="/paper-assets/121561674c274b082aab2cdfc0a75152b4ca65a4193800e445587d38089445f8.png"/></div><figcaption>원문 Figure 2. 초록색은 적절한 확장·유지·trim에 대한 양의 보상, 빨간색은 OOM이나 위험한 trim에 대한 penalty를 나타냅니다.</figcaption></figure>
+<div class="tbl-wrap"><div class="tbl-cap"><span class="tn">TABLE I</span>보상 상태 전이의 주요 항목</div><div class="tbl-scroll"><table><thead><tr><th>현재 상태와 행동</th><th>보상</th><th>의도</th></tr></thead><tbody>
+<tr><td>Init: 강한 상승 추세를 보고 확장</td><td>+1.0 ~ +1.3</td><td>급증 전에 limit을 키움</td></tr>
+<tr><td>Init: 중간 상승 추세로 확장(큰/작은 변화)</td><td>+0.30 / +0.10</td><td>작업 시작 신호에 맞춰 확장</td></tr>
+<tr><td>Init: 추세 없이 확장</td><td>−0.15</td><td>근거 없는 여유 확대 방지</td></tr>
+<tr><td>Init: trim</td><td>Y ∈ {−0.15, −0.25, −0.50, −0.75}</td><td>작업 전 limit 축소 억제</td></tr>
+<tr><td>Init: trim + allocation failure</td><td>−0.35</td><td>압박 신호 아래 축소 억제</td></tr>
+<tr class="hl"><td>Efficient: peak에 맞춰 유지/조정</td><td>+1.0</td><td>안전 margin을 둔 높은 활용</td></tr>
+<tr><td>Efficient → Over-provisioned</td><td>&lt; +1.0</td><td>필요 이상으로 큰 limit은 덜 선호</td></tr>
+<tr><td>Over-provisioned: 사용량 하락 중 trim</td><td>[0, 1] + 0.05</td><td>안전한 절감 유도</td></tr>
+<tr><td>Efficient: 과도한 trim</td><td>[0, −0.5]</td><td>위험 구간으로의 이동 억제</td></tr>
+<tr><td>Efficient → Dangerous: trim + 실패 압력</td><td>−0.2</td><td>OOM 직전 축소 방지</td></tr>
+<tr><td>위험/적정 상태에서 너무 큰 trim</td><td>−4.0 ~ −2.0</td><td>OOM보다 먼저 강한 경고</td></tr>
+<tr class="hl"><td>OOM: working set &gt; limit</td><td>−2.0 ~ −4.0, 종료 상태</td><td>완료된 계산까지 잃는 결과를 최우선 방지</td></tr>
+</tbody></table></div><div class="tbl-foot">원문 Table I의 보상 전이를 한국어로 재구성했습니다. 보상은 우선순위가 있어 상위 항목이 적용되면 하위 보상은 계산하지 않습니다.</div></div>
+<div class="call arb"><div class="ct">생활 속 비유 · 작은 예 · 논문 대응</div><p><b>비유:</b> 차를 주차할 때 연비를 아끼려 해도 브레이크 경고등이 켜지면 속도를 더 내지 않습니다. <b>작은 예:</b> allocation failure가 늘고 working set이 limit에 가까우면, 잠깐의 여유 절감 보상은 포기하고 확장을 선택합니다. <b>논문 대응:</b> VERA는 OOM·실패 압력 보상을 trim 절감 보상보다 우선 적용합니다.</p></div>
+</section>
+
+
+<section class="ch" id="c3">
+<div class="ch-eyebrow"><span class="cnum">03</span><span class="clabel">Method · 학습과 비교 실험 설계</span></div>
+<h2 class="ch-title">실제 GKE trace로 학습하고, 같은 workload 실행에 두 추천을 대입했다</h2>
+<div class="tldr"><div class="h">한눈에 요약</div>
+<p>저자들은 4,790개 execution trace와 1,214,600개 Prometheus 표본을 수집하고 70/30으로 학습·평가를 나눴습니다. 96개 PPO agent를 학습한 뒤, 네 가지 초기 trim penalty 모델을 100개 평가 run에서 기본 VPA 추천기와 비교했습니다.</p>
+<p>중요한 점은 두 추천기가 같은 실행 trace를 보되, 계산된 limit을 실제 pod에 적용하지 않았다는 것입니다.</p>
+</div>
+<p class="lead">평가는 GKE의 live cluster에서 이루어졌지만, limit 변경을 실제로 실행하는 closed-loop 실험은 아닙니다.</p>
+<p>추적 데이터는 LAMMPS, graph analytics(BFS, PageRank, connected components 등), Spark 기반 in-memory analytics, MLPerf 3D-UNet에서 수집했습니다. 데이터는 workload 종류를 섞어 70%를 train, 30%를 evaluation으로 나눴습니다. PPO 모델 96개는 frame-stack 깊이와 학습 timestep 예산을 달리해 학습했습니다. 표 III의 네 모델은 init-trim penalty Y를 −0.15, −0.25, −0.50, −0.75로 바꾼 구성입니다.</p>
+<p>평가 node는 GKE의 n2-standard-16(16 vCPU, 64GB RAM)이었고, 네 workload군에 총 100 run을 배분했습니다: Graph 50, In-Memory 15, LAMMPS 18, MLPerf 17. VPA는 기본 90th percentile+15% margin 정책으로 두되 updateMode를 끄고 권고만 기록했습니다. VERA 역시 계산한 limit을 기록만 했습니다. 따라서 각 추천이 같은 실제 메모리 trace를 감당했을지 “가정상” 세어 비교하며, 그 추천으로 실제 limit을 변경했을 때의 효과는 측정하지 않았습니다.</p>
+<p>논문은 설계 설명에서 2초 간격 MDP를 정의하지만, 실험 설정은 agent가 5초마다 Prometheus를 조회한다고 서술합니다. 본문은 두 주기의 차이를 더 설명하지 않습니다.</p>
+<div class="tbl-wrap"><div class="tbl-cap"><span class="tn">TABLE II</span>PPO 학습 설정</div><div class="tbl-scroll"><table><thead><tr><th>항목</th><th>값</th><th>논문 설명</th></tr></thead><tbody>
+<tr><td>Learning rate</td><td>3 × 10⁻⁴</td><td>안정적인 optimizer update</td></tr>
+<tr><td>Rollout steps</td><td>2048</td><td>episode 시간 흐름 포착</td></tr>
+<tr><td>Mini-batch / epochs</td><td>1024 / 10</td><td>한 rollout에서 표본 효율 확보</td></tr>
+<tr><td>Discount γ / GAE λ</td><td>0.99 / 0.95</td><td>장기 효과와 bias–variance 절충</td></tr>
+<tr><td>Clip range ε</td><td>0.2</td><td>policy 변화 폭 제한</td></tr>
+<tr><td>Entropy / value coefficient</td><td>0.01 / 0.5</td><td>탐색 보너스 / critic 손실 가중치</td></tr>
+<tr><td>Max gradient norm</td><td>0.5</td><td>gradient 폭주 제한</td></tr>
+<tr><td>Training timesteps</td><td>workload당 1–3 × 10⁶</td><td>수렴에 맞춰 설정</td></tr>
+</tbody></table></div><div class="tbl-foot">원문 Table II의 PPO hyperparameter를 재구성했습니다. 실제 관측값 14개는 원래 Kubernetes memory limit으로 정규화됩니다.</div></div>
+<div class="call"><div class="ct">생활 속 비유 · 작은 예 · 논문 대응</div><p><b>비유:</b> 두 운전자를 같은 블랙박스 영상으로 평가하면 실제로 브레이크를 조작해 본 것과는 다릅니다. <b>작은 예:</b> 같은 100개 실행 trace를 놓고 “VPA 권고값이면 peak를 넘었을까?”를 확인합니다. <b>논문 대응:</b> 저자들은 live metric과 실제 workload를 썼지만, agent limit을 적용하지 않은 shadow comparison이므로 동적 할당의 실제 운영 효과는 후속 검증 대상입니다.</p></div>
+</section>
+
+
+<section class="ch" id="c4">
+<div class="ch-eyebrow"><span class="cnum">04</span><span class="clabel">Results · 수치와 workload별 결과</span></div>
+<h2 class="ch-title">추천 한도 기준 OOM 초과 사례는 줄고, 평균 여유 메모리는 더 많이 회수했다</h2>
+<div class="tldr"><div class="h">한눈에 요약</div>
+<p>100개 trace 평가에서 선택된 VERA Model 1은 평균 메모리 낭비를 31.6% 줄이고, 추천 limit이 trace peak보다 낮았던 경우는 1회였습니다. VPA 권고는 30개 run에서 peak보다 낮았고, 평균적으로 원래 limit보다 7.9% 더 크게 잡아 낭비를 늘렸습니다.</p>
+<p>이는 권고값을 같은 trace에 대입한 그림자 평가 결과이지, 30건의 실제 OOM이나 실제 31.6% 클러스터 절감을 관측한 것은 아닙니다.</p>
+</div>
+<p class="lead">표의 OOM 수는 workload를 VERA/VPA limit으로 실행했을 때 발생한 실제 사고 횟수가 아니라, 관측된 working set이 각 추천 limit을 넘었는지 센 횟수입니다.</p>
+<p>ΔW는 원래 limit 대비 메모리 낭비를 얼마나 줄였는지를 나타냅니다. 양수면 여유 자원을 회수한 것이고, 음수면 추천 limit이 원래보다 커져 평균 provision이 증가한 것입니다. Util은 working set과 추천 limit의 평균 비율입니다. Model 1은 여러 model을 함께 평가한 다목적 선택 절차에서 가장 나은 safety–efficiency 절충으로 선택됐습니다. 더 큰 초기 trim penalty는 관측상 OOM 초과를 0으로 낮추지만, 절감률도 31.6%에서 9.6%로 낮아지는 trade-off가 나타납니다.</p>
+<div class="tbl-wrap"><div class="tbl-cap"><span class="tn">TABLE III</span>workload별 네 RL 모델과 VPA 권고 비교</div><div class="tbl-scroll"><table><thead><tr><th>Workload</th><th>권고기</th><th>ΔW</th><th>Util</th><th>#OOM 초과</th></tr></thead><tbody>
+<tr><td rowspan="5">Graph (n=50)</td><td>RL Model 1</td><td>30.0%</td><td>0.136</td><td>0</td></tr>
+<tr><td>RL Model 2</td><td>28.6%</td><td>0.142</td><td>0</td></tr><tr><td>RL Model 3</td><td>17.5%</td><td>0.129</td><td>0</td></tr><tr><td>RL Model 4</td><td>−0.3%</td><td>0.113</td><td>0</td></tr><tr class="hl"><td>VPA mean</td><td>2.2%</td><td>0.017</td><td>7</td></tr>
+<tr><td rowspan="5">In-Memory (n=15)</td><td>RL Model 1</td><td>62.7%</td><td>0.462</td><td>0</td></tr>
+<tr><td>RL Model 2</td><td>67.2%</td><td>0.514</td><td>0</td></tr><tr><td>RL Model 3</td><td>61.3%</td><td>0.474</td><td>0</td></tr><tr><td>RL Model 4</td><td>54.1%</td><td>0.467</td><td>0</td></tr><tr class="hl"><td>VPA mean</td><td>—</td><td>—</td><td>13</td></tr>
+<tr><td rowspan="5">LAMMPS (n=18)</td><td>RL Model 1</td><td>25.5%</td><td>0.404</td><td>1</td></tr>
+<tr><td>RL Model 2</td><td>17.9%</td><td>0.435</td><td>0</td></tr><tr><td>RL Model 3</td><td>3.2%</td><td>0.419</td><td>0</td></tr><tr><td>RL Model 4</td><td>4.6%</td><td>0.419</td><td>0</td></tr><tr class="hl"><td>VPA mean</td><td>−51.5%</td><td>0.298</td><td>4</td></tr>
+<tr><td rowspan="5">MLPerf (n=17)</td><td>RL Model 1</td><td>15.4%</td><td>0.225</td><td>0</td></tr>
+<tr><td>RL Model 2</td><td>16.2%</td><td>0.245</td><td>1</td></tr><tr><td>RL Model 3</td><td>4.8%</td><td>0.232</td><td>0</td></tr><tr><td>RL Model 4</td><td>4.5%</td><td>0.277</td><td>0</td></tr><tr class="hl"><td>VPA mean</td><td>1.5%</td><td>0.014</td><td>6</td></tr>
+<tr><td rowspan="5">Overall (n=100)</td><td>RL Model 1</td><td>31.6%</td><td>0.248</td><td>1</td></tr>
+<tr><td>RL Model 2</td><td>30.4%</td><td>0.268</td><td>1</td></tr><tr><td>RL Model 3</td><td>19.3%</td><td>0.250</td><td>0</td></tr><tr><td>RL Model 4</td><td>9.6%</td><td>0.249</td><td>0</td></tr><tr class="hl"><td>VPA mean</td><td>−7.9%</td><td>0.065</td><td>30</td></tr>
+</tbody></table></div><div class="tbl-foot">원문 Table III 재구성. In-Memory workload에서 VPA는 유효한 추천을 내지 못한 구성이 있어 ΔW·util이 ‘—’로 표시됩니다. OOM 값은 동일 trace에 추천 limit을 대입해 초과 여부를 센 결과입니다.</div></div>
+<h3 class="sub">네 workload가 서로 다른 메모리 곡선을 만든다 <span class="en">Workload-specific behavior</span></h3>
+<p><b>Graph analytics:</b> 초기화 후 graph traversal과 중간 결과 축적으로 메모리가 꾸준히 증가합니다. 원문 예시에서 VPA 권고는 2.8GiB였는데 관측 working set은 10.7GiB까지 올라가 3.8배 차이가 났습니다. Model 1은 원래 57GiB limit 중 약 37GiB를 회수한 사례를 보여 줍니다.</p>
+<figure><div class="fig-top"><span class="fnum">FIG 3</span><span class="ftitle">Connected Components trace: 작업 시작 뒤 limit을 수요에 맞춰 올림</span></div><div class="imgbox"><img alt="Graph Analytics Connected Components의 working set, Kubernetes limit, VPA 권고, RL 권고를 비교한 시계열" decoding="async" loading="lazy" src="/paper-assets/ed5f96b05bbdfa5b4ea368aa82a5388971943fc9e6f9a17f3ee449bb2cbca351.png"/></div><figcaption>원문 Figure 3. 같은 16GiB tier 예시에서 VERA 권고는 메모리 수요 상승을 따라가며, VPA 목표는 초기 낮은 추천 뒤 더 완만하게 변합니다.</figcaption></figure>
+<p><b>In-memory analytics:</b> 불규칙하게 오르내리고 peak를 미리 정하기 어려운 패턴입니다. 저자들은 VPA가 이 workload configuration들에 쓸 수 있는 추천을 내지 못했다고 설명하고, Table III에는 VPA limit 초과 13건을 집계했습니다. 네 RL 구성은 모두 초과가 없었으며 ΔW는 54.1–67.2%였습니다.</p>
+<figure><div class="fig-top"><span class="fnum">FIG 4</span><span class="ftitle">불규칙 burst를 관찰해 수요 위에 limit 여유를 유지</span></div><div class="imgbox"><img alt="In-Memory Analytics의 사용량 burst와 VERA/VPA limit 추천을 보여주는 시계열" decoding="async" loading="lazy" src="/paper-assets/b81a74041953646d423f71a53639f8c6169775a76746880e2928346f7a6537f1.png"/></div><figcaption>원문 Figure 4. VERA는 변동 peak 위쪽으로 limit을 조정하고, VPA의 예시 추천은 실제 관측 수요 아래에 놓입니다.</figcaption></figure>
+<p><b>LAMMPS:</b> 원자 수가 늘며 메모리 수요가 대체로 선형 증가합니다. VPA의 ΔW −51.5%는 권고 limit이 원래보다 커졌음을 뜻합니다. VERA Model 1은 ΔW 25.5%, 초과 1건이고, 초기 trim penalty가 큰 Model 2–4는 초과 0건인 대신 절감 폭이 작습니다.</p>
+<figure><div class="fig-top"><span class="fnum">FIG 5</span><span class="ftitle">선형 증가를 따라가되, 시작 구간의 급격한 상승은 안전성 trade-off로 남음</span></div><div class="imgbox"><img alt="LAMMPS molecular dynamics의 working set 및 두 메모리 권고 시계열" decoding="async" loading="lazy" src="/paper-assets/238033fb4c4ea149a27694f944e017abb744587a78e449865d20aa3a52e608d5.png"/></div><figcaption>원문 Figure 5. VERA는 증가하는 수요를 뒤따르는 limit을 제안합니다. 논문은 작은 40m-small-lj 설정에서 Model 1이 기록한 단 한 건의 초과도 함께 보고합니다.</figcaption></figure>
+<p><b>MLPerf 3D-UNet:</b> mini-batch와 framework cache로 sawtooth peak가 반복됩니다. VPA는 17개 평가에서 6건의 초과 사례, RL은 Model 2의 1건 외에는 없습니다. peak 자체를 미리 알 수 없어서, 안전 여유를 크게 잡을수록 회수 가능한 메모리는 제한됩니다.</p>
+<figure><div class="fig-top"><span class="fnum">FIG 6</span><span class="ftitle">반복적인 sawtooth peak마다 OOM 여유가 필요한 MLPerf 3D-UNet</span></div><div class="imgbox"><img alt="MLPerf 3D-UNet의 반복 메모리 peak와 VERA/VPA 한도 권고 비교" decoding="async" loading="lazy" src="/paper-assets/79201e321aca8ca4379489a16250138e2f484b337a8f2f9b7f7864329ef1a2e5.png"/></div><figcaption>원문 Figure 6. VERA는 반복 peak 위의 여유를 유지하고, VPA 권고는 일부 peak 아래로 내려가는 예시를 보입니다.</figcaption></figure>
+<div class="call ar"><div class="ct">생활 속 비유 · 작은 예 · 논문 대응</div><p><b>비유:</b> 네 종류의 도로에서 연료 계획을 시험하면 직선 도로, 급경사, 멈췄다 출발하는 구간마다 연료 소모가 다릅니다. <b>작은 예:</b> LAMMPS는 대체로 계속 올라가는 곡선, 3D-UNet은 반복 peak입니다. <b>논문 대응:</b> 저자들은 한 개 평균 workload 대신 네 계열을 나눠 평가했고, peak 대비 limit 초과와 절감률을 함께 봤습니다.</p></div>
+</section>
+
+
+<section class="ch" id="c5">
+<div class="ch-eyebrow"><span class="cnum">05</span><span class="clabel">Discussion · 해석과 한계</span></div>
+<h2 class="ch-title">좋은 추천 결과는 보였지만, 자동 조정의 실운영 안전성까지 입증한 것은 아니다</h2>
+<div class="tldr"><div class="h">한눈에 요약</div>
+<p>이 논문은 VPA의 과거 기반 추천이 phase-driven HPC memory에 약할 수 있음을 실제 workload trace에서 보이고, RL 추천으로 절감과 안전성의 절충을 조절할 수 있음을 제시합니다. 반면 limit을 실제로 변경하지 않아 제어 지연·재할당·작업 안정성은 검증하지 않았습니다.</p>
+<p>성과는 네 workload 구성과 소규모 GKE 평가의 trace 기반 결과로 한정해서 읽어야 합니다.</p>
+</div>
+<p class="lead">핵심 공헌은 “강화학습이면 무조건 더 적은 메모리를 쓴다”가 아니라, 향후 메모리 수요를 관찰해 효율성과 OOM 위험을 함께 조절하려는 추천 정책입니다.</p>
+<p>강점은 서로 다른 네 메모리 패턴을 실제 GKE workload로 시험했고, 실패 횟수 하나에만 맞춰 모델을 고르지 않도록 활용률·낭비·OOM 초과를 함께 봤다는 점입니다. 또 VPA가 더 큰 limit을 추천해도 평균 사용량보다 peak가 더 높은 task가 있을 수 있어, average-based baselines의 단점을 설명합니다.</p>
+<p>가장 큰 한계는 <b>shadow mode</b>입니다. 평가 중에는 모든 pod가 원래 limit L₀로 실행됐고, VERA/VPA 추천 limit은 기록만 했습니다. 따라서 “같은 trace에서 추천값이 peak보다 낮았는가”는 계산할 수 있지만, 실제 limit을 내리거나 올렸을 때 새 OOM이 생기는지, 5초 polling과 control-plane update가 안정적인지, scheduler가 추가 workload를 얼마나 더 수용하는지는 실험이 아닙니다. 저자들도 in-place limit update의 live 적용을 future work로 남깁니다.</p>
+<p>외적 타당성도 제한적입니다. workload는 scientific/HPC, graph, Spark in-memory, 3D-UNet 네 가족이고 평가는 100 trace run입니다. 초기화 때 CPU 사용률 20% 미만을 보는 guard와 64MB–2L₀ action bounds, 작은 penalty grid 같은 설정이 다른 CPU/memory 계측 주기나 다양한 Kubernetes 운영 정책에서도 그대로 맞는지는 추가 검증이 필요합니다.</p>
+<div class="call arb"><div class="ct">실무 적용 전에 확인할 것</div><p>실제 도입이라면 shadow recommendation을 충분한 기간 검토하고, 최소/최대 limit, 적용 cooldown, OOM pressure interlock, rollback, MPI 전체 작업 영향, request와 limit 변경의 적용 시점 및 Prometheus scrape lag를 점검해야 합니다. 이 논문만으로 실제 cluster에서 자동 limit mutation을 켜도 안전하다고 결론 내릴 수는 없습니다.</p></div>
+<div class="call"><div class="ct">생활 속 비유 · 작은 예 · 논문 대응</div><p><b>비유:</b> 비행 시뮬레이터에서 조종사의 추천 궤적이 좋아 보여도 실제 비행의 돌풍 대응까지 증명되지는 않습니다. <b>작은 예:</b> trace에서 12GiB peak를 넘지 않은 추천이 실제 container에서 limit update race나 계측 지연에도 안전한지는 별도 문제입니다. <b>논문 대응:</b> 이 실험은 추천 정책을 live workload 위에 shadow로 평가했고, limit 적용 제어는 다음 검증 단계로 남겼습니다.</p></div>
+</section>
+
+
+<section class="ch" id="gloss"><div class="ch-eyebrow"><span class="cnum">＋</span><span class="clabel">Glossary · 핵심 용어</span></div><h2 class="ch-title">핵심 용어 정리</h2><div class="gloss">
+<div class="gitem"><div class="term">수직 자동 확장<span class="en">Vertical autoscaling</span></div><p>pod 수를 늘리는 대신 실행 pod 하나에 배정된 CPU나 memory 크기를 조정하는 방식.</p></div>
+<div class="gitem"><div class="term">메모리 limit<span class="en">Memory limit</span></div><p>cgroup이 컨테이너에 허용하는 상한. 넘으면 Linux OOM killer가 종료시킬 수 있다.</p></div>
+<div class="gitem"><div class="term">Working set<span class="en">Working set</span></div><p>현재 작업이 실제로 필요로 하는 활성 메모리. 논문에서 limit 초과 여부를 보는 핵심 신호다.</p></div>
+<div class="gitem"><div class="term">Shadow mode<span class="en">Shadow evaluation</span></div><p>새 추천은 계산·기록하지만 실제 설정에는 적용하지 않는 평가 방식. 실운영 개입과는 다르다.</p></div>
+<div class="gitem"><div class="term">Cold-start guard<span class="en">Initialization guard</span></div><p>작업이 아직 시작되지 않아 usage가 낮은 동안 limit을 잘못 줄이지 않게 하는 보호 규칙.</p></div>
+<div class="gitem"><div class="term">PPO<span class="en">Proximal Policy Optimization</span></div><p>강화학습 policy가 한 번에 너무 크게 바뀌지 않도록 update를 제한하는 actor–critic 알고리즘.</p></div>
+</div></section>
+
+
+<section class="ch" id="take"><div class="ch-eyebrow"><span class="cnum">＋</span><span class="clabel">One-page Summary · 한 장 정리</span></div><h2 class="ch-title">이 논문을 한 장으로</h2><div class="takeaways">
+<div class="take"><div class="n">01</div><div class="body">기본 VPA는 <b>과거 P90 + 15% 여유</b>를 추천하지만 first-run·phase-changing HPC 작업의 peak를 놓칠 수 있다.</div></div>
+<div class="take"><div class="n">02</div><div class="body">VERA는 14개 Prometheus 기반 상태와 연속 ±10% limit action, <b>OOM 우선 보상</b>으로 동적 추천을 만든다.</div></div>
+<div class="take"><div class="n">03</div><div class="body">100개 shadow trace에서 선택 모델은 VPA 대비 낭비 절감 31.6%와 추천 limit 초과 1건, VPA는 −7.9%와 30건을 보고했다.</div></div>
+<div class="take"><div class="n">04</div><div class="body"><b>30건은 실제 OOM이 아니다.</b> 추천 limit을 동일 trace에 대입해 peak보다 낮았던 사례다. 실제 pod limit은 변경하지 않았다.</div></div>
+<div class="take"><div class="n">05</div><div class="body">운영 배포 전 shadow 검증, cooldown, 안전 bound, 실제 K8s in-place limit update, MPI job-level rollback을 별도로 확인해야 한다.</div></div>
+</div></section>

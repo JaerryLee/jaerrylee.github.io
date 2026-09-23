@@ -1,0 +1,64 @@
+<section class="ch" id="c1">
+<div class="ch-eyebrow"><span class="cnum">01</span><span class="clabel">Motivation · 문제</span></div>
+<h2 class="ch-title">논문이 쌓여도 모델에 대한 지식은 남지 않는다</h2>
+<div class="tldr"><div class="h">한눈에 요약</div><p>모델의 행동과 실패를 밝힌 결과가 논문별로 흩어져 있어, 특정 모델에 대해 알려진 것을 한번에 찾기 어렵다. Modelpedia는 이 결과를 논문이 아닌 ‘발견(finding)’ 단위로 저장하려는 시도다.</p></div>
+<p class="lead">평가 점수만 누적하는 리더보드와 달리, 이 카탈로그는 모델이 <strong>왜 그렇게 행동했는지</strong>, 어떤 데이터와 방법에서 관찰됐는지를 연결한다.</p><p>저자들은 모델 카드·데이터시트처럼 타인이 발견한 모델 지식도 표준화된 표현이 필요하다고 본다. 현재 프로토타입은 ICLR 2024·2025 채택 논문만 다룬다.</p><figure>
+<div class="fig-top"><span class="fnum">FIG 1</span><span class="ftitle">Modelpedia의 세 단계와 지식 구조</span></div>
+<div class="imgbox"><img alt="Modelpedia의 세 단계와 지식 구조" decoding="async" loading="lazy" src="/paper-assets/1c58b7150c65fe567a5f4a9be301aa5e1d780e5acfb4a24b16d518a33209ea5c.png"/></div>
+<figcaption>논문 순위화, LLM 추출, 카탈로그 갱신을 거쳐 발견을 모델·데이터셋·방법·개념에 연결한다.</figcaption>
+</figure>
+</section>
+<section class="ch" id="c2">
+<div class="ch-eyebrow"><span class="cnum">02</span><span class="clabel">Architecture · 구조</span></div>
+<h2 class="ch-title">발견 하나를 다섯 개의 근거 노드에 묶는다</h2>
+<div class="tldr"><div class="h">한눈에 요약</div><p>각 발견은 반드시 모델 변형, 데이터셋, 방법, 개념, 원문 출처와 연결된다. 이로써 요약문 하나를 넘어 서로 비교할 수 있는 지식 단위가 된다.</p></div>
+<p class="lead">추출기는 Qwen3.8-27B-FP8를 사용하고, 문서의 직접 인용을 각 엔티티와 발견에 붙이도록 요구한다.</p><p>신규 엔티티는 기존 레지스트리와 문자열 유사도를 먼저 비교한 뒤 새 노드 생성 여부를 LLM이 제안한다. 발견의 근거 유형은 관찰·상관·개입 중 하나로 분류된다. 원문에 없는 개념은 허용되지만, 이때는 정의 목록에서만 고르고 해당 정의의 문구를 근거로 제시해야 한다.</p><div class="tbl-wrap"><div class="tbl-cap"><span class="tn">TABLE 1</span>논문 선별에 쓴 7개 키워드 그룹과 가중치</div>
+<div class="tbl-scroll"><table><thead><tr><th>어휘</th><th>예시</th><th>초록 w/c</th><th>리뷰 w/c</th></tr></thead><tbody><tr><td>XAI</td><td>shap, logit lens, activation patching</td><td>2.0 / 2</td><td>2.0 / 3</td></tr><tr><td>Model</td><td>clip, llama-3, stable diffusion</td><td>2.0 / 2</td><td>1.5 / 2</td></tr><tr><td>Behavior</td><td>shortcut, spurious, hallucinat</td><td>1.0 / 2</td><td>1.0 / 2</td></tr><tr><td>Finding</td><td>we find, our analysis, surprisingly</td><td>1.0 / 2</td><td>–</td></tr><tr><td>Method</td><td>we propose, our framework, outperforms</td><td>-0.5 / 2</td><td>–</td></tr><tr><td>Analysis</td><td>reveals that, dissect, pitfall</td><td>–</td><td>1.0 / 4</td></tr><tr><td>Proposes</td><td>proposed method, novel framework</td><td>–</td><td>-2.0 / 3</td></tr></tbody></table></div><div class="tbl-foot">w는 가중치, c는 그룹별 최대 반영 횟수다. 정확한 어휘 목록과 임계값은 공개 저장소에 있다.</div></div><div class="tbl-wrap"><div class="tbl-cap"><span class="tn">TABLE 2</span>ICLR 2024에서 가장 높은 선별 점수를 받은 5편</div>
+<div class="tbl-scroll"><table><thead><tr><th>순위</th><th>논문</th><th>초록</th><th>리뷰</th><th>합계</th></tr></thead><tbody><tr><td>1</td><td>Vision Transformers Need Registers</td><td>9.5</td><td>14.0</td><td>23.5</td></tr><tr><td>2</td><td>Language Models Represent Space and Time</td><td>9.0</td><td>11.5</td><td>20.5</td></tr><tr><td>3</td><td>Successor Heads</td><td>10.0</td><td>9.0</td><td>19.0</td></tr><tr><td>4</td><td>In-Context Learning Dynamics with Random Binary Sequences</td><td>9.0</td><td>9.5</td><td>18.5</td></tr><tr><td>5</td><td>The Unlocking Spell on Base LLMs</td><td>8.5</td><td>10.0</td><td>18.5</td></tr></tbody></table></div><div class="tbl-foot">초록과 리뷰를 독립적으로 채점한 뒤 합산한다.</div></div>
+</section>
+<section class="ch" id="c3">
+<div class="ch-eyebrow"><span class="cnum">03</span><span class="clabel">Evidence · 근거</span></div>
+<h2 class="ch-title">972편에서 1,026개 발견을 만들었다</h2>
+<div class="tldr"><div class="h">한눈에 요약</div><p>선별기가 ICLR 2024·2025 채택논문 972편을 고르고, 그중에서 1,026개의 발견을 추출했다. 다만 상위 15%만 분석했고, 선택된 논문의 약 45%에서는 발견이 하나도 나오지 않았다.</p></div>
+<p class="lead">추출 결과는 Claude Opus 5 with extra thinking으로 다시 검사했다.</p><p>검증기는 발견 자체는 모두 확인했지만, 핵심 지표(key metric) 필드에서 약 20% 불일치가 있었다. 따라서 ‘자동 검증 완료’를 사실 정확성의 완전한 보증으로 보면 안 된다.</p><div class="stat-row"><div class="stat"><div class="v">972</div><div class="l">분석한 ICLR 채택 논문</div></div><div class="stat"><div class="v">1,026</div><div class="l">추출한 발견</div></div><div class="stat"><div class="v arb">≈45%</div><div class="l">선정 후도 발견 0개인 논문</div></div></div><figure>
+<div class="fig-top"><span class="fnum">FIG 3</span><span class="ftitle">키워드 점수의 분포</span></div>
+<div class="imgbox"><img alt="키워드 점수의 분포" decoding="async" loading="lazy" src="/paper-assets/055ddeb1a3b84d9b2c9c185c7c494843cc9bb5a44aeb7e3d27e51a4c97f4efde.png"/></div>
+<figcaption>임계값 위의 보라색 구간만 LLM 분석에 들어간다. 계산량과 재현율 사이의 현실적 타협이다.</figcaption>
+</figure>
+</section>
+<section class="ch" id="c4">
+<div class="ch-eyebrow"><span class="cnum">04</span><span class="clabel">Meta-analysis · 메타 분석</span></div>
+<h2 class="ch-title">상관 근거가 대부분이고, 개입 근거는 드물다</h2>
+<div class="tldr"><div class="h">한눈에 요약</div><p>카탈로그를 연구 대상으로 삼아 분석한 결과, 모델 행동을 설명하는 근거는 주로 상관에 머물러 있었다. 원인을 더 강하게 테스하는 개입 근거는 특히 폐쇄형 모델에서 거의 없었다.</p></div>
+<p class="lead">ICLR 2025에서 Llama 3가 가장 많이 분석됐고, 언어·비전-언어 모델이 시각 모델보다 압도적으로 많이 다뤄졌다.</p><p>시각 모델은 ImageNet·COCO에 집중했지만, 언어 모델 평가 데이터셋은 더 다양했다. 대부분의 발견은 모델 하나와 데이터셋 하나에 의존했다.</p><figure>
+<div class="fig-top"><span class="fnum">FIG 2</span><span class="ftitle">어떤 모델과 데이터셋이 많이 연구됐나</span></div>
+<div class="imgbox"><img alt="어떤 모델과 데이터셋이 많이 연구됐나" decoding="async" loading="lazy" src="/paper-assets/52769f4d0ad311ace0e6ade95e3526562619e2e342018ece35f8094042121da7.png"/></div>
+<figcaption>Llama·GPT·Mistral 계열에 관심이 집중되고, 언어 평가 데이터셋은 시각 분야보다 분산돼 있다.</figcaption>
+</figure><figure>
+<div class="fig-top"><span class="fnum">FIG 4</span><span class="ftitle">발견당 데이터셋과 모델 수</span></div>
+<div class="imgbox"><img alt="발견당 데이터셋과 모델 수" decoding="async" loading="lazy" src="/paper-assets/28e6424216131700f8e682432a854c34ecc45647440568f9331e968d25d1ed39.png"/></div>
+<figcaption>대부분은 데이터셋 1개, 모델 1개에서 나온 발견이며 긴 꼬리 분포가 있다.</figcaption>
+</figure><figure>
+<div class="fig-top"><span class="fnum">FIG 5</span><span class="ftitle">개입 근거와 논문별 발견 수</span></div>
+<div class="imgbox"><img alt="개입 근거와 논문별 발견 수" decoding="async" loading="lazy" src="/paper-assets/1a41a2d2b6838d0958aed2b4cc8316499b6c19ae05f4b3de9a492e8752246de8.png"/></div>
+<figcaption>폐쇄형 모델은 개입 근거 비중이 거의 0에 가깝고, 약 45%의 논문은 발견을 제공하지 못했다.</figcaption>
+</figure>
+</section>
+<section class="ch" id="c5">
+<div class="ch-eyebrow"><span class="cnum">05</span><span class="clabel">Limits · 해석 경계</span></div>
+<h2 class="ch-title">이 카탈로그는 발견을 모으지만 참인지 재검증하지는 않는다</h2>
+<div class="tldr"><div class="h">한눈에 요약</div><p>Modelpedia는 원문의 주장을 구조화할 뿐, 실험 방법이 올바른지나 발견이 재현되는지를 판정하지 않는다. 또한 현재 분석은 ICLR 두 개 연도에 치우쳐 있다.</p></div>
+<p class="lead">저자들이 정직하게 밝힌 가장 큰 한계는 <strong>‘주장을 그대로 싣는다’</strong>는 점이다.</p><p>따라서 이 시스템은 지식 그래프의 탐색성과 출처 추적성을 높이지만, 메타분석의 진실성을 자동으로 보장하지는 않는다. 사람 큐레이션, 재현 결과, 수정 이력이 뒤따라야 공동 지식 인프라가 된다.</p><div class="call arb"><div class="ct">실용 판독법</div><p>이 카탈로그의 항목은 정답이 아니라 원문으로 들어가기 위한 색인으로 읽어야 한다. 핵심 수치와 인과 주장은 반드시 출처 논문에서 확인하는 것이 안전하다.</p></div>
+</section>
+<section class="ch" id="gloss">
+<div class="ch-eyebrow"><span class="cnum">＋</span><span class="clabel">Glossary · 핵심 용어</span></div>
+<h2 class="ch-title">핵심 용어 정리</h2>
+<div class="tldr"><div class="h">한눈에 요약</div><p>논문의 주장을 따라가는 데 필요한 용어만 간결하게 모았다.</p></div>
+<div class="gloss"><div class="gitem"><div class="term">발견<span class="en">Finding</span></div><p>기존 모델의 행동이나 실패에 대해 논문이 보고한 구체적 주장.</p></div><div class="gitem"><div class="term">근거 유형<span class="en">Evidence type</span></div><p>발견이 관찰·상관·개입 중 어느 근거에 기반했는지를 나타내는 표식.</p></div><div class="gitem"><div class="term">앵커<span class="en">Anchor</span></div><p>모델·데이터셋·방법을 처음 소개한 원문으로 가는 링크.</p></div><div class="gitem"><div class="term">아티팩트<span class="en">Artifact</span></div><p>모델이나 데이터셋을 받을 수 있는 실제 자원 링크.</p></div><div class="gitem"><div class="term">모델 과학<span class="en">Model Science</span></div><p>새 모델 제안보다 이미 학습된 모델을 경험적 연구 대상으로 보는 관점.</p></div></div>
+</section>
+<section class="ch" id="take">
+<div class="ch-eyebrow"><span class="cnum">＋</span><span class="clabel">One-page Summary · 한 장 정리</span></div>
+<h2 class="ch-title">이 논문을 한 장으로</h2>
+<div class="tldr"><div class="h">한눈에 요약</div><p>문제, 방법, 증거, 한계를 한 번에 다시 정리한다.</p></div>
+<div class="takeaways"><div class="take"><div class="n">01</div><div class="body"><b>논문 단위가 아니라 발견 단위</b>로 AI 모델 지식을 누적한다.</div></div><div class="take"><div class="n">02</div><div class="body">ICLR 2024·2025 채택논문 972편에서 1,026개 발견을 추출했다.</div></div><div class="take"><div class="n">03</div><div class="body">각 발견은 모델·데이터셋·방법·개념·출처와 연결된다.</div></div><div class="take"><div class="n">04</div><div class="body">상관 근거가 대부분이고, 폐쇄형 모델의 개입 근거는 거의 없다.</div></div><div class="take"><div class="n">05</div><div class="body"><b>원문 주장의 참여부를 재검증하지는 않는다.</b> 결과는 색인으로 사용해야 한다.</div></div></div>
+</section>

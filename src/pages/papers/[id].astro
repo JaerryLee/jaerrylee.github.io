@@ -1,0 +1,42 @@
+---
+import Base from '../../layouts/Base.astro'
+import { papers, getPaperBody, getPaperTopic, type Paper } from '../../lib/papers'
+
+export function getStaticPaths() {
+  return papers.map(paper => ({ params: { id: paper.id }, props: { paper } }))
+}
+
+interface Props { paper: Paper }
+const { paper } = Astro.props
+const topic = getPaperTopic(paper.topic)
+const body = getPaperBody(paper.id)
+const related = papers.filter(item => item.topic === paper.topic && item.id !== paper.id).slice(0, 3)
+---
+
+<Base title={paper.title} description={paper.summary} article date={new Date('2026-09-23')}>
+  <article class="article paper-article shell">
+    <header class="article-header">
+      <a class="back-link" href="/papers/">← 논문 노트</a>
+      <div class="post-meta"><span class="category">{topic.label}</span><span>한국어 읽기 노트</span><span>자료 수집 <time datetime={paper.collectedOn}>{paper.collectedOn.replaceAll('-', '.')}</time></span></div>
+      <h1>{paper.title}</h1>
+      <p class="article-description">{paper.intro}</p>
+      <div class="paper-source" id="paper-source">
+        <span class="eyebrow">ORIGINAL PAPER</span>
+        <p class="source-title">{paper.originalTitle}</p>
+        {paper.authors && <p>{paper.authors}</p>}
+        {paper.venue && <p>{paper.venue}</p>}
+        <div class="source-links"><a href={paper.sourceUrl} target="_blank" rel="noopener noreferrer">원문·출처 ↗</a>{paper.pdfUrl && <a href={paper.pdfUrl} target="_blank" rel="noopener noreferrer">원문 PDF ↗</a>}</div>
+      </div>
+    </header>
+    <div class="article-grid">
+      <div class="article-body">
+        <details class="mobile-toc"><summary>이 노트의 목차</summary><ol>{paper.headings.map(heading => <li><a href={`#${heading.id}`}>{heading.text}</a></li>)}</ol></details>
+        {paper.practical && <section class="paper-application" aria-labelledby="application-title"><h2 id="application-title">설계와 운영에 연결할 질문</h2><p>{paper.practical}</p></section>}
+        <div class="prose paper-prose" set:html={body} />
+        <div class="paper-attribution"><p>보관한 한국어 해설을 주제별로 정리한 읽기 노트입니다. 연구의 저자는 위 원문에 표시된 저자들이며, 그림·표와 실험 결과의 출처도 해당 논문입니다.</p><a href={paper.sourceUrl} target="_blank" rel="noopener noreferrer">원문에서 연구 조건과 결과 확인하기 ↗</a></div>
+      </div>
+      <aside class="desktop-toc"><nav aria-label="이 노트의 목차"><span class="eyebrow">ON THIS PAGE</span><ol>{paper.headings.map(heading => <li><a href={`#${heading.id}`}>{heading.text}</a></li>)}</ol><a class="toc-top" href="#main">맨 위로 ↑</a></nav></aside>
+    </div>
+    <section class="related" aria-labelledby="related-title"><h2 id="related-title">같은 주제에서 이어서 읽기</h2><div>{related.map(item => <a href={`/papers/${item.id}/`}><span class="category">{topic.label}</span><strong>{item.title}</strong><span aria-hidden="true">↗</span></a>)}</div></section>
+  </article>
+</Base>

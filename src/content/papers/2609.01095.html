@@ -1,0 +1,67 @@
+<section class="ch" id="c1">
+<div class="ch-eyebrow"><span class="cnum">01</span><span class="clabel">Problem · 문제</span></div>
+<h2 class="ch-title">과학 코드는 문법보다 소프트웨어 관계에서 무너진다</h2>
+<div class="tldr"><div class="h">한눈에 요약</div><p>LLM은 얼핏 그럴듯한 ROOT 코드를 쓰지만, 없는 메서드·낡은 오버로드·누락된 의존성 때문에 실행에서 깨진다. 논문은 이 문제를 더 큰 모델이 아니라 사전에 정리한 소프트웨어 지식으로 풀려고 한다.</p></div>
+<p class="lead">대상은 실험 고에너지물리에서 널리 쓰는 C++ 프레임워크 ROOT다.</p><p>평가 요청 275개는 ROOT 튜토리얼 구현을 프레임워크 클래스나 API 이름 없는 자연어 요구사항으로 바꿀 것이다. 참조 구현은 생성 중에는 보이지 않고 마지막 독립 평가에만 쓰였다.</p><figure>
+<div class="fig-top"><span class="fnum">FIG 1</span><span class="ftitle">구조·절차·진단 그라운딩의 전체 흐름</span></div>
+<div class="imgbox"><img alt="구조·절차·진단 그라운딩의 전체 흐름" decoding="async" loading="lazy" src="/paper-assets/bcda58ef962ec918f5ea02eeac1e510a5f793a208b4fed9a0ca01471fd13532d.png"/></div>
+<figcaption>튜토리얼과 코드 그래프는 1차 생성 전에 들어가고, 실행 실패는 최대 5회의 Error-RAG 수리 루프로 들어간다.</figcaption>
+</figure>
+</section>
+<section class="ch" id="c2">
+<div class="ch-eyebrow"><span class="cnum">02</span><span class="clabel">Method · 방법</span></div>
+<h2 class="ch-title">구조, 완성된 예제, 실행 오류를 서로 다른 근거로 쓴다</h2>
+<div class="tldr"><div class="h">한눈에 요약</div><p>구조 그라운딩은 코드베이스의 contains·depends·extends 관계를, 절차 그라운딩은 완성된 ROOT 튜토리얼을, 진단 그라운딩은 실행 로그와 관련 그래프 노드를 사용한다.</p></div>
+<p class="lead">그래프는 49,270개 노드와 167,472개 방향 간선을 갖고, 32,603개 노드만 1,024차원 밀집 인덱스에 들어간다.</p><p>의미 쿼리는 dense 검색, API 쿼리는 BM25에 사용하고 RRF로 합친 뒤 재랭킹한다. 앵커에서 아무 두 합성 경로나 타는 것이 아니라 노드 타입별로 허용된 관계 순서만 최대 길이 2까지 확장한다.</p><figure>
+<div class="fig-top"><span class="fnum">FIG 2</span><span class="ftitle">ROOT 전체 코드 그래프와 로컬 스키마</span></div>
+<div class="imgbox"><img alt="ROOT 전체 코드 그래프와 로컬 스키마" decoding="async" loading="lazy" src="/paper-assets/c293e79c35e59df3cb8dd95edc0f6862c5f7e6fab698f9ecc5f9f8dc352af616.png"/></div>
+<figcaption>왼쪽은 저장소 규모 그래프, 오른쪽은 패키지·파일·클래스 사이의 포함·상속·의존 관계를 보인다.</figcaption>
+</figure><div class="tbl-wrap"><div class="tbl-cap"><span class="tn">TABLE I</span>검증된 구현·실험 파라미터</div>
+<div class="tbl-scroll"><table><thead><tr><th>항목</th><th>검증된 값</th></tr></thead><tbody><tr><td>생성·수리·쿼리 재작성</td><td>deepseek-ai/deepseek-v4-pro</td></tr><tr><td>선택·튜토리얼 탐색·플래닝·심사</td><td>deepseek-ai/deepseek-v4-flash</td></tr><tr><td>임베딩 / 재랭킹</td><td>hepai/bge-m3:latest / hepai/bge-reranker-v2-m3</td></tr><tr><td>그래프 크기</td><td>49,270 nodes; 167,472 edges; 70 isolated</td></tr><tr><td>밀집 인덱스</td><td>32,603 vectors; 1,024 dimensions; normalized inner product</td></tr><tr><td>초기 검색</td><td>dense 200 + BM25 200; RRF k=60; rerank top 20</td></tr><tr><td>앵커 선택</td><td>threshold 0.50; at most 4</td></tr><tr><td>타입 서브그래프</td><td>depends/contains/extends 각 1; 최대 경로 2</td></tr><tr><td>확장 노드</td><td>rerank at most 5; judge selects at most 5</td></tr><tr><td>튜토리얼 탐색</td><td>branches 3; children 2; depth 6; files 3</td></tr><tr><td>Error-RAG</td><td>one action; at most 3 validated graph nodes</td></tr><tr><td>수리 제한</td><td>5 rounds</td></tr><tr><td>ROOT timeout</td><td>120s Claude Code; 180s standalone</td></tr><tr><td>참조 평가</td><td>50/30/10/10; execution success and score ≥80</td></tr><tr><td>Claude Code</td><td>v2.1.220; max 12 turns; grounded effective 1 turn</td></tr></tbody></table></div><div class="tbl-foot">기록이 없는 ROOT 커밋, 컴파일러, OS, 하드웨어 값은 추정하지 않고 미기록으로 처리했다.</div></div>
+</section>
+<section class="ch" id="c3">
+<div class="ch-eyebrow"><span class="cnum">03</span><span class="clabel">Results · 결과</span></div>
+<h2 class="ch-title">첫 실행부터 최종 성공까지 두 오케스트레이션에서 모두 개선됐다</h2>
+<div class="tldr"><div class="h">한눈에 요약</div><p>Claude Code에서 1차 실행률은 58.5%→76.0%, 독립 러너에서는 51.3%→64.0%로 올랐다. 최대 5회 수리 후 최종 성공률도 90.5%→96.0%, 78.9%→90.9%로 높아졌다.</p></div>
+<p class="lead">라운드 0에서는 아직 실행 로그가 없으므로, 이 때의 차이는 구조·절차 컨텍스트가 만든 것으로 해석할 수 있다.</p><p>최종 점수 평균은 Claude Code에서 +3.77, standalone에서 +11.60이었고 8개 핵심 비교의 Holm 보정 p값이 모두 0.05 미만이었다.</p><figure>
+<div class="fig-top"><span class="fnum">FIG 3</span><span class="ftitle">275개 과제의 실행·품질·최종 성공</span></div>
+<div class="imgbox"><img alt="275개 과제의 실행·품질·최종 성공" decoding="async" loading="lazy" src="/paper-assets/0f169938c5232410984009cba3543838c0669c6bf5153705975edc644171f36f.png"/></div>
+<figcaption>두 오케스트레이션 모두에서 그라운딩 시스템의 지표가 높고, 최종 코드 점수 분포도 좋은 쪽으로 이동한다.</figcaption>
+</figure><div class="tbl-wrap"><div class="tbl-cap"><span class="tn">TABLE II</span>275개 과제의 핵심 결과</div>
+<div class="tbl-scroll"><table><thead><tr><th>오케스트레이션</th><th>지표</th><th>직접 생성</th><th>그라운딩</th><th>차이</th><th>95% CI</th><th>Holm p</th></tr></thead><tbody><tr><td>Claude Code</td><td>Initial execution</td><td>58.5%</td><td>76.0%</td><td>+17.5pp</td><td>[+10.9,+24.0]</td><td>7.8e-6</td></tr><tr><td>Claude Code</td><td>Quality-gated</td><td>54.2%</td><td>68.7%</td><td>+14.5pp</td><td>[+8.0,+21.1]</td><td>1.8e-4</td></tr><tr><td>Claude Code</td><td>Final success</td><td>90.5%</td><td>96.0%</td><td>+5.5pp</td><td>[+1.8,+9.1]</td><td>0.0118</td></tr><tr><td>Claude Code</td><td>Mean score</td><td>78.74</td><td>82.51</td><td>+3.77</td><td>[+0.81,+6.80]</td><td>0.0133</td></tr><tr><td>Standalone</td><td>Initial execution</td><td>51.3%</td><td>64.0%</td><td>+12.7pp</td><td>[+6.2,+19.3]</td><td>0.0013</td></tr><tr><td>Standalone</td><td>Quality-gated</td><td>44.7%</td><td>58.9%</td><td>+14.2pp</td><td>[+7.3,+21.1]</td><td>3.1e-4</td></tr><tr><td>Standalone</td><td>Final success</td><td>78.9%</td><td>90.9%</td><td>+12.0pp</td><td>[+7.3,+16.7]</td><td>1.4e-5</td></tr><tr><td>Standalone</td><td>Mean score</td><td>70.51</td><td>82.10</td><td>+11.60</td><td>[+7.88,+15.34]</td><td>1.2e-4</td></tr></tbody></table></div></div><div class="tbl-wrap"><div class="tbl-cap"><span class="tn">TABLE III</span>동일한 1차 실패에서 Error-RAG와 원시 오류 피드백 비교</div>
+<div class="tbl-scroll"><table><thead><tr><th>코호트</th><th>지표</th><th>Error-RAG</th><th>직접 피드백</th><th>차이 [95% CI]</th><th>p</th></tr></thead><tbody><tr><td>113 failures</td><td>Final repair success</td><td>77.9%</td><td>59.3%</td><td>+18.6pp [+9.7,+27.4]</td><td>0.000192</td></tr><tr><td>85 paired evals</td><td>Reference pass</td><td>65.9%</td><td>51.8%</td><td>+14.1pp [+3.5,+24.7]</td><td>0.0227</td></tr></tbody></table></div></div>
+</section>
+<section class="ch" id="c4">
+<div class="ch-eyebrow"><span class="cnum">04</span><span class="clabel">Trade-offs · 비용과 수리</span></div>
+<h2 class="ch-title">토큰은 더 많이 쓰지만, 성공 1건당 생성 비용은 거의 같다</h2>
+<div class="tldr"><div class="h">한눈에 요약</div><p>그라운딩은 과제당 토큰을 Claude Code에서 65.9%, standalone에서 111.5% 더 썼다. 그러나 성공 수가 늘고 평균 수리 횟수가 줄어 성공 1건당 관찰 비용 차이는 +1.3%, +3.2%에 머물렀다.</p></div>
+<p class="lead">최종 실패는 Claude Code에서 26건→11건, standalone에서 58건→25건으로 줄었다.</p><p>직접 생성 실패를 그라운딩이 구한 케이스는 각각 21건과 41건이고, 반대로 성공을 실패로 바꾼 케이스는 6건과 8건이었다. Error-RAG는 동일한 1차 실패에서 원시 로그만 넘기는 수리보다 18.6%p 높은 수리 성공률을 냈다.</p><figure>
+<div class="fig-top"><span class="fnum">FIG 4</span><span class="ftitle">수리 라운드와 최종 전이 행렬</span></div>
+<div class="imgbox"><img alt="수리 라운드와 최종 전이 행렬" decoding="async" loading="lazy" src="/paper-assets/d6ff05b824e97d9792323adad18c0df555372d28cb471f026c83a666caa862a6.png"/></div>
+<figcaption>라운드별 누적 성공률과 직접/그라운딩 사이의 구제·회귀 건수를 함께 보여준다.</figcaption>
+</figure><figure>
+<div class="fig-top"><span class="fnum">FIG 5</span><span class="ftitle">최종 실패 구성과 자원 변화</span></div>
+<div class="imgbox"><img alt="최종 실패 구성과 자원 변화" decoding="async" loading="lazy" src="/paper-assets/b8baa31f6b7cd3106805724c03b1e4d2236f54606d269e5150ab2776387a7ffc.png"/></div>
+<figcaption>실패 건수는 줄었지만 토큰 사용량은 크게 늘었다. 그래도 성공 당 비용 증가는 작았다.</figcaption>
+</figure><div class="tbl-wrap"><div class="tbl-cap"><span class="tn">TABLE IV</span>생성 단계의 절대 자원 사용량</div>
+<div class="tbl-scroll"><table><thead><tr><th>오케스트레이션</th><th>자원</th><th>직접</th><th>그라운딩</th><th>차이 [95% CI]</th></tr></thead><tbody><tr><td>Claude</td><td>Mean repairs</td><td>1.12</td><td>0.68</td><td>-0.44 [-0.62,-0.26]</td></tr><tr><td>Claude</td><td>Mean time(s)</td><td>585.6</td><td>610.8</td><td>+25.2 [-52.8,+101.9]</td></tr><tr><td>Claude</td><td>P95 time(s)</td><td>2,097.2</td><td>1,601.3</td><td>-495.9 [-851.3,+152.6]</td></tr><tr><td>Claude</td><td>Mean tokens</td><td>40,841</td><td>67,754</td><td>+26,912 [+20,690,+33,155]</td></tr><tr><td>Claude</td><td>Mean cost(CNY)</td><td>0.2060</td><td>0.2214</td><td>+0.0153 [-0.0134,+0.0443]</td></tr><tr><td>Claude</td><td>Cost/success</td><td>0.2275</td><td>0.2306</td><td>+0.0031 [-0.0342,+0.0396]</td></tr><tr><td>Standalone</td><td>Mean repairs</td><td>1.72</td><td>0.98</td><td>-0.75 [-0.98,-0.52]</td></tr><tr><td>Standalone</td><td>Mean time(s)</td><td>273.2</td><td>312.5</td><td>+39.3 [+11.0,+67.4]</td></tr><tr><td>Standalone</td><td>P95 time(s)</td><td>827.3</td><td>804.5</td><td>-22.8 [-181.5,+143.1]</td></tr><tr><td>Standalone</td><td>Mean tokens</td><td>20,355</td><td>43,056</td><td>+22,701 [+19,384,+26,046]</td></tr><tr><td>Standalone</td><td>Mean cost(CNY)</td><td>0.1046</td><td>0.1243</td><td>+0.0197 [+0.0078,+0.0315]</td></tr><tr><td>Standalone</td><td>Cost/success</td><td>0.1326</td><td>0.1368</td><td>+0.0042 [-0.0169,+0.0232]</td></tr></tbody></table></div><div class="tbl-foot">참조답 평가 호출은 비용에서 제외했다.</div></div><div class="tbl-wrap"><div class="tbl-cap"><span class="tn">TABLE V</span>환경 차단 실패의 민감도 경계</div>
+<div class="tbl-scroll"><table><thead><tr><th>분석</th><th>N</th><th>직접</th><th>그라운딩</th><th>차이; p</th></tr></thead><tbody><tr><td>환경 차단=실패</td><td>275</td><td>78.9%</td><td>90.9%</td><td>+12.0pp; 2e-6</td></tr><tr><td>낙관적 그라운딩 성공 경계</td><td>275</td><td>78.9%</td><td>92.7%</td><td>+13.8pp; 3.2e-8</td></tr></tbody></table></div><div class="tbl-foot">낙관적 행은 환경 차단을 코드 정답으로 판정한 것이 아니라 상한선만 계산한 것이다.</div></div>
+</section>
+<section class="ch" id="c5">
+<div class="ch-eyebrow"><span class="cnum">05</span><span class="clabel">Validity · 재현성과 한계</span></div>
+<h2 class="ch-title">결과는 ROOT에서 강하지만, 일반 코드베이스로의 전이는 아직 가설이다</h2>
+<div class="tldr"><div class="h">한눈에 요약</div><p>연구는 오픈소스 ROOT 저장소와 275개 과제, 두 오케스트레이션에서 재현 가능성을 높였다. 하지만 다른 프레임워크나 사내 코드에서 같은 수치가 나온다는 증거는 아니다.</p></div>
+<p class="lead">생성에는 deepseek-v4-pro, 선택·판정에는 deepseek-v4-flash를 쓰었으므로 다른 모델 구성의 재현성도 별도로 보아야 한다.</p><p>또한 grounded Claude Code는 미리 계산한 컨텍스트를 한 턴에 넘기고 도구를 끄는 반면, direct는 최대 12 agent turns을 사용하므로 오케스트레이션 세부 조건은 완전히 동일하지 않다. 논문은 환경 차단 케이스를 별도로 유지하고, 구제·회귀 사례까지 공개해 이 경계를 보완한다.</p><div class="call arb"><div class="ct">재현 자료</div><p>ROOTER 소스코드는 논문에 명시된 GitHub 저장소에 공개돼 있다. 표 I에 기록되지 않은 ROOT 커밋·컴파일러·OS·하드웨어는 추정하지 않았다.</p></div>
+</section>
+<section class="ch" id="gloss">
+<div class="ch-eyebrow"><span class="cnum">＋</span><span class="clabel">Glossary · 핵심 용어</span></div>
+<h2 class="ch-title">핵심 용어 정리</h2>
+<div class="tldr"><div class="h">한눈에 요약</div><p>논문의 주장을 따라가는 데 필요한 용어만 간결하게 모았다.</p></div>
+<div class="gloss"><div class="gitem"><div class="term">구조 그라운딩<span class="en">Structural grounding</span></div><p>코드베이스의 파일·클래스·패키지와 의존·포함·상속 관계를 생성 컨텍스트로 제공하는 방식.</p></div><div class="gitem"><div class="term">절차 그라운딩<span class="en">Procedural grounding</span></div><p>개별 API가 아니라 여러 API를 합쳐 완성한 공식 튜토리얼 예제를 제공하는 방식.</p></div><div class="gitem"><div class="term">진단 그라운딩<span class="en">Diagnostic grounding</span></div><p>실행 오류와 관련 그래프 노드를 수리 단계에 제공하는 방식.</p></div><div class="gitem"><div class="term">RRF<span class="en">Reciprocal Rank Fusion</span></div><p>dense와 BM25처럼 다른 순위 목록을 각 순위의 역수로 합치는 방법.</p></div><div class="gitem"><div class="term">품질 게이트<span class="en">Quality gate</span></div><p>종료 코드 0뿐 아니라 로그에 수치 오류·피팅 실패·출력 누락이 없는지 확인하는 판정기.</p></div><div class="gitem"><div class="term">Error-RAG<span class="en">Execution-feedback RAG</span></div><p>실패한 코드를 직접 수정할지, 그래프 노드를 검색할지, 환경 문제로 중단할지 고르는 루프.</p></div></div>
+</section>
+<section class="ch" id="take">
+<div class="ch-eyebrow"><span class="cnum">＋</span><span class="clabel">One-page Summary · 한 장 정리</span></div>
+<h2 class="ch-title">이 논문을 한 장으로</h2>
+<div class="tldr"><div class="h">한눈에 요약</div><p>문제, 방법, 증거, 한계를 한 번에 다시 정리한다.</p></div>
+<div class="takeaways"><div class="take"><div class="n">01</div><div class="body"><b>코드 그래프+완성된 예제+실행 피드백</b>을 서로 다른 그라운딩 층으로 사용한다.</div></div><div class="take"><div class="n">02</div><div class="body">275개 ROOT 과제에서 첫 실행률이 58.5%→76.0%, 51.3%→64.0%로 올랐다.</div></div><div class="take"><div class="n">03</div><div class="body">최종 성공률도 90.5%→96.0%, 78.9%→90.9%로 상승했다.</div></div><div class="take"><div class="n">04</div><div class="body">Error-RAG는 동일한 113개 1차 실패에서 직접 오류 피드백보다 수리 성공률이 18.6%p 높았다.</div></div><div class="take"><div class="n">05</div><div class="body">토큰은 65.9%·111.5% 더 쓰지만, 성공 1건당 비용 증가는 1.3%·3.2%였다.</div></div><div class="take"><div class="n">06</div><div class="body"><b>ROOT 밖의 코드베이스로 전이된다는 점은 아직 실험하지 않았다.</b></div></div></div>
+</section>

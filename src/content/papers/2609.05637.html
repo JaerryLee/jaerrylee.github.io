@@ -1,0 +1,848 @@
+<section class="ch" id="c1"><div class="ch-eyebrow"><span class="cnum">01</span><span class="clabel">Question · 문제 설정</span></div><h2 class="ch-title">“재작성하면 좋아진다”를 강한 기준선 위에서 다시 묻다</h2><div class="tldr"><div class="h">한눈에 요약</div><p>약한 검색기와 비교하면 어떤 재작성도 좋아 보일 수 있다. 논문은 BGE dense retrieval, cross-encoder reranking, MMR까지 갖춘 강한 기준선을 고정하고 재작성만 바꾼다.</p></div><p>RAG는 질문과 가까운 문서를 먼저 찾고, 그 문서를 LLM에게 보여 주어 답하게 한다. 여기서 흔한 보강법은 질문을 여러 문장으로 바꿔 각각 검색하는 <strong>질의 재작성(query rewriting)</strong>이다.</p><p>핵심 질문은 “재작성 한 방식이 기준선을 이기는가?”보다 “각 방식이 기준선이 놓친 서로 다른 문서를 찾는가?”다. 이 차이가 단독 성능과 결합 성능을 갈라 놓는다.</p><div class="call ar"><div class="ct">초등학생도 이해하는 설명</div><p>한 명의 사서에게 같은 뜻의 질문을 여러 말투로 던지는 셈이다. 사서가 이미 아주 잘 찾는다면 말투 하나를 바꾼 효과는 작지만, 서로 다른 말투가 각자 놓친 책을 가져오면 책 더미를 합칠 가치가 생긴다.</p></div></section>
+<section class="ch" id="c2"><div class="ch-eyebrow"><span class="cnum">02</span><span class="clabel">Methods · 재작성 전략</span></div><h2 class="ch-title">원문을 그대로 쓰는 S1부터 가짜 문서를 만드는 Query2Doc까지</h2><div class="tldr"><div class="h">한눈에 요약</div><p>S1만 LLM 호출이 없고, 나머지는 질문 변형이나 가상 문서를 생성한다. 여러 검색 결과는 각 문서의 최고 유사도 점수로 합친다.</p></div><p>S2는 관련 대상을 묻는 이웃 질문, S3는 동의어 재표현, S4는 비교 질문을 만든다. HyDE는 가상 답변 문단의 embedding으로 검색하고, Query2Doc은 생성 문단을 원 질문에 덧붙인다.</p><p><div class="tbl-wrap"><div class="tbl-cap"><span class="tn">TABLE 1</span>원 질문, 이웃 질문, 동의어, 비교 질문, HyDE, Query2Doc의 동작과 비용</div><div class="tbl-scroll"><table class="ltx_tabular ltx_guessed_headers ltx_align_middle" id="S3.T1.2">
+<thead>
+<tr>
+<th><span>Strategy</span></th>
+<th>
+<span>
+<span><span>What it does</span></span>
+</span></th>
+<th>
+<span>
+<span><span>Cost</span></span>
+</span></th>
+<th>
+<span>
+<span><span>Example for “side effects of Tylenol?”</span></span>
+</span></th></tr>
+</thead>
+<tbody>
+<tr>
+<th>S1 Parent</th>
+<td>
+<span>
+<span>Use the original query, unchanged</span>
+</span></td>
+<td>
+<span>
+<span><span>Cheap (no LLM)</span></span>
+</span></td>
+<td>
+<span>
+<span><em>(query used as-is)</em></span>
+</span></td></tr>
+<tr>
+<th>S2 Neighbor</th>
+<td>
+<span>
+<span>Ask sibling questions (related entities)</span>
+</span></td>
+<td>
+<span>
+<span>Expensive (LLM + <math><semantics><mi>n</mi><annotation>n</annotation></semantics></math> retr.)</span>
+</span></td>
+<td>
+<span>
+<span>“side effects of ibuprofen?”</span>
+</span></td></tr>
+<tr>
+<th>S3 Synonym</th>
+<td>
+<span>
+<span>Reword with different vocabulary</span>
+</span></td>
+<td>
+<span>
+<span>Expensive (LLM; thesaurus-able)</span>
+</span></td>
+<td>
+<span>
+<span>“adverse reactions to acetaminophen?”</span>
+</span></td></tr>
+<tr>
+<th>S4 Comparative</th>
+<td>
+<span>
+<span>Compare the subject vs. alternatives</span>
+</span></td>
+<td>
+<span>
+<span>Expensive (LLM, 1 variant)</span>
+</span></td>
+<td>
+<span>
+<span>“Tylenol vs. Advil side effects?”</span>
+</span></td></tr>
+<tr>
+<th>HyDE</th>
+<td>
+<span>
+<span>Write a fake answer passage, search with it</span>
+</span></td>
+<td>
+<span>
+<span>Expensive (LLM)</span>
+</span></td>
+<td>
+<span>
+<span><em>(pseudo-passage on acetaminophen)</em></span>
+</span></td></tr>
+<tr>
+<th>Query2Doc</th>
+<td>
+<span>
+<span>Add a generated pseudo-document to the query</span>
+</span></td>
+<td>
+<span>
+<span>Expensive (LLM)</span>
+</span></td>
+<td>
+<span>
+<span><em>(query <math><semantics><mo>+</mo><annotation>+</annotation></semantics></math> pseudo-passage)</em></span>
+</span></td></tr>
+</tbody>
+</table></div><div class="tbl-foot">수치와 표 구조는 원문 그대로 옮겼다.</div></div></p><p>S3·S4 같은 전략은 단독 우승 여부보다 다른 전략과의 <strong>상보성</strong>이 중요하다. S4는 한 변형만 만들어 S2·S3보다 싸고, 결합 구성원으로 실용적이었다.</p><div class="call ar"><div class="ct">초등학생도 이해하는 설명</div><p>“타이레놀 부작용”을 그대로 묻거나, “아세트아미노펜 이상 반응”, “타이레놀과 애드빌 비교”처럼 바꿔 묻는다. 각 문장은 다른 서가의 책을 끌어올 수 있다.</p></div></section>
+<section class="ch" id="c3"><div class="ch-eyebrow"><span class="cnum">03</span><span class="clabel">Setup · 실험 설계</span></div><h2 class="ch-title">검색기를 고정하고 질문 바꾸기만 비교하다</h2><div class="tldr"><div class="h">한눈에 요약</div><p>세 데이터셋과 세 seed를 사용하고 paired bootstrap으로 차이를 검정했다. 기업형 데이터는 51만여 문서라 훨씬 어렵고, 공개 시점상 GPT-4.1의 암기 누출 가능성도 낮다.</p></div><p><div class="tbl-wrap"><div class="tbl-cap"><span class="tn">TABLE 2</span>HotpotQA·AmbigNQ·EnterpriseRAG-Bench의 규모와 성격</div><div class="tbl-scroll"><table class="ltx_tabular ltx_centering ltx_guessed_headers ltx_align_middle" id="S4.T2.2">
+<thead>
+<tr>
+<th><span>Dataset</span></th>
+<th><span>Docs</span></th>
+<th><span>Queries</span></th>
+<th><span>Character</span></th></tr>
+</thead>
+<tbody>
+<tr>
+<td>HotpotQA</td>
+<td>49,708</td>
+<td>5,000</td>
+<td>Multi-hop</td></tr>
+<tr>
+<td>AmbigNQ</td>
+<td>28,378</td>
+<td>2,002</td>
+<td>Ambiguous</td></tr>
+<tr>
+<td>EnterpriseRAG-Bench</td>
+<td>511,958</td>
+<td>470</td>
+<td>Enterprise</td></tr>
+</tbody>
+</table></div><div class="tbl-foot">수치와 표 구조는 원문 그대로 옮겼다.</div></div></p><p>모든 실험은 bge-base-en-v1.5, bge-reranker-base, MMR λ=0.85, 512/50 문장 chunk, GPT-4.1을 공유한다. 따라서 결과 차이를 재작성 전략에 비교적 깨끗하게 귀속할 수 있다.</p><p>HotpotQA 5,000개, AmbigNQ 2,002개, EnterpriseRAG-Bench의 답변 가능 질문 470개를 썼다. 기업형 corpus의 약 60% 질의는 기준선 top-10에 관련 문서가 없어 어려운 축에 속한다.</p><div class="call ar"><div class="ct">초등학생도 이해하는 설명</div><p>운동화 성능을 비교할 때 사람과 운동장을 바꾸지 않고 신발만 바꾼 실험이다. 그래야 어떤 신발이 도움을 줬는지 알 수 있다.</p></div></section>
+<section class="ch" id="c4"><div class="ch-eyebrow"><span class="cnum">04</span><span class="clabel">Solo Results · 단독 결과</span></div><h2 class="ch-title">혼자서는 작은 승리, 데이터셋마다 우승자가 바뀐다</h2><div class="tldr"><div class="h">한눈에 요약</div><p>기업형 HIT@10에서 최고 단독 전략 S3는 42.91%, S1은 39.22%였다. HotpotQA·AmbigNQ에서도 어떤 한 방식이 모든 지표를 지배하지 않았다.</p></div><p><div class="tbl-wrap"><div class="tbl-cap"><span class="tn">TABLE 3</span>각 전략을 단독 사용한 세 데이터셋의 주요 검색 지표</div><div class="tbl-scroll"><table class="ltx_tabular ltx_centering ltx_guessed_headers ltx_align_middle" id="S5.T3.2">
+<thead>
+<tr>
+<th><span>Dataset</span></th>
+<th><span>Strategy</span></th>
+<th><span>Recall@10</span></th>
+<th><span>NDCG@10</span></th>
+<th><span>MRR@10</span></th>
+<th><span>HIT@10</span></th></tr>
+</thead>
+<tbody>
+<tr>
+<th rowspan="6"><span>HotpotQA</span></th>
+<th>S1 (Parent)</th>
+<td>87.70 <math><semantics><mo>±</mo><annotation>\pm</annotation></semantics></math>0.08</td>
+<td>84.21 <math><semantics><mo>±</mo><annotation>\pm</annotation></semantics></math>0.08</td>
+<td>91.49 <math><semantics><mo>±</mo><annotation>\pm</annotation></semantics></math>0.09</td>
+<td>97.13 <math><semantics><mo>±</mo><annotation>\pm</annotation></semantics></math>0.11</td></tr>
+<tr>
+<th>S2 (Neighbor)</th>
+<td>86.34 <math><semantics><mo>±</mo><annotation>\pm</annotation></semantics></math>0.10<sup><span>∗∗∗</span></sup></td>
+<td>80.51 <math><semantics><mo>±</mo><annotation>\pm</annotation></semantics></math>0.08<sup><span>∗∗∗</span></sup></td>
+<td>88.93 <math><semantics><mo>±</mo><annotation>\pm</annotation></semantics></math>0.09<sup><span>∗∗∗</span></sup></td>
+<td><span>97.65</span> <math><semantics><mo>±</mo><annotation>\pm</annotation></semantics></math>0.01<sup><span>∗∗</span></sup></td></tr>
+<tr>
+<th>S3 (Synonym)</th>
+<td>86.14 <math><semantics><mo>±</mo><annotation>\pm</annotation></semantics></math>0.08<sup><span>∗∗∗</span></sup></td>
+<td>80.29 <math><semantics><mo>±</mo><annotation>\pm</annotation></semantics></math>0.10<sup><span>∗∗∗</span></sup></td>
+<td>88.62 <math><semantics><mo>±</mo><annotation>\pm</annotation></semantics></math>0.16<sup><span>∗∗∗</span></sup></td>
+<td>97.40 <math><semantics><mo>±</mo><annotation>\pm</annotation></semantics></math>0.18</td></tr>
+<tr>
+<th>S4 (Comparative)</th>
+<td>86.27 <math><semantics><mo>±</mo><annotation>\pm</annotation></semantics></math>0.11<sup><span>∗∗∗</span></sup></td>
+<td>80.50 <math><semantics><mo>±</mo><annotation>\pm</annotation></semantics></math>0.10<sup><span>∗∗∗</span></sup></td>
+<td>88.80 <math><semantics><mo>±</mo><annotation>\pm</annotation></semantics></math>0.11<sup><span>∗∗∗</span></sup></td>
+<td>97.33 <math><semantics><mo>±</mo><annotation>\pm</annotation></semantics></math>0.09</td></tr>
+<tr>
+<th>HyDE</th>
+<td>88.97 <math><semantics><mo>±</mo><annotation>\pm</annotation></semantics></math>0.09<sup><span>∗∗∗</span></sup></td>
+<td>85.06 <math><semantics><mo>±</mo><annotation>\pm</annotation></semantics></math>0.06<sup><span>∗∗∗</span></sup></td>
+<td>91.62 <math><semantics><mo>±</mo><annotation>\pm</annotation></semantics></math>0.08</td>
+<td>97.19 <math><semantics><mo>±</mo><annotation>\pm</annotation></semantics></math>0.05</td></tr>
+<tr>
+<th>Query2Doc</th>
+<td><span>89.74</span> <math><semantics><mo>±</mo><annotation>\pm</annotation></semantics></math>0.04<sup><span>∗∗∗</span></sup></td>
+<td><span>85.57</span> <math><semantics><mo>±</mo><annotation>\pm</annotation></semantics></math>0.08<sup><span>∗∗∗</span></sup></td>
+<td><span>91.65</span> <math><semantics><mo>±</mo><annotation>\pm</annotation></semantics></math>0.20</td>
+<td>97.31 <math><semantics><mo>±</mo><annotation>\pm</annotation></semantics></math>0.22</td></tr>
+<tr>
+<th rowspan="6"><span>AmbigNQ</span></th>
+<th>S1 (Parent)</th>
+<td>79.48 <math><semantics><mo>±</mo><annotation>\pm</annotation></semantics></math>0.03</td>
+<td>59.27 <math><semantics><mo>±</mo><annotation>\pm</annotation></semantics></math>0.02</td>
+<td>60.58 <math><semantics><mo>±</mo><annotation>\pm</annotation></semantics></math>0.02</td>
+<td>93.67 <math><semantics><mo>±</mo><annotation>\pm</annotation></semantics></math>0.03</td></tr>
+<tr>
+<th>S2 (Neighbor)</th>
+<td><span>81.71</span> <math><semantics><mo>±</mo><annotation>\pm</annotation></semantics></math>0.02<sup><span>∗∗∗</span></sup></td>
+<td><span>67.29</span> <math><semantics><mo>±</mo><annotation>\pm</annotation></semantics></math>0.02<sup><span>∗∗∗</span></sup></td>
+<td>71.26 <math><semantics><mo>±</mo><annotation>\pm</annotation></semantics></math>0.02<sup><span>∗∗∗</span></sup></td>
+<td>95.44 <math><semantics><mo>±</mo><annotation>\pm</annotation></semantics></math>0.03<sup><span>∗∗∗</span></sup></td></tr>
+<tr>
+<th>S3 (Synonym)</th>
+<td>81.65 <math><semantics><mo>±</mo><annotation>\pm</annotation></semantics></math>0.04<sup><span>∗∗∗</span></sup></td>
+<td>67.27 <math><semantics><mo>±</mo><annotation>\pm</annotation></semantics></math>0.02<sup><span>∗∗∗</span></sup></td>
+<td><span>71.28</span> <math><semantics><mo>±</mo><annotation>\pm</annotation></semantics></math>0.01<sup><span>∗∗∗</span></sup></td>
+<td><span>95.47</span> <math><semantics><mo>±</mo><annotation>\pm</annotation></semantics></math>0.03<sup><span>∗∗∗</span></sup></td></tr>
+<tr>
+<th>S4 (Comparative)</th>
+<td>81.59 <math><semantics><mo>±</mo><annotation>\pm</annotation></semantics></math>0.04<sup><span>∗∗∗</span></sup></td>
+<td>67.19 <math><semantics><mo>±</mo><annotation>\pm</annotation></semantics></math>0.04<sup><span>∗∗∗</span></sup></td>
+<td>71.17 <math><semantics><mo>±</mo><annotation>\pm</annotation></semantics></math>0.06<sup><span>∗∗∗</span></sup></td>
+<td>95.34 <math><semantics><mo>±</mo><annotation>\pm</annotation></semantics></math>0.06<sup><span>∗∗</span></sup></td></tr>
+<tr>
+<th>HyDE</th>
+<td>80.94 <math><semantics><mo>±</mo><annotation>\pm</annotation></semantics></math>0.13<sup><span>∗∗∗</span></sup></td>
+<td>60.23 <math><semantics><mo>±</mo><annotation>\pm</annotation></semantics></math>0.03<sup><span>∗∗∗</span></sup></td>
+<td>61.16 <math><semantics><mo>±</mo><annotation>\pm</annotation></semantics></math>0.09<sup><span>∗∗</span></sup></td>
+<td>94.91 <math><semantics><mo>±</mo><annotation>\pm</annotation></semantics></math>0.17<sup><span>∗∗∗</span></sup></td></tr>
+<tr>
+<th>Query2Doc</th>
+<td>80.58 <math><semantics><mo>±</mo><annotation>\pm</annotation></semantics></math>0.20<sup><span>∗∗</span></sup></td>
+<td>60.03 <math><semantics><mo>±</mo><annotation>\pm</annotation></semantics></math>0.10<sup><span>∗∗∗</span></sup></td>
+<td>61.08 <math><semantics><mo>±</mo><annotation>\pm</annotation></semantics></math>0.09<sup><span>∗∗</span></sup></td>
+<td>94.69 <math><semantics><mo>±</mo><annotation>\pm</annotation></semantics></math>0.15<sup><span>∗∗</span></sup></td></tr>
+<tr>
+<th rowspan="6"><span>Enterprise</span></th>
+<th>S1 (Parent)</th>
+<td>34.33 <math><semantics><mo>±</mo><annotation>\pm</annotation></semantics></math>0.39</td>
+<td>31.99 <math><semantics><mo>±</mo><annotation>\pm</annotation></semantics></math>0.36</td>
+<td>34.05 <math><semantics><mo>±</mo><annotation>\pm</annotation></semantics></math>0.39</td>
+<td>39.22 <math><semantics><mo>±</mo><annotation>\pm</annotation></semantics></math>0.49</td></tr>
+<tr>
+<th>S2 (Neighbor)</th>
+<td>35.77 <math><semantics><mo>±</mo><annotation>\pm</annotation></semantics></math>1.11</td>
+<td>29.81 <math><semantics><mo>±</mo><annotation>\pm</annotation></semantics></math>1.13</td>
+<td>30.87 <math><semantics><mo>±</mo><annotation>\pm</annotation></semantics></math>1.04<sup><span>∗</span></sup></td>
+<td>41.21 <math><semantics><mo>±</mo><annotation>\pm</annotation></semantics></math>1.17</td></tr>
+<tr>
+<th>S3 (Synonym)</th>
+<td><span>37.21</span> <math><semantics><mo>±</mo><annotation>\pm</annotation></semantics></math>0.67<sup><span>∗</span></sup></td>
+<td>30.97 <math><semantics><mo>±</mo><annotation>\pm</annotation></semantics></math>0.73</td>
+<td>32.18 <math><semantics><mo>±</mo><annotation>\pm</annotation></semantics></math>0.83</td>
+<td><span>42.91</span> <math><semantics><mo>±</mo><annotation>\pm</annotation></semantics></math>1.07<sup><span>∗∗</span></sup></td></tr>
+<tr>
+<th>S4 (Comparative)</th>
+<td>36.13 <math><semantics><mo>±</mo><annotation>\pm</annotation></semantics></math>0.63</td>
+<td>30.11 <math><semantics><mo>±</mo><annotation>\pm</annotation></semantics></math>0.63</td>
+<td>31.20 <math><semantics><mo>±</mo><annotation>\pm</annotation></semantics></math>0.51<sup><span>∗</span></sup></td>
+<td>41.63 <math><semantics><mo>±</mo><annotation>\pm</annotation></semantics></math>0.54<sup><span>∗</span></sup></td></tr>
+<tr>
+<th>HyDE</th>
+<td>34.43 <math><semantics><mo>±</mo><annotation>\pm</annotation></semantics></math>0.53</td>
+<td>31.99 <math><semantics><mo>±</mo><annotation>\pm</annotation></semantics></math>0.61</td>
+<td>34.34 <math><semantics><mo>±</mo><annotation>\pm</annotation></semantics></math>0.64</td>
+<td>39.50 <math><semantics><mo>±</mo><annotation>\pm</annotation></semantics></math>0.44</td></tr>
+<tr>
+<th>Query2Doc</th>
+<td>37.05 <math><semantics><mo>±</mo><annotation>\pm</annotation></semantics></math>1.19<sup><span>∗</span></sup></td>
+<td><span>33.51</span> <math><semantics><mo>±</mo><annotation>\pm</annotation></semantics></math>1.25</td>
+<td><span>35.32</span> <math><semantics><mo>±</mo><annotation>\pm</annotation></semantics></math>1.40</td>
+<td>41.91 <math><semantics><mo>±</mo><annotation>\pm</annotation></semantics></math>1.29</td></tr>
+</tbody>
+</table></div><div class="tbl-foot">수치와 표 구조는 원문 그대로 옮겼다.</div></div></p><p><div class="tbl-wrap"><div class="tbl-cap"><span class="tn">TABLE 4</span>완벽한 질의별 선택기가 가질 수 있는 상한</div><div class="tbl-scroll"><table class="ltx_tabular ltx_centering ltx_guessed_headers ltx_align_middle" id="S5.T4.2">
+<thead>
+<tr>
+<th><span>Dataset</span></th>
+<th><span>Best solo</span></th>
+<th><span>All-method</span></th>
+<th><span>Headroom</span></th></tr>
+</thead>
+<tbody>
+<tr>
+<td></td>
+<th><span>HIT@10</span></th>
+<th><span>oracle</span></th>
+<td></td></tr>
+<tr>
+<td>HotpotQA</td>
+<td>97.65 (S2)</td>
+<td>99.37</td>
+<td>+1.72</td></tr>
+<tr>
+<td>AmbigNQ</td>
+<td>95.47 (S3)</td>
+<td>98.19</td>
+<td>+2.72</td></tr>
+<tr>
+<td>Enterprise</td>
+<td>42.91 (S3)</td>
+<td>55.74</td>
+<td>+12.83</td></tr>
+</tbody>
+</table></div><div class="tbl-foot">수치와 표 구조는 원문 그대로 옮겼다.</div></div></p><p>HotpotQA에서는 S2의 HIT@10이 97.65로 높지만 Recall·NDCG는 Query2Doc이 앞선다. AmbigNQ에서는 S2~S4가 순위 품질을 크게 높인다. Enterprise에서는 S3가 HIT@10 42.91로 S1보다 3.69포인트 높다.</p><p>모든 방법을 질의마다 완벽하게 골라 쓰는 oracle의 여지는 Enterprise에서 +12.83포인트로 가장 컸다. 이 수치는 방법들이 같은 질문만 맞히는 것이 아니라는 신호다.</p><div class="call ar"><div class="ct">초등학생도 이해하는 설명</div><p>반에서 수학 1등과 국어 1등이 다르듯, 검색법마다 잘 찾는 질문이 다르다. 한 시험 점수만 보고 한 명만 뽑으면 놓치는 문제가 생긴다.</p></div></section>
+<section class="ch" id="c5"><div class="ch-eyebrow"><span class="cnum">05</span><span class="clabel">Fusion &amp; Cost · 결합과 비용</span></div><h2 class="ch-title">다양한 결과일 때 합치고, 낮은 확신일 때만 돈을 쓰다</h2><div class="tldr"><div class="h">한눈에 요약</div><p>Enterprise에서 5-way 결합은 HIT@10 52.98로 S1 39.22보다 13.76포인트 높았다. τ=0.65 router는 질의 39%만 확장해 +4.33포인트와 답변 F1 +1.92를 얻었다.</p></div><p>네 방식 결합은 Enterprise에서 51.70, 다섯 방식은 52.98을 기록했다. 검색 깊이만 늘린 TopK-100과 multi-pass HNSW는 약 44.3에 그쳐 결합 이득의 약 40%만 설명했다. 즉 더 많이 훑은 것보다 <strong>다른 관점으로 훑은 것</strong>이 중요했다.</p><p>기준선 reranker의 top-1 점수가 0.65보다 낮으면 Query2Doc을 추가하는 router는 Enterprise 질의의 39%에서만 비용을 썼고 HIT@10을 39.22에서 43.55로 높였다. 200개 답변 평가에서도 F1이 28.22에서 30.14로 올랐다.</p><p><div class="tbl-wrap"><div class="tbl-cap"><span class="tn">TABLE 5</span>결과 목록을 실제로 합친 post-hoc ensemble</div><div class="tbl-scroll"><table class="ltx_tabular ltx_centering ltx_align_middle" id="S5.T5.2">
+<tbody>
+<tr>
+<td><span>Dataset</span></td>
+<td><span>Ensemble</span></td>
+<td><span>HIT@10</span></td>
+<td><math><semantics><mi>Δ</mi><annotation>\Delta</annotation></semantics></math><span> vs.</span></td></tr>
+<tr>
+<td></td>
+<td></td>
+<td></td>
+<td><span>best solo</span></td></tr>
+<tr>
+<td rowspan="3"><span>HotpotQA</span></td>
+<td>S1+Query2Doc</td>
+<td>98.86</td>
+<td>+1.22</td></tr>
+<tr>
+<td>S1+S3+S4+HyDE</td>
+<td>99.28</td>
+<td>+1.64</td></tr>
+<tr>
+<td>S1+S3+S4+HyDE+Q2D</td>
+<td><span>99.40</span></td>
+<td>+1.76</td></tr>
+<tr>
+<td rowspan="3"><span>AmbigNQ</span></td>
+<td>HyDE+Query2Doc</td>
+<td>94.31</td>
+<td><math><semantics><mo>−</mo><annotation>-</annotation></semantics></math>1.14</td></tr>
+<tr>
+<td>S1+S3+S4+HyDE</td>
+<td>93.06</td>
+<td><math><semantics><mo>−</mo><annotation>-</annotation></semantics></math>2.39<sup><span>∗∗∗</span></sup></td></tr>
+<tr>
+<td>S1+S3+S4+HyDE+Q2D</td>
+<td>92.96</td>
+<td><math><semantics><mo>−</mo><annotation>-</annotation></semantics></math>2.49<sup><span>∗∗∗</span></sup></td></tr>
+<tr>
+<td rowspan="4"><span>Enterprise</span></td>
+<td>S1+Query2Doc</td>
+<td>48.94</td>
+<td>+5.54</td></tr>
+<tr>
+<td>S1+HyDE+Query2Doc</td>
+<td>50.00</td>
+<td>+6.60</td></tr>
+<tr>
+<td>S1+S3+S4+HyDE</td>
+<td><span>51.70</span></td>
+<td>+8.30<sup><span>∗∗∗</span></sup></td></tr>
+<tr>
+<td>S1+S3+S4+HyDE+Q2D</td>
+<td>52.98</td>
+<td>+9.58<sup><span>∗∗∗</span></sup></td></tr>
+</tbody>
+</table></div><div class="tbl-foot">수치와 표 구조는 원문 그대로 옮겼다.</div></div><div class="tbl-wrap"><div class="tbl-cap"><span class="tn">TABLE 6</span>기준선 확신 점수로 재작성을 켜는 router</div><div class="tbl-scroll"><table class="ltx_tabular ltx_centering ltx_guessed_headers ltx_align_middle" id="S5.T6.2">
+<tbody>
+<tr>
+<td></td>
+<th><span>Always</span></th>
+<th><span>Router</span></th>
+<th><span>% exp-</span></th>
+<th><span>Always</span></th></tr>
+<tr>
+<th><span>Dataset</span></th>
+<th><span>S1</span></th>
+<th><math><semantics><mrow><mi>τ</mi><mo>=</mo><mn>0.65</mn></mrow><annotation>\tau{=}0.65</annotation></semantics></math></th>
+<th><span>anded</span></th>
+<th><span>merge</span></th></tr>
+<tr>
+<td>HotpotQA</td>
+<td>97.13</td>
+<td>97.65</td>
+<td>1.2%</td>
+<td>98.81</td></tr>
+<tr>
+<td>AmbigNQ</td>
+<td>93.67</td>
+<td>93.76</td>
+<td>7.2%</td>
+<td>93.42</td></tr>
+<tr>
+<td>Enterprise</td>
+<td>39.22</td>
+<td><span>43.55</span></td>
+<td>39.0%</td>
+<td>47.94</td></tr>
+</tbody>
+</table></div><div class="tbl-foot">수치와 표 구조는 원문 그대로 옮겼다.</div></div><div class="tbl-wrap"><div class="tbl-cap"><span class="tn">TABLE 7</span>기준선의 치명적 실패를 각 전략이 구조한 비율</div><div class="tbl-scroll"><table class="ltx_tabular ltx_centering ltx_align_middle" id="A2.T7.2">
+<tbody>
+<tr>
+<td></td>
+<td><span>Miss%</span></td>
+<td><span>Rescues S1’s misses</span></td></tr>
+<tr>
+<td><span>Method</span></td>
+<td>(HIT@10<math><semantics><mo>=</mo><annotation>=</annotation></semantics></math>0)</td>
+<td>(% of S1 misses)</td></tr>
+<tr>
+<td colspan="3"><em>HotpotQA</em> (S1 misses <math><semantics><mrow><mi>n</mi><mo>=</mo><mn>138</mn></mrow><annotation>n{=}138</annotation></semantics></math>)</td></tr>
+<tr>
+<td>   HyDE</td>
+<td>2.81</td>
+<td>62.1%</td></tr>
+<tr>
+<td>   Query2Doc</td>
+<td>2.69</td>
+<td>61.1%</td></tr>
+<tr>
+<td>   S2</td>
+<td>2.35</td>
+<td>44.2%</td></tr>
+<tr>
+<td>   S3</td>
+<td>2.60</td>
+<td>38.4%</td></tr>
+<tr>
+<td>   S4</td>
+<td>2.67</td>
+<td>36.2%</td></tr>
+<tr>
+<td colspan="3"><em>AmbigNQ</em> (S1 misses <math><semantics><mrow><mi>n</mi><mo>=</mo><mn>127</mn></mrow><annotation>n{=}127</annotation></semantics></math>)</td></tr>
+<tr>
+<td>   S3</td>
+<td>4.53</td>
+<td>57.0%</td></tr>
+<tr>
+<td>   S2</td>
+<td>4.56</td>
+<td>56.7%</td></tr>
+<tr>
+<td>   S4</td>
+<td>4.66</td>
+<td>54.9%</td></tr>
+<tr>
+<td>   HyDE</td>
+<td>5.09</td>
+<td>30.4%</td></tr>
+<tr>
+<td>   Query2Doc</td>
+<td>5.31</td>
+<td>27.3%</td></tr>
+<tr>
+<td colspan="3"><em>Enterprise</em> (S1 misses <math><semantics><mrow><mi>n</mi><mo>=</mo><mn>283</mn></mrow><annotation>n{=}283</annotation></semantics></math>)</td></tr>
+<tr>
+<td>   Query2Doc</td>
+<td>58.09</td>
+<td>14.8%</td></tr>
+<tr>
+<td>   HyDE</td>
+<td>60.50</td>
+<td>14.5%</td></tr>
+<tr>
+<td>   S3</td>
+<td>57.09</td>
+<td>13.2%</td></tr>
+<tr>
+<td>   S4</td>
+<td>58.37</td>
+<td>10.1%</td></tr>
+<tr>
+<td>   S2</td>
+<td>58.79</td>
+<td>10.1%</td></tr>
+</tbody>
+</table></div><div class="tbl-foot">수치와 표 구조는 원문 그대로 옮겼다.</div></div><div class="tbl-wrap"><div class="tbl-cap"><span class="tn">TABLE 8</span>전략별 실행 시간</div><div class="tbl-scroll"><table class="ltx_tabular ltx_centering ltx_guessed_headers ltx_align_middle" id="A3.T8.2">
+<thead>
+<tr>
+<th><span>Strategy</span></th>
+<th><span>HotpotQA</span></th>
+<th><span>AmbigNQ</span></th>
+<th><span>Enterprise</span></th></tr>
+</thead>
+<tbody>
+<tr>
+<td>S1</td>
+<td>808</td>
+<td>182</td>
+<td>25,492</td></tr>
+<tr>
+<td>S2</td>
+<td>8,275</td>
+<td>2,700</td>
+<td>22,061</td></tr>
+<tr>
+<td>S3</td>
+<td>9,366</td>
+<td>2,797</td>
+<td>22,458</td></tr>
+<tr>
+<td>S4</td>
+<td>8,246</td>
+<td>2,490</td>
+<td>21,845</td></tr>
+<tr>
+<td>HyDE</td>
+<td>7,339</td>
+<td>3,180</td>
+<td>26,406</td></tr>
+<tr>
+<td>Query2Doc</td>
+<td>7,636</td>
+<td>3,120</td>
+<td>26,496</td></tr>
+</tbody>
+</table></div><div class="tbl-foot">수치와 표 구조는 원문 그대로 옮겼다.</div></div><div class="tbl-wrap"><div class="tbl-cap"><span class="tn">TABLE 9</span>추가 검색 지표</div><div class="tbl-scroll"><table class="ltx_tabular ltx_centering ltx_guessed_headers ltx_align_middle" id="A4.T9.2">
+<thead>
+<tr>
+<th><span>Dataset</span></th>
+<th><span>Strategy</span></th>
+<th><span>MAP@10</span></th>
+<th><span>P@10</span></th>
+<th><span>HIT@1</span></th></tr>
+</thead>
+<tbody>
+<tr>
+<td rowspan="6"><span>HotpotQA</span></td>
+<td>S1</td>
+<td>78.71</td>
+<td>17.54</td>
+<td>86.97</td></tr>
+<tr>
+<td>S2</td>
+<td>73.18</td>
+<td>17.27</td>
+<td>82.79</td></tr>
+<tr>
+<td>S3</td>
+<td>72.99</td>
+<td>17.23</td>
+<td>82.43</td></tr>
+<tr>
+<td>S4</td>
+<td>73.25</td>
+<td>17.25</td>
+<td>82.74</td></tr>
+<tr>
+<td>HyDE</td>
+<td>79.66</td>
+<td>17.79</td>
+<td>87.14</td></tr>
+<tr>
+<td>Query2Doc</td>
+<td>80.23</td>
+<td>17.95</td>
+<td>87.11</td></tr>
+<tr>
+<td rowspan="6"><span>AmbigNQ</span></td>
+<td>S1</td>
+<td>47.50</td>
+<td>15.78</td>
+<td>45.39</td></tr>
+<tr>
+<td>S2</td>
+<td>57.05</td>
+<td>16.23</td>
+<td>58.28</td></tr>
+<tr>
+<td>S3</td>
+<td>57.02</td>
+<td>16.21</td>
+<td>58.29</td></tr>
+<tr>
+<td>S4</td>
+<td>56.95</td>
+<td>16.21</td>
+<td>58.18</td></tr>
+<tr>
+<td>HyDE</td>
+<td>48.30</td>
+<td>16.13</td>
+<td>45.62</td></tr>
+<tr>
+<td>Query2Doc</td>
+<td>48.12</td>
+<td>16.03</td>
+<td>45.62</td></tr>
+<tr>
+<td rowspan="6"><span>Enterprise</span></td>
+<td>S1</td>
+<td>29.93</td>
+<td>4.79</td>
+<td>31.06</td></tr>
+<tr>
+<td>S2</td>
+<td>26.53</td>
+<td>5.03</td>
+<td>26.10</td></tr>
+<tr>
+<td>S3</td>
+<td>27.51</td>
+<td>5.27</td>
+<td>27.23</td></tr>
+<tr>
+<td>S4</td>
+<td>26.79</td>
+<td>5.10</td>
+<td>26.24</td></tr>
+<tr>
+<td>HyDE</td>
+<td>29.72</td>
+<td>4.99</td>
+<td>31.06</td></tr>
+<tr>
+<td>Query2Doc</td>
+<td>30.90</td>
+<td>5.39</td>
+<td>31.49</td></tr>
+</tbody>
+</table></div><div class="tbl-foot">수치와 표 구조는 원문 그대로 옮겼다.</div></div><div class="tbl-wrap"><div class="tbl-cap"><span class="tn">TABLE 10</span>실험 seed와 robustness coverage</div><div class="tbl-scroll"><table class="ltx_tabular ltx_centering ltx_guessed_headers ltx_align_middle" id="A5.T10.2">
+<thead>
+<tr>
+<th><span>Strategy</span></th>
+<th><span>Ent.</span></th>
+<th><span>Amb.</span></th>
+<th><span>Hot.</span></th>
+<th><span>Note</span></th></tr>
+</thead>
+<tbody>
+<tr>
+<th>S1</th>
+<th>3</th>
+<td>3</td>
+<td>3</td>
+<td></td></tr>
+<tr>
+<th>S2</th>
+<th>3<sup><span>∗</span></sup></th>
+<td>3<sup><span>∗</span></sup></td>
+<td>3<sup><span>∗</span></sup></td>
+<td></td></tr>
+<tr>
+<th>S3</th>
+<th>3<sup><span>∗</span></sup></th>
+<td>3<sup><span>∗</span></sup></td>
+<td>3<sup><span>∗</span></sup></td>
+<td></td></tr>
+<tr>
+<th>S4</th>
+<th>3<sup><span>∗</span></sup></th>
+<td>3<sup><span>∗</span></sup></td>
+<td>3<sup><span>∗</span></sup></td>
+<td></td></tr>
+<tr>
+<th>HyDE</th>
+<th>3</th>
+<td>3</td>
+<td>3</td>
+<td></td></tr>
+<tr>
+<th>Query2Doc</th>
+<th>3</th>
+<td>3</td>
+<td>3</td>
+<td></td></tr>
+<tr>
+<th>S1+TopK-100</th>
+<th>3</th>
+<td>–</td>
+<td>–</td>
+<td>budget</td></tr>
+<tr>
+<th>S1+multi-pass</th>
+<th>3</th>
+<td>–</td>
+<td>–</td>
+<td>budget</td></tr>
+<tr>
+<th>S1 (E5)</th>
+<th>3</th>
+<td>–</td>
+<td>–</td>
+<td>retr.</td></tr>
+<tr>
+<th>Q2D (E5)</th>
+<th>1</th>
+<td>–</td>
+<td>–</td>
+<td>s42</td></tr>
+<tr>
+<th>S1 (MiniLM)</th>
+<th>–</th>
+<td>1</td>
+<td>1</td>
+<td>retr., 1 seed</td></tr>
+<tr>
+<th>S3 (Llama)</th>
+<th>–</th>
+<td>3</td>
+<td>–</td>
+<td>LLM</td></tr>
+</tbody>
+</table></div><div class="tbl-foot">수치와 표 구조는 원문 그대로 옮겼다.</div></div><div class="tbl-wrap"><div class="tbl-cap"><span class="tn">TABLE 11</span>더 깊게 찾기와 여러 방식을 합치기의 공정 비교</div><div class="tbl-scroll"><table class="ltx_tabular ltx_centering ltx_guessed_headers ltx_align_middle" id="A6.T11.2">
+<tbody>
+<tr>
+<th><span>Method</span></th>
+<td><span>HIT@10</span></td>
+<td><math><semantics><mi>Δ</mi><annotation>\Delta</annotation></semantics></math><span> vs S1</span></td>
+<td><span>Share of gain</span></td></tr>
+<tr>
+<th>S1 (baseline)</th>
+<td>39.22<sub><span>±0.49</span></sub></td>
+<td>—</td>
+<td>—</td></tr>
+<tr>
+<th>S1+TopK-100</th>
+<td>44.33<sub><span>±0.12</span></sub></td>
+<td>+5.11</td>
+<td>41%</td></tr>
+<tr>
+<th>S1+multi-pass</th>
+<td>44.19<sub><span>±0.49</span></sub></td>
+<td>+4.97</td>
+<td>40%</td></tr>
+<tr>
+<th>Best solo (S3)</th>
+<td>42.91<sub><span>±1.07</span></sub></td>
+<td>+3.69</td>
+<td>30%</td></tr>
+<tr>
+<th>4-way ensemble<sup><span>†</span></sup></th>
+<td>51.70</td>
+<td>+12.48<sup><span>∗∗∗</span></sup></td>
+<td>100%</td></tr>
+<tr>
+<th>5-way ensemble<sup><span>†</span></sup></th>
+<td>52.98</td>
+<td>+13.76<sup><span>∗∗∗</span></sup></td>
+<td>—</td></tr>
+</tbody>
+</table></div><div class="tbl-foot">수치와 표 구조는 원문 그대로 옮겼다.</div></div><div class="tbl-wrap"><div class="tbl-cap"><span class="tn">TABLE 12</span>router 임계값에 따른 비용–성능 변화</div><div class="tbl-scroll"><table class="ltx_tabular ltx_centering ltx_guessed_headers ltx_align_middle" id="A7.T12.2">
+<tbody>
+<tr>
+<th><math><semantics><mi>τ</mi><annotation>\tau</annotation></semantics></math></th>
+<td>HIT@10</td>
+<td><math><semantics><mi>Δ</mi><annotation>\Delta</annotation></semantics></math> vs S1</td>
+<td>Exp%</td></tr>
+<tr>
+<th colspan="4"><em>Enterprise</em> (S1 = 39.22, always-merge = 47.94)</th></tr>
+<tr>
+<th>0.55</th>
+<td>41.42</td>
+<td>+2.20</td>
+<td>23.1</td></tr>
+<tr>
+<th>0.60</th>
+<td>42.62</td>
+<td>+3.40</td>
+<td>31.4</td></tr>
+<tr>
+<th>0.65</th>
+<td>43.55</td>
+<td>+4.33</td>
+<td>39.0</td></tr>
+<tr>
+<th>0.70</th>
+<td>45.39</td>
+<td>+6.17</td>
+<td>51.7</td></tr>
+<tr>
+<th colspan="4"><em>HotpotQA</em> (S1 = 97.13, always-merge = 98.81)</th></tr>
+<tr>
+<th>0.55</th>
+<td>97.47</td>
+<td>+0.35</td>
+<td>0.6</td></tr>
+<tr>
+<th>0.60</th>
+<td>97.56</td>
+<td>+0.43</td>
+<td>0.8</td></tr>
+<tr>
+<th>0.65</th>
+<td>97.65</td>
+<td>+0.52</td>
+<td>1.2</td></tr>
+<tr>
+<th>0.70</th>
+<td>97.85</td>
+<td>+0.73</td>
+<td>2.2</td></tr>
+<tr>
+<th colspan="4"><em>AmbigNQ</em> (S1 = 93.67, always-merge = 93.42)</th></tr>
+<tr>
+<th>0.55</th>
+<td>93.76</td>
+<td>+0.08</td>
+<td>1.6</td></tr>
+<tr>
+<th>0.60</th>
+<td>93.77</td>
+<td>+0.10</td>
+<td>3.8</td></tr>
+<tr>
+<th>0.65</th>
+<td>93.76</td>
+<td>+0.08</td>
+<td>7.2</td></tr>
+<tr>
+<th>0.70</th>
+<td>93.81</td>
+<td>+0.13</td>
+<td>15.9</td></tr>
+</tbody>
+</table></div><div class="tbl-foot">수치와 표 구조는 원문 그대로 옮겼다.</div></div><div class="tbl-wrap"><div class="tbl-cap"><span class="tn">TABLE 13</span>router에 붙이는 helper별 이득</div><div class="tbl-scroll"><table class="ltx_tabular ltx_centering ltx_align_middle" id="A8.T13.2">
+<tbody>
+<tr>
+<td><span>Helper</span></td>
+<td><span>Hot.</span></td>
+<td><span>Amb.</span></td>
+<td><span>Ent.</span></td></tr>
+<tr>
+<td>Query2Doc</td>
+<td>+0.52</td>
+<td>+0.08</td>
+<td><span>+4.33</span></td></tr>
+<tr>
+<td>HyDE</td>
+<td>+0.51</td>
+<td>+0.12</td>
+<td>+4.18</td></tr>
+<tr>
+<td>S4 (cheapest)</td>
+<td>+0.43</td>
+<td>+0.03</td>
+<td>+2.98</td></tr>
+<tr>
+<td><em>% expanded</em></td>
+<td><em>1.2</em></td>
+<td><em>7.2</em></td>
+<td><em>39.0</em></td></tr>
+</tbody>
+</table></div><div class="tbl-foot">수치와 표 구조는 원문 그대로 옮겼다.</div></div><div class="tbl-wrap"><div class="tbl-cap"><span class="tn">TABLE 14</span>검색 개선이 최종 답변 F1로 이어지는지 확인</div><div class="tbl-scroll"><table class="ltx_tabular ltx_centering ltx_guessed_headers ltx_align_middle" id="A9.T14.2">
+<thead>
+<tr>
+<th><span>Retrieval config</span></th>
+<th><span>EM</span></th>
+<th><span>F1</span></th>
+<th><math><semantics><mi>Δ</mi><annotation>\Delta</annotation></semantics></math><span>F1 [CI95]</span></th></tr>
+</thead>
+<tbody>
+<tr>
+<td>S1</td>
+<td>0.0</td>
+<td>28.22</td>
+<td>—</td></tr>
+<tr>
+<td>Always-merge</td>
+<td>0.0</td>
+<td>30.68</td>
+<td>+2.46 [+0.89,+4.10]<sup><span>∗∗</span></sup></td></tr>
+<tr>
+<td>Router (<math><semantics><mrow><mi>τ</mi><mo>=</mo><mn>0.65</mn></mrow><annotation>\tau{=}0.65</annotation></semantics></math>)</td>
+<td>0.0</td>
+<td>30.14</td>
+<td>+1.92 [+0.44,+3.41]<sup><span>∗∗</span></sup></td></tr>
+</tbody>
+</table></div><div class="tbl-foot">수치와 표 구조는 원문 그대로 옮겼다.</div></div></p><div class="call ar"><div class="ct">초등학생도 이해하는 설명</div><p>모든 문제에 과외 선생님을 부르지 않는다. 내가 자신 없는 문제에만 도움을 청하면 돈은 덜 쓰면서 중요한 오답을 줄일 수 있다.</p></div></section>
+<section class="ch" id="c6"><div class="ch-eyebrow"><span class="cnum">06</span><span class="clabel">Boundary · 실패와 한계</span></div><h2 class="ch-title">비슷한 결과만 합치면 오히려 망가진다</h2><div class="tldr"><div class="h">한눈에 요약</div><p>AmbigNQ처럼 검색 결과 목록이 거의 겹치면 결합이 다양성을 만들지 못하고 좋은 문서를 top-10 밖으로 밀어낼 수 있다. 논문의 ensemble과 router는 아직 사후 simulation이다.</p></div><p>AmbigNQ의 방법 간 Jaccard@10은 0.55~0.99로 높았고, 5-way 결합은 최고 단독 방식보다 2.49포인트 낮았다. 이는 “많이 합치면 늘 좋다”가 틀렸음을 보여 준다.</p><p>기업형 실험은 합성 corpus 하나이고, answer-quality는 GPT-4.1 reader와 200개 질의만 사용했다. router threshold도 실서비스 A/B test가 아니라 저장된 실행 결과를 이용한 simulation이다.</p><p><strong>그래프 구별:</strong> 본문의 HNSW는 지식 관계를 표현하는 GraphRAG가 아니라 dense vector 후보를 빨리 찾는 내부 도로다. 이 논문 자체는 Microsoft GraphRAG·HippoRAG 계열이 아니다.</p><div class="call ar"><div class="ct">초등학생도 이해하는 설명</div><p>같은 책을 세 번 복사해 책상에 올려도 새로운 정보는 늘지 않는다. 오히려 중요한 다른 책을 놓을 자리가 줄 수 있다.</p></div></section>
+<section class="ch" id="c7"><div class="ch-eyebrow"><span class="cnum">07</span><span class="clabel">Decision · 적용 판단</span></div><h2 class="ch-title">먼저 강한 기준선, 그다음 상보성, 마지막으로 router</h2><div class="tldr"><div class="h">한눈에 요약</div><p>실무 기본값은 원 질의 dense retrieval+rereanking+MMR다. 재작성은 결과 중복이 낮고 기준선 확신이 낮은 구간에서 조건부로 켠다.</p></div><p>도입 임계점은 질의 수가 많아지는 때가 아니라 <strong>기준선이 놓친 질문을 다른 표현이 실제로 구조하고, 결과 목록이 충분히 다를 때</strong>다.</p><p>최대 정확도가 중요하면 Query2Doc, 싼 확장이 필요하면 S4가 유력하다. 단, offline HIT@10뿐 아니라 LLM 호출 비용·p95 latency·최종 답변 품질을 함께 측정해야 한다.</p><div class="call ar"><div class="ct">초등학생도 이해하는 설명</div><p>먼저 혼자 찾아 본다. 잘 못 찾았다는 신호가 보일 때만 다른 말로 한 번 더 묻고, 새 책을 가져왔는지 확인한다.</p></div></section>
+<section class="ch" id="gloss"><div class="ch-eyebrow"><span class="cnum">＋</span><span class="clabel">Glossary · 핵심 용어</span></div><h2 class="ch-title">핵심 용어 정리</h2><div class="gloss"><div class="gitem"><div class="term">질의 재작성<span class="en">Query rewriting</span></div><p>원 질문의 뜻을 유지하거나 보완하면서 검색용 표현을 바꾸는 과정.</p></div><div class="gitem"><div class="term">상보성<span class="en">Complementarity</span></div><p>서로 다른 방법이 서로 다른 실패를 구조하는 성질.</p></div><div class="gitem"><div class="term">재순위화<span class="en">Reranking</span></div><p>첫 검색 후보를 더 정교한 모델로 다시 줄 세우는 단계.</p></div><div class="gitem"><div class="term">MMR<span class="en">Maximal Marginal Relevance</span></div><p>관련성과 결과 다양성을 함께 고려하는 선택법.</p></div><div class="gitem"><div class="term">HIT@10<span class="en">Hit at 10</span></div><p>상위 10개 안에 정답 문서가 하나라도 있는 질의 비율.</p></div><div class="gitem"><div class="term">확신 기반 라우터<span class="en">Confidence-gated router</span></div><p>기준선 점수가 낮을 때만 비싼 보조 검색을 켜는 규칙.</p></div></div></section>
+<section class="ch" id="take"><div class="ch-eyebrow"><span class="cnum">＋</span><span class="clabel">One-page Summary · 한 장 정리</span></div><h2 class="ch-title">이 논문을 한 장으로</h2><div class="takeaways"><div class="take"><div class="n">01</div><div class="body"><b>강한 기준선이 먼저다.</b> 재작성 효과를 약한 검색기 위에서 재지 말아야 한다.</div></div><div class="take"><div class="n">02</div><div class="body">재작성은 단독 교체재보다 <b>상보적 coverage source</b>다.</div></div><div class="take"><div class="n">03</div><div class="body">결과 중복이 높으면 결합이 해로울 수 있다.</div></div><div class="take"><div class="n">04</div><div class="body">기업형 실험에서 5-way는 S1보다 HIT@10이 13.76포인트 높았다.</div></div><div class="take"><div class="n">05</div><div class="body">τ=0.65 router는 39%만 확장해 HIT@10 +4.33, 답변 F1 +1.92를 얻었다.</div></div><div class="take"><div class="n">06</div><div class="body">HNSW는 지식 그래프가 아니라 ANN 검색 내부 도로다.</div></div></div></section>

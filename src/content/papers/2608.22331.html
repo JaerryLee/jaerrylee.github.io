@@ -1,0 +1,583 @@
+<section class="ch" id="c1">
+<div class="ch-eyebrow"><span class="cnum">01</span><span class="clabel">Conclusion First · 결론부터</span></div>
+<h2 class="ch-title">점수의 작은 차이보다 “질문 표현에 흔들리는가”를 먼저 보라</h2>
+<div class="tldr"><div class="h">한눈에 요약</div><p>같은 설정의 재실행은 거의 같은 결과를 냈다. 그러나 뜻이 같은 프롬프트를 조금 다르게 쓰면 평균 점수는 비슷해도 맞히는 문제가 크게 뒤바뀌었다.</p><p>이 논문이 강하게 뒷받침하는 결론은 특정 모델의 우열이 아니라, BFCL의 제한된 도구 호출 설정에서 프롬프트 표면형이 더 큰 측정 잡음이라는 점이다.</p></div>
+<p class="lead">저울이 1kg 물건을 잴 때마다 999g, 1001g처럼 흔들린다면 그 흔들림 아래의 차이는 믿기 어렵다. 벤치마크에도 이런 최소 흔들림, 즉 <strong>잡음 바닥(noise floor)</strong>이 있다.</p>
+<p>저자들은 BFCL의 150개 고정 문제에서 세 API endpoint를 검사했다. 온도 0에서 똑같이 10번 실행했을 때 점수 차이의 표준편차는 <span class="ar-t">0.28pp, 0.91pp, 1.1pp</span>로 작았다. 반면 뜻은 유지하고 표현만 바꾼 네 프롬프트 사이의 중앙 paired SD는 <span class="arb-t">16pp, 10pp, 19pp</span>였다. endpoint별로 순서를 맞추면 프롬프트 쪽 흔들림이 재실행 흔들림의 약 58배, 11배, 16배다.</p>
+<div class="call arb"><div class="ct">읽을 때 가장 중요한 주의</div><p>“두 모델의 점수 차이가 10pp 미만이면 모두 무의미하다”는 보편 법칙이 아니다. 이 수치는 이 논문이 고정한 BFCL 하위집합, endpoint, 프롬프트 네 종류에 조건부인 관측치다. 다만 같은 종류의 평가에서 프롬프트 민감도를 재지 않고 1~2pp 차이를 크게 해석하는 일은 위험하다는 강한 경고다.</p></div>
+<div class="call ar"><div class="ct">초등학생도 이해하는 설명</div><p>같은 로봇에게 같은 말을 열 번 하면 거의 같은 답을 했다. 그런데 “연필을 가져와”를 “도구를 써서 연필을 가져와”처럼 뜻은 같게 조금 꾸미자, 전체 점수는 비슷해도 전에 맞힌 문제를 틀리고 다른 문제를 맞혔다. 그래서 로봇 순위를 매길 때 말투를 여러 개 시험해야 한다.</p></div>
+</section>
+
+
+<section class="ch" id="c2">
+<div class="ch-eyebrow"><span class="cnum">02</span><span class="clabel">Introduction · 문제 설정</span></div>
+<h2 class="ch-title">에이전트 점수 하나는 여러 층이 합쳐진 결과다</h2>
+<div class="tldr"><div class="h">한눈에 요약</div><p>도구 호출 점수는 모델 능력만 재는 순수한 숫자가 아니다. API가 출력을 만들고, harness가 이를 읽고, grader가 정답과 비교하고, 유한한 문제를 평균내는 전 과정의 결과다.</p></div>
+<p>함수 호출(function calling)에서 모델은 자연어 답 대신 함수 이름과 인자를 구조화해 내보낸다. 예를 들어 날씨 도구라면 <code>get_weather(city="Seoul")</code>처럼 호출해야 한다. 여기서 함수 이름이 틀릴 수도 있고, 인자 값이 틀릴 수도 있고, JSON이나 provider payload 구조 자체가 깨질 수도 있다.</p>
+<p>그래서 헤드라인 정확도가 82%라는 사실만으로는 충분하지 않다. 같은 endpoint가 다시 실행할 때 얼마나 흔들리는지, 같은 뜻의 다른 말투에 얼마나 민감한지, 실패가 “잘 만든 오답”인지 “읽을 수도 없는 출력”인지가 모두 운영 품질에 영향을 준다.</p>
+<div class="versus">
+<div class="card ar"><h4><span class="tag">작은 흔들림</span> 재실행 잡음</h4><ul><li>문제·프롬프트·온도를 모두 고정</li><li>같은 endpoint를 여러 번 다시 호출</li><li>서비스 내부의 잔여 비결정성을 관측</li></ul></div>
+<div class="card arb"><h4><span class="tag">큰 흔들림</span> 프롬프트 표면 민감도</h4><ul><li>요청 의미와 정답은 그대로 유지</li><li>공백·접두사·라벨·접미사만 변경</li><li>같은 뜻을 다른 모양으로 말했을 때 관측</li></ul></div>
+</div>
+<div class="call ar"><div class="ct">초등학생도 이해하는 설명</div><p>시험 점수는 아이 실력만으로 정해지지 않는다. 문제지가 흐렸는지, 채점표가 맞는지, 채점기가 글씨를 읽었는지도 섞인다. 이 논문은 그중 “똑같이 다시 시험 보기”와 “뜻은 같은데 말투만 바꾼 시험 보기”가 점수를 얼마나 흔드는지 따로 잰다.</p></div>
+</section>
+
+
+<section class="ch" id="c3">
+<div class="ch-eyebrow"><span class="cnum">03</span><span class="clabel">Related Work · 관련 연구</span></div>
+<h2 class="ch-title">새 벤치마크가 아니라 기존 벤치마크의 온도계를 검사한다</h2>
+<div class="tldr"><div class="h">한눈에 요약</div><p>기존 연구는 평가 오차막대, 재현성, 프롬프트 민감도, 에이전트 실패 분석을 각각 다뤘다. 이 논문은 BFCL native tool-calling이라는 좁은 대상에서 이들을 한 측정 감사로 묶었다.</p></div>
+<p>이 논문은 더 어려운 문제를 제안하거나 새 agent architecture를 만들지 않는다. 같은 suite, 같은 150개 instance, 같은 AST grader를 고정한 다음, 측정값 자체가 얼마나 믿을 만한지를 본다. 따라서 “최고 성능 모델” 논문보다는 저울의 눈금을 점검하는 calibration 보고서에 가깝다.</p>
+<p>기존 multi-prompt 평가가 표현 변화로 순위와 정확도가 달라질 수 있다고 지적했다면, 이 연구는 <strong>동일 instance를 짝지어</strong> 재실행 변동과 프롬프트 변동을 비교한다. 또 성공/실패 한 숫자 대신 함수명 오류, 인자 오류, 구조 불량, 기타로 나눠 원인을 본다.</p>
+<div class="call ar"><div class="ct">초등학생도 이해하는 설명</div><p>새로운 달리기 선수를 데려온 연구가 아니다. 이미 쓰는 초시계가 매번 같은 시간을 재는지, 출발 구호를 조금 바꾸면 기록이 크게 바뀌는지 검사한 연구다.</p></div>
+</section>
+
+
+<section class="ch" id="c4">
+<div class="ch-eyebrow"><span class="cnum">04</span><span class="clabel">Experimental Setup · 실험 설계</span></div>
+<h2 class="ch-title">150개 문제를 고정하고 재실행과 말투 변화만 분리하다</h2>
+<div class="tldr"><div class="h">한눈에 요약</div><p>BFCL의 multiple·parallel 두 AST 평가 범주에서 150개 문제를 고정했다. 세 endpoint를 native tool interface로 호출하고, 주 실험은 10회 재실행, 변형 실험은 네 프롬프트를 각 5회 실행했다.</p></div>
+<p>endpoint는 <code>llama-3.1-8b-instant</code>, <code>llama-3.3-70b-versatile</code>, <code>gemini-3.5-flash</code>다. 모두 온도 0이며 Gemini는 <code>thinkingLevel=low</code>로 고정했다. 유지된 Gemini 주 실험 호출은 평균 189 thinking token을 썼다. provider가 돌려준 실제 모델 identity가 실험 중 바뀌면 중단하는 guard도 두었다.</p>
+<p>채점은 함수 이름 multiset과 필요한 인자가 허용된 정답 값과 정확히 맞는지를 보는 AST exactness다. 문제 하나를 제거해야 할 때는 일부 실행에서만 빼지 않고 모든 run index에서 함께 제거해 짝 비교를 보존하도록 설계했으며, 실제 보고된 cell은 모두 150개를 유지해 제외된 instance와 복구 불가능 unit이 0개였다.</p>
+<div class="tbl-wrap">
+<div class="tbl-cap"><span class="tn">TABLE 1</span>뜻을 유지한 채 겉모양만 바꾼 네 가지 프롬프트 변형</div>
+<div class="tbl-scroll"><table>
+<thead>
+<tr>
+<th>
+<span>
+<span>Variant</span>
+</span></th>
+<th>
+<span>
+<span>Surface change</span>
+</span></th>
+<th>
+<span>
+<span>Why semantics are preserved</span>
+</span></th></tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<span>
+<span><span>compact_user_request</span></span>
+</span></td>
+<td>
+<span>
+<span>Collapse user-message whitespace while preserving token order.</span>
+</span></td>
+<td>
+<span>
+<span>The requested operation and arguments are unchanged.</span>
+</span></td></tr>
+<tr>
+<td>
+<span>
+<span><span>tool_instruction_prefix</span></span>
+</span></td>
+<td>
+<span>
+<span>Prefix the user message with a generic instruction to use provided tools when needed.</span>
+</span></td>
+<td>
+<span>
+<span>The prefix does not add, remove, or alter any requested operation.</span>
+</span></td></tr>
+<tr>
+<td>
+<span>
+<span><span>request_label_wrap</span></span>
+</span></td>
+<td>
+<span>
+<span>Wrap the original request in neutral request-boundary labels.</span>
+</span></td>
+<td>
+<span>
+<span>The wrapped request text is unchanged.</span>
+</span></td></tr>
+<tr>
+<td>
+<span>
+<span><span>call_only_suffix</span></span>
+</span></td>
+<td>
+<span>
+<span>Append a generic instruction to answer through the function-calling interface rather than prose.</span>
+</span></td>
+<td>
+<span>
+<span>BFCL scoring already evaluates the requested tool call.</span>
+</span></td></tr>
+</tbody>
+</table></div>
+<div class="tbl-foot">원문의 영어 표현과 구조를 그대로 옮겼다. 네 변형은 공백 압축, 도구 사용 지시 접두사, 요청 경계 라벨, 함수 호출만 하라는 접미사다.</div>
+</div>
+<h3 class="sub">왜 “짝지어 비교”하는가 <span class="en">Matched paired design</span></h3>
+<p>월요일 반과 화요일 반처럼 서로 다른 문제 묶음을 비교하면 문제 난이도 차이가 섞인다. 이 연구는 같은 150개 문제 각각의 결과를 나란히 놓는다. 그러면 “어떤 문제를 뽑았느냐”의 흔들림은 제거되고, 실행이나 프롬프트가 바뀌어서 생긴 차이에 집중할 수 있다.</p>
+<div class="call ar"><div class="ct">초등학생도 이해하는 설명</div><p>사과와 오렌지의 무게를 재서 저울이 흔들린다고 말하면 안 된다. 같은 사과를 같은 자리에 놓고 여러 번 재야 한다. 이 논문도 같은 150문제를 그대로 두고 한 가지 조건만 바꿨다.</p></div>
+</section>
+
+
+<section class="ch" id="c5">
+<div class="ch-eyebrow"><span class="cnum">05</span><span class="clabel">Results &amp; Math · 핵심 결과와 수학</span></div>
+<h2 class="ch-title">평균은 그대로인데, 맞히는 문제는 크게 갈아 끼워졌다</h2>
+<div class="tldr"><div class="h">한눈에 요약</div><p>온도 0 재실행은 매우 안정적이었다. 하지만 의미 보존 프롬프트 변형은 평균 정확도를 거의 유지하면서도 각 문제의 정오를 크게 뒤바꿔 paired SD가 11~58배 커졌다.</p></div>
+<div class="tbl-wrap">
+<div class="tbl-cap"><span class="tn">TABLE 2</span>온도 0에서 같은 질문을 10번 반복했을 때의 결정성</div>
+<div class="tbl-scroll"><table>
+<thead>
+<tr>
+<th>Endpoint</th>
+<th>Corr.</th>
+<th>Always C</th>
+<th>Always W</th>
+<th>Flip inst.</th>
+<th>Flip frac.</th>
+<th>Marg. SD</th>
+<th>Paired SD</th></tr>
+</thead>
+<tbody>
+<tr>
+<td>Gemini</td>
+<td>0.961286</td>
+<td>118</td>
+<td>28</td>
+<td>4</td>
+<td>0.0266667</td>
+<td>0.00798146</td>
+<td>0.0112954</td></tr>
+<tr>
+<td>Groq 8B</td>
+<td>0.996744</td>
+<td>107</td>
+<td>42</td>
+<td>1</td>
+<td>0.00666667</td>
+<td>0.00210819</td>
+<td>0.00282684</td></tr>
+<tr>
+<td>Groq 70B</td>
+<td>0.966475</td>
+<td>121</td>
+<td>26</td>
+<td>3</td>
+<td>0.02</td>
+<td>0.00706233</td>
+<td>0.00911825</td></tr>
+</tbody>
+</table></div>
+<div class="tbl-foot">SD 값은 원문처럼 0~1 비율로 표기되어 있다. 예: 0.0112954는 약 1.13퍼센트포인트(pp)다.</div>
+</div>
+<p>평균 run correlation은 Groq 8B 0.997, Groq 70B 0.966, Gemini 0.961이었다. 열 번 중 한 번이라도 정오가 뒤집힌 문제 비율은 각각 0.7%, 2.0%, 2.7%였다. 즉 온도 0에서 같은 문장을 반복한 결과는 거의 고정되어 있었다.</p>
+<div class="tbl-wrap">
+<div class="tbl-cap"><span class="tn">TABLE 3</span>같은 질문에 프롬프트 표면형만 달리했을 때의 쌍별 변동</div>
+<div class="tbl-scroll"><table>
+<thead>
+<tr>
+<th>Endpoint</th>
+<th>Left</th>
+<th>Right</th>
+<th>Left acc.</th>
+<th>Right acc.</th>
+<th>Matched</th>
+<th>Paired SD</th></tr>
+</thead>
+<tbody>
+<tr>
+<td>Gemini</td>
+<td>compact</td>
+<td>prefix</td>
+<td>0.806667</td>
+<td>0.814667</td>
+<td>750</td>
+<td>0.163212</td></tr>
+<tr>
+<td>Gemini</td>
+<td>compact</td>
+<td>wrap</td>
+<td>0.806667</td>
+<td>0.817333</td>
+<td>750</td>
+<td>0.206421</td></tr>
+<tr>
+<td>Gemini</td>
+<td>compact</td>
+<td>suffix</td>
+<td>0.806667</td>
+<td>0.797333</td>
+<td>750</td>
+<td>0.196548</td></tr>
+<tr>
+<td>Gemini</td>
+<td>prefix</td>
+<td>wrap</td>
+<td>0.814667</td>
+<td>0.817333</td>
+<td>750</td>
+<td>0.163387</td></tr>
+<tr>
+<td>Gemini</td>
+<td>prefix</td>
+<td>suffix</td>
+<td>0.814667</td>
+<td>0.797333</td>
+<td>750</td>
+<td>0.174375</td></tr>
+<tr>
+<td>Gemini</td>
+<td>wrap</td>
+<td>suffix</td>
+<td>0.817333</td>
+<td>0.797333</td>
+<td>750</td>
+<td>0.208945</td></tr>
+<tr>
+<td>Groq 8B</td>
+<td>compact</td>
+<td>prefix</td>
+<td>0.714667</td>
+<td>0.733333</td>
+<td>750</td>
+<td>0.144958</td></tr>
+<tr>
+<td>Groq 8B</td>
+<td>compact</td>
+<td>wrap</td>
+<td>0.714667</td>
+<td>0.726667</td>
+<td>750</td>
+<td>0.158817</td></tr>
+<tr>
+<td>Groq 8B</td>
+<td>compact</td>
+<td>suffix</td>
+<td>0.714667</td>
+<td>0.721333</td>
+<td>750</td>
+<td>0.0964432</td></tr>
+<tr>
+<td>Groq 8B</td>
+<td>prefix</td>
+<td>wrap</td>
+<td>0.733333</td>
+<td>0.726667</td>
+<td>750</td>
+<td>0.182574</td></tr>
+<tr>
+<td>Groq 8B</td>
+<td>prefix</td>
+<td>suffix</td>
+<td>0.733333</td>
+<td>0.721333</td>
+<td>750</td>
+<td>0.167013</td></tr>
+<tr>
+<td>Groq 8B</td>
+<td>wrap</td>
+<td>suffix</td>
+<td>0.726667</td>
+<td>0.721333</td>
+<td>750</td>
+<td>0.186238</td></tr>
+<tr>
+<td>Groq 70B</td>
+<td>compact</td>
+<td>prefix</td>
+<td>0.817333</td>
+<td>0.818667</td>
+<td>750</td>
+<td>0.131737</td></tr>
+<tr>
+<td>Groq 70B</td>
+<td>compact</td>
+<td>wrap</td>
+<td>0.817333</td>
+<td>0.818667</td>
+<td>750</td>
+<td>0.109609</td></tr>
+<tr>
+<td>Groq 70B</td>
+<td>compact</td>
+<td>suffix</td>
+<td>0.817333</td>
+<td>0.818667</td>
+<td>750</td>
+<td>0.109609</td></tr>
+<tr>
+<td>Groq 70B</td>
+<td>prefix</td>
+<td>wrap</td>
+<td>0.818667</td>
+<td>0.818667</td>
+<td>750</td>
+<td>0.0895024</td></tr>
+<tr>
+<td>Groq 70B</td>
+<td>prefix</td>
+<td>suffix</td>
+<td>0.818667</td>
+<td>0.818667</td>
+<td>750</td>
+<td>0.0730784</td></tr>
+<tr>
+<td>Groq 70B</td>
+<td>wrap</td>
+<td>suffix</td>
+<td>0.818667</td>
+<td>0.818667</td>
+<td>750</td>
+<td>0.0516742</td></tr>
+</tbody>
+</table></div>
+<div class="tbl-foot">Matched 750은 각 변형 쌍에서 150개 문제를 5회씩 맞춰 비교한 수다. 비슷한 평균 정확도라도 Paired SD가 크면 맞고 틀리는 문제의 구성이 많이 바뀐 것이다.</div>
+</div>
+<p>프롬프트별 평균 정확도 범위는 Groq 8B 71~73%, Groq 70B 약 82%, Gemini 80~82%로 좁았다. 그러나 paired SD 범위는 각각 9.6~19pp, 5.2~13pp, 16~21pp였다. 평균이 비슷하다는 것은 “모두 같은 문제를 맞혔다”는 뜻이 아니다. A 말투에서 맞고 B 말투에서 틀린 문제와 그 반대 문제가 서로 상쇄되면 평균만 조용해 보인다.</p>
+<figure>
+<div class="fig-top"><span class="fnum">FIG 1</span><span class="ftitle">재실행 잡음과 프롬프트 변형 잡음의 크기 비교</span></div>
+<div class="imgbox"><img alt="Gemini, Groq 8B, Groq 70B에서 재실행 paired SD보다 프롬프트 변형 paired SD가 훨씬 큰 막대그래프" decoding="async" loading="lazy" src="/paper-assets/35f2029d160045a030d6d3e6841b66c8af608bdacd14039b79ebaebb91096f26.png"/></div>
+<figcaption>검은 막대는 같은 설정을 반복한 paired SD, 회색 막대는 프롬프트 변형 쌍들의 중앙 paired SD다. <b>Gemini는 1.1pp 대 19pp, Groq 8B는 0.28pp 대 16pp, Groq 70B는 0.91pp 대 10pp</b>다. y축은 log scale이므로 막대 높이의 시각적 간격을 선형 눈금처럼 읽으면 안 된다.</figcaption>
+</figure>
+<h3 class="sub">수학을 모른다고 가정한 세 가지 개념 <span class="en">pp · SD · correlation</span></h3>
+<p><strong>퍼센트포인트(pp)</strong>는 퍼센트끼리 뺀 칸 수다. 정확도가 80%에서 81%가 되면 1pp 상승이다. <strong>표준편차(SD)</strong>는 여러 값이 평균 주위에서 얼마나 퍼져 있는지 나타내는 흔들림 자다. 0pp에 가까우면 거의 안 흔들리고, 19pp면 비교 결과가 꽤 넓게 출렁인다는 뜻이다. <strong>상관계수(correlation)</strong>는 두 실행이 문제들을 비슷하게 맞히고 틀리는 정도로, 1에 가까울수록 패턴이 같다.</p>
+<p><strong>paired SD</strong>는 같은 문제를 A와 B 조건에서 비교한 차이들의 흔들림을 이용해 “A−B라는 비교가 얼마나 안정적인가”를 재는 방식이다. 논문은 재실행들이 거의 독립일 때 paired SD가 marginal SD의 약 √2배가 되는 통상 근사가 적절한지도 확인했다. 관측된 paired-to-√2-marginal 비율은 0.95, 0.91, 1.00으로 1에 가까웠다.</p>
+<div class="call ar"><div class="ct">초등학생도 이해하는 설명</div><p>10문제 중 A 말투는 앞의 8개를 맞히고, B 말투는 뒤의 8개를 맞혔다고 하자. 둘 다 점수는 80점이라 평균만 보면 똑같다. 하지만 어떤 문제를 맞혔는지는 네 문제나 바뀌었다. 이 논문은 바로 그 숨은 뒤집힘을 본다.</p></div>
+</section>
+
+
+<section class="ch" id="c6">
+<div class="ch-eyebrow"><span class="cnum">06</span><span class="clabel">Failure Taxonomy · 실패 유형</span></div>
+<h2 class="ch-title">같은 오답이라도 “틀린 인자”와 “깨진 출력”은 전혀 다르다</h2>
+<div class="tldr"><div class="h">한눈에 요약</div><p>Groq 8B에서는 전체 실패의 30%가 구조적으로 읽기 힘든 malformed output이었지만, Groq 70B는 7%, Gemini는 1% 미만이었다. 평균 정확도는 이런 운영상 차이를 숨긴다.</p></div>
+<div class="tbl-wrap">
+<div class="tbl-cap"><span class="tn">TABLE 4</span>주 실험에서 실패한 이유의 유형</div>
+<div class="tbl-scroll"><table>
+<thead>
+<tr>
+<th>Endpoint</th>
+<th>Wrong fn.</th>
+<th>Wrong args</th>
+<th>Malformed</th>
+<th>Other</th>
+<th>Malformed share</th></tr>
+</thead>
+<tbody>
+<tr>
+<td>Gemini</td>
+<td>0</td>
+<td>263</td>
+<td>2</td>
+<td>36</td>
+<td>&lt;1%</td></tr>
+<tr>
+<td>Groq 8B</td>
+<td>10</td>
+<td>270</td>
+<td>130</td>
+<td>19</td>
+<td>30%</td></tr>
+<tr>
+<td>Groq 70B</td>
+<td>0</td>
+<td>247</td>
+<td>20</td>
+<td>10</td>
+<td>7%</td></tr>
+</tbody>
+</table></div>
+<div class="tbl-foot">각 endpoint의 150개 문제 × 10회 실행에서 중복 retry 행을 제거한 집계다. Malformed share는 전체 실패 중 구조 자체가 깨진 출력의 비율이다.</div>
+</div>
+<p><strong>wrong function</strong>은 함수 이름 집합이 정답과 다르고, <strong>wrong arguments</strong>는 함수는 맞지만 필수 인자가 빠지거나 타입·값이 틀린 경우다. <strong>malformed output</strong>은 provider 출력이나 tool payload가 파싱 불가, 누락, 잘림, 비정상 상태라 일반적인 인자 채점 전에 실패한 경우다. <strong>other</strong>는 주로 호출 횟수가 잘못된, 구조는 정상인 나머지 실패다.</p>
+<p>운영 대응도 달라진다. 구조 불량은 interface reliability, decoding constraint, parser·retry 정책을 의심해야 한다. 잘 만들어진 호출의 인자 값이 틀리면 tool-use 의미 이해와 reasoning을 고쳐야 한다. 단순 accuracy는 이 둘을 한 칸의 오답으로 합쳐 버린다.</p>
+<div class="call ar"><div class="ct">초등학생도 이해하는 설명</div><p>“3+4=8”은 글자를 읽을 수 있지만 답이 틀렸다. 종이가 찢겨 숫자 자체를 읽을 수 없는 것은 다른 문제다. 둘 다 0점이어도 고치는 방법은 완전히 다르다.</p></div>
+</section>
+
+
+<section class="ch" id="c7">
+<div class="ch-eyebrow"><span class="cnum">07</span><span class="clabel">Discussion · 실무 해석</span></div>
+<h2 class="ch-title">재실행 예산보다 프롬프트 다양성과 실패 진단에 먼저 투자하라</h2>
+<div class="tldr"><div class="h">한눈에 요약</div><p>이 설정에서는 같은 프롬프트를 계속 반복하는 것보다 의미가 같은 여러 표면형, grader 감사, 더 넓은 문제 coverage에 평가 예산을 쓰는 편이 정보량이 크다. 모델이 크거나 점수가 높다고 항상 더 안정적인 것도 아니었다.</p></div>
+<p>첫 번째 작은 재실행 점검에서 온도 0의 변동이 이미 작다면, 동일 실행을 더 쌓아도 새 정보가 거의 늘지 않는다. 대신 prompt template family를 선언하고, 같은 문제를 여러 말투로 검사하고, paired perturbation SD와 실패 유형을 headline accuracy 옆에 공개하는 것이 이 논문의 권고다.</p>
+<p>또 Groq 70B는 Groq 8B보다 재실행 SD가 컸지만 프롬프트 변형 중앙 SD는 작았다. 즉 “성능이 높은 endpoint일수록 모든 종류의 안정성이 좋다”는 단순한 축은 성립하지 않았다. 다만 Gemini는 provider와 thinking 설정이 동시에 달라 clean scale comparison은 아니다.</p>
+<div class="call arb"><div class="ct">에이전트·검색 프로젝트에 적용할 체크리스트</div><p>점수표에 평균뿐 아니라 ① 동일 조건 재실행 변동, ② 의미 보존 prompt suite의 paired 변동, ③ instance별 flip 비율, ④ parser/구조 실패와 의미 실패의 분리, ⑤ endpoint identity·fingerprint·retry 기록을 함께 남기는 것이 좋다. Retrieval agent라면 여기에 검색 결과 변동, 환경 state, tool side effect, 장기 trajectory 성공 여부를 별도로 추가해야 한다.</p></div>
+<div class="call ar"><div class="ct">초등학생도 이해하는 설명</div><p>같은 자로 같은 책상을 백 번 재기보다, 자가 휘었는지 확인하고 책상 모서리 여러 곳을 재는 편이 낫다. 시험도 같은 문제를 같은 말로 계속 묻기보다, 뜻이 같은 다른 말로 물어야 진짜 튼튼한지 알 수 있다.</p></div>
+</section>
+
+
+<section class="ch" id="c8">
+<div class="ch-eyebrow"><span class="cnum">08</span><span class="clabel">Limitations · 한계와 증거 경계</span></div>
+<h2 class="ch-title">“에이전트 전체가 이렇다”까지 말할 수는 없다</h2>
+<div class="tldr"><div class="h">한눈에 요약</div><p>결과는 BFCL의 두 AST 범주, 150개 문제, 세 endpoint, 네 프롬프트, 온도 0에 한정된다. multi-turn agent, retrieval, 실행 가능한 도구, 환경 변화, 장기 계획의 안정성은 측정하지 않았다.</p></div>
+<p>가장 큰 범위 한계는 논문 제목의 “Agent Benchmarks”가 넓게 들리지만 실제 측정 대상은 <strong>한 번의 native tool call을 AST로 비교하는 좁은 slice</strong>라는 점이다. executable BFCL category, irrelevance, retrieval task, multi-turn trajectory는 제외됐다. 따라서 RAG나 browser agent의 검색 품질, 환경 부작용, 기억 누적 오류를 이 수치로 설명할 수 없다.</p>
+<p>세 endpoint와 두 provider만 사용했고 API product는 시간에 따라 바뀔 수 있다. Gemini는 provider와 thinking 설정이 동시에 달라 원인을 분리할 수 없다. 네 prompt variant도 가능한 모든 재표현의 모집단을 대표하지 않는다. 온도 0.7 실험은 완료 결과에 포함되지 않았고, AST grader는 실제 도구 실행 없이 구조를 맞춰 semantically correct한 다른 표현을 놓치거나 표면적으로 맞는 호출을 과대평가할 수 있다.</p>
+<p>통계적으로도 frozen 150개에 조건부인 기술적(descriptive) 감사다. bootstrap curve는 표본 수 계획용 진단이지, 선택된 문제가 안정된 전체 모집단에서 독립 표집됐다는 보장이 아니다. 결과는 변동이 어디에 있는지는 보여 주지만, training choice나 routing, decoder, provider validator 중 무엇이 원인인지는 밝히지 않는다.</p>
+<div class="call arb"><div class="ct">내 해석</div><p>논문의 핵심 메시지는 설득력 있고 실무적으로 유용하다. matched design과 raw failure taxonomy가 특히 좋다. 다만 이를 일반적인 “agent benchmark의 보편 noise floor”로 부르기에는 범위가 좁다. 더 정확한 읽기는 “세 hosted endpoint의 BFCL native tool-call slice에서 측정한 조건부 noise floor”다.</p></div>
+<div class="call ar"><div class="ct">초등학생도 이해하는 설명</div><p>세 종류의 로봇에게 한 종류의 짧은 심부름 시험을 시켰다. 여기서 찾은 규칙이 모든 로봇, 긴 여행, 인터넷 검색, 여러 날의 계획에도 똑같이 맞는다고 말할 수는 없다.</p></div>
+</section>
+
+
+<section class="ch" id="c9">
+<div class="ch-eyebrow"><span class="cnum">09</span><span class="clabel">Appendix · 부록 진단표</span></div>
+<h2 class="ch-title">표본이 작으면 잡음 바닥 자체도 불안정하게 보인다</h2>
+<div class="tldr"><div class="h">한눈에 요약</div><p>bootstrap 결과는 25개처럼 작은 matched subset에서 SD의 95% 구간이 넓음을 보여 준다. fingerprint가 같은 실행과 다른 실행의 변동도 비슷한 차수라, 기록된 backend fingerprint 변화만으로 재실행 잡음을 설명하기 어려웠다.</p></div>
+<div class="tbl-wrap">
+<div class="tbl-cap"><span class="tn">TABLE A.1</span>표본 수에 따른 bootstrap 재실행 paired-SD 곡선</div>
+<div class="tbl-scroll"><table>
+<thead>
+<tr>
+<th>Endpoint</th>
+<th>n</th>
+<th>Mean SD</th>
+<th>95% interval</th></tr>
+</thead>
+<tbody>
+<tr>
+<th>Gemini</th>
+<th>25</th>
+<td>1.8pp</td>
+<td>0pp–6pp</td></tr>
+<tr>
+<th>Gemini</th>
+<th>50</th>
+<td>1.6pp</td>
+<td>0pp–4.2pp</td></tr>
+<tr>
+<th>Gemini</th>
+<th>75</th>
+<td>1.4pp</td>
+<td>0pp–3.4pp</td></tr>
+<tr>
+<th>Gemini</th>
+<th>100</th>
+<td>1.4pp</td>
+<td>0pp–2.9pp</td></tr>
+<tr>
+<th>Gemini</th>
+<th>150</th>
+<td>1.3pp</td>
+<td>0.4pp–2.6pp</td></tr>
+<tr>
+<th>Groq 8B</th>
+<th>25</th>
+<td>0.33pp</td>
+<td>0pp–1.7pp</td></tr>
+<tr>
+<th>Groq 8B</th>
+<th>50</th>
+<td>0.33pp</td>
+<td>0pp–1.7pp</td></tr>
+<tr>
+<th>Groq 8B</th>
+<th>75</th>
+<td>0.36pp</td>
+<td>0pp–1.7pp</td></tr>
+<tr>
+<th>Groq 8B</th>
+<th>100</th>
+<td>0.29pp</td>
+<td>0pp–0.85pp</td></tr>
+<tr>
+<th>Groq 8B</th>
+<th>150</th>
+<td>0.26pp</td>
+<td>0pp–0.85pp</td></tr>
+<tr>
+<th>Groq 70B</th>
+<th>25</th>
+<td>1.4pp</td>
+<td>0pp–5.9pp</td></tr>
+<tr>
+<th>Groq 70B</th>
+<th>50</th>
+<td>1.2pp</td>
+<td>0pp–4.1pp</td></tr>
+<tr>
+<th>Groq 70B</th>
+<th>75</th>
+<td>1.2pp</td>
+<td>0pp–3.2pp</td></tr>
+<tr>
+<th>Groq 70B</th>
+<th>100</th>
+<td>1.1pp</td>
+<td>0pp–3pp</td></tr>
+<tr>
+<th>Groq 70B</th>
+<th>150</th>
+<td>1.1pp</td>
+<td>0pp–2.4pp</td></tr>
+</tbody>
+</table></div>
+<div class="tbl-foot">각 크기에서 200회 재표집한 평균과 95% 구간이다. SD는 비선형 통계량이라 이 bootstrap 평균이 Table 2의 plug-in 추정치와 정확히 같을 필요는 없다.</div>
+</div>
+<p>작은 pilot은 재실행 잡음이 존재하는지 보는 데는 쓸 수 있다. 하지만 endpoint 안정성의 미세한 순위를 매기는 정밀 도구로 쓰기에는 구간이 너무 넓다. matched instance 수가 충분히 커져 resampling curve가 안정될 때 해석의 신뢰가 올라간다.</p>
+<div class="tbl-wrap">
+<div class="tbl-cap"><span class="tn">TABLE A.2</span>같은·다른 시스템 fingerprint 안에서 본 재실행 차이</div>
+<div class="tbl-scroll"><table>
+<thead>
+<tr>
+<th>Endpoint</th>
+<th>FPs</th>
+<th>Within pairs</th>
+<th>Within SD</th>
+<th>Across pairs</th>
+<th>Across SD</th></tr>
+</thead>
+<tbody>
+<tr>
+<td>Gemini</td>
+<td>1</td>
+<td>6750</td>
+<td>11pp</td>
+<td>N/A</td>
+<td>N/A</td></tr>
+<tr>
+<td>Groq 8B</td>
+<td>11</td>
+<td>1887</td>
+<td>5.1pp</td>
+<td>4863</td>
+<td>2.9pp</td></tr>
+<tr>
+<td>Groq 70B</td>
+<td>8</td>
+<td>1407</td>
+<td>11pp</td>
+<td>5343</td>
+<td>9.8pp</td></tr>
+</tbody>
+</table></div>
+<div class="tbl-foot">이 표의 SD는 실행 쌍별 instance 수준 값이라 Table 2의 aggregate-score paired SD와 집계 수준이 다르며 크기를 직접 비교하면 안 된다.</div>
+</div>
+<p>Gemini 로그에는 fingerprint가 하나뿐이라 across 비교가 없다. Groq에서는 within과 across SD가 같은 차수였다. 기록된 fingerprint 변화가 지배 원인이라면 변동이 대부분 across에 몰려야 하지만 그런 패턴이 없었으므로, 저자들은 fingerprint가 이 harness의 rerun floor를 설명하는 주된 요인은 아니라는 제한적 음의 결론을 낸다.</p>
+<div class="call ar"><div class="ct">초등학생도 이해하는 설명</div><p>동전을 다섯 번만 던지면 앞면 비율이 20%나 80%처럼 크게 흔들릴 수 있다. 많이 던질수록 대략적인 비율이 안정된다. 잡음의 크기를 재는 일도 표본이 너무 작으면 그 측정값 자체가 흔들린다.</p></div>
+</section>
+
+
+<section class="ch" id="gloss">
+<div class="ch-eyebrow"><span class="cnum">＋</span><span class="clabel">Glossary · 핵심 용어</span></div>
+<h2 class="ch-title">핵심 용어 정리</h2>
+<div class="gloss">
+<div class="gitem"><div class="term">잡음 바닥<span class="en">Noise floor</span></div><p>측정 시스템 자체의 흔들림 때문에 그보다 작은 차이를 믿기 어려워지는 기준선.</p></div>
+<div class="gitem"><div class="term">퍼센트포인트<span class="en">Percentage point, pp</span></div><p>퍼센트 값의 단순한 차이. 80%와 81%의 차이는 1pp다.</p></div>
+<div class="gitem"><div class="term">표준편차<span class="en">Standard deviation, SD</span></div><p>여러 측정값이 평균 주변에서 얼마나 넓게 퍼지는지 나타내는 흔들림 크기.</p></div>
+<div class="gitem"><div class="term">짝 비교<span class="en">Paired comparison</span></div><p>똑같은 문제를 두 조건에서 비교해 문제 구성 차이를 제거하는 방법.</p></div>
+<div class="gitem"><div class="term">의미 보존 변형<span class="en">Semantics-preserving perturbation</span></div><p>요청한 일과 정답은 바꾸지 않고 공백, 라벨, 일반 지시 같은 겉모양만 바꾸는 것.</p></div>
+<div class="gitem"><div class="term">AST 채점<span class="en">AST grading</span></div><p>함수 호출을 구문 구조로 읽어 함수 이름과 인자가 정답 구조에 맞는지 검사하는 방식.</p></div>
+</div>
+</section>
+
+
+<section class="ch" id="take">
+<div class="ch-eyebrow"><span class="cnum">＋</span><span class="clabel">One-page Summary · 한 장 정리</span></div>
+<h2 class="ch-title">이 논문을 한 장으로</h2>
+<div class="takeaways">
+<div class="take"><div class="n">01</div><div class="body"><b>결론:</b> 같은 실행의 잔여 잡음보다 뜻이 같은 프롬프트 말투 변화가 훨씬 큰 불안정성을 만들었다.</div></div>
+<div class="take"><div class="n">02</div><div class="body">재실행 paired SD는 0.28pp·0.91pp·1.1pp, 프롬프트 변형 중앙 paired SD는 16pp·10pp·19pp였다.</div></div>
+<div class="take"><div class="n">03</div><div class="body"><b>평균 정확도는 숨긴다.</b> 평균이 거의 같아도 맞는 문제와 틀리는 문제가 대량으로 서로 바뀔 수 있다.</div></div>
+<div class="take"><div class="n">04</div><div class="body"><b>실패 유형도 점수의 일부다.</b> malformed output은 전체 실패의 30%·7%·1% 미만으로 endpoint별 성격이 달랐다.</div></div>
+<div class="take"><div class="n">05</div><div class="body">평가 보고서에는 prompt family, paired 변동, flip 비율, failure taxonomy, endpoint identity를 함께 남기는 편이 좋다.</div></div>
+<div class="take"><div class="n">06</div><div class="body"><b>증거 경계:</b> 이는 retrieval·multi-turn·environment interaction을 포함한 에이전트 전체의 보편 법칙이 아니라 BFCL native tool-call slice의 조건부 결과다.</div></div>
+</div>
+</section>

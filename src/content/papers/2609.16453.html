@@ -1,0 +1,68 @@
+<section class="ch" id="c1">
+<div class="ch-eyebrow"><span class="cnum">01</span><span class="clabel">Problem · 문제</span></div>
+<h2 class="ch-title">에이전트는 검색을 오래 해도 매번 더 나아지는 것은 아니다</h2>
+<div class="tldr"><div class="h">한눈에 요약</div><p>에이전트형 RAG는 답을 생각하면서 여러 번 검색한다. 하지만 마지막 몇 번의 검색은 답을 거의 바꾸지 않을 수도 있고, 논문은 전체 정답률만 보면 어느 반복이 실제로 도움이 됐는지 알기 어렵다고 본다.</p></div>
+<p class="lead">저자들은 검색-추론 반복마다 현재 답을 잠시 만들어 보고, 그 시점의 품질과 직전보다 나아진 정도를 기록한다.</p><p>이렇게 하면 “지금 답이 충분히 괜찮은가?”와 “방금 검색이 실제로 도움이 되었나?”를 별도로 볼 수 있다.</p><div class="call ar"><div class="ct">초등학생도 이해하는 설명</div><p>숙제를 풀며 중간 답을 써 보면, 어느 힌트를 읽은 뒤 답을 알아냈는지와 그 뒤 힌트가 더 필요했는지를 알 수 있다.</p></div><figure>
+<div class="fig-top"><span class="fnum">FIG 1</span><span class="ftitle">정답까지 가는 검색 반복과 중간 답 점검</span></div>
+<div class="imgbox"><img alt="정답까지 가는 검색 반복과 중간 답 점검" decoding="async" loading="lazy" src="/paper-assets/c51d2159c1a01384391a58a4b8de23a10fe9335426d895a2c841ac3a7828f49e.png"/></div>
+<figcaption>검색 에이전트가 매 반복 질의·근거·추론을 만들고, 점검기는 중간 답의 품질과 반복별 변화를 추정한다.</figcaption>
+</figure><div class="call arb"><div class="ct">중요한 구분</div><p>이 논문은 GraphRAG가 아니다. 지식 그래프를 제안하지 않고, agentic RAG의 여러 검색 반복을 언제 멈출지 예측한다.</p></div>
+</section>
+<section class="ch" id="c2">
+<div class="ch-eyebrow"><span class="cnum">02</span><span class="clabel">Measures · 측정</span></div>
+<h2 class="ch-title">답 품질과 검색 한 번의 기여는 다른 숫자다</h2>
+<div class="tldr"><div class="h">한눈에 요약</div><p>중간 답 품질 Pᵢ는 해당 시점 답을 정답과 비교한 F1이다. 부분 효용 Uᵢ는 Pᵢ에서 직전 반복의 Pᵢ₋₁을 뺀 값으로, 양수면 개선, 0 근처면 변화 적음, 음수면 악화다.</p></div>
+<p class="lead">F1은 “정답에 필요한 내용을 얼마나 맞게 담았는지”를 정확도와 빠뜨리지 않기의 균형으로 보는 0~1 점수다.</p><p>온라인 서비스는 실제 정답을 모르기 때문에 P와 U를 바로 계산할 수 없다. 그래서 현재까지의 검색 점수, 인접 반복의 유사도 변화, 질문과 현재 검색의 맞춤 정도 등을 입력으로 예측기를 학습한다.</p><div class="call ar"><div class="ct">초등학생도 이해하는 설명</div><p>답 점수는 지금까지 얼마나 잘했는지, 효용 점수는 방금 한 검색이 점수를 올렸는지 내렸는지다.</p></div><div class="tbl-wrap"><div class="tbl-cap"><span class="tn">TABLE 1</span>각 반복에서 답 품질을 예측하는 단서</div>
+<div class="tbl-scroll"><table><thead><tr><th>단서 종류</th><th>학습 없는 신호 예</th><th>학습 신호 예</th></tr></thead><tbody><tr><td>현재 반복</td><td>현재 질의·검색 문맥의 QPP, 답 생성 확률</td><td>원래 질문 + 현재 질의·추론·검색문맥을 교차 인코더에 입력</td></tr><tr><td>반복 간 변화</td><td>이전/현재 추론·문맥의 유사도 변화, 답 확률 변화</td><td>이전과 현재 질의·추론을 함께 입력</td></tr><tr><td>원 질문과 정렬</td><td>현재 질의·추론이 원 질문 및 초기 추론과 얼마나 비슷한가</td><td>원 질문 + 초기/현재 추론 + 현재 질의를 입력</td></tr></tbody></table></div></div><figure>
+<div class="fig-top"><span class="fnum">FIG 3</span><span class="ftitle">검색 반복마다 도움이 되는 정도는 듬성듬성하다</span></div>
+<div class="imgbox"><img alt="검색 반복마다 도움이 되는 정도는 듬성듬성하다" decoding="async" loading="lazy" src="/paper-assets/a4e152b38d120862f539fd121fa62cdd31d1885c35d53f6fec063db98bcdee16.png"/></div>
+<figcaption>유용한 변화가 일부 결정적 반복에 몰리고, 다른 반복은 답 품질을 크게 바꾸지 않는 모습을 보인다.</figcaption>
+</figure><figure>
+<div class="fig-top"><span class="fnum">FIG 4</span><span class="ftitle">정답 품질이 반복에 따라 변하는 사례</span></div>
+<div class="imgbox"><img alt="정답 품질이 반복에 따라 변하는 사례" decoding="async" loading="lazy" src="/paper-assets/556dddf292b3f586bb727377c589fe09318ea37abd1de212ac4edb5fe48b1b3a.png"/></div>
+<figcaption>질문·검색기별 중간 답 F1 궤적을 보여, 한 번 맞힌 뒤 평탄해지거나 일부 구간에서 바뀌는 차이를 드러낸다.</figcaption>
+</figure>
+</section>
+<section class="ch" id="c3">
+<div class="ch-eyebrow"><span class="cnum">03</span><span class="clabel">Predictors · 예측기</span></div>
+<h2 class="ch-title">검색 품질, 반복 간 변화, 원 질문과의 거리를 함께 본다</h2>
+<div class="tldr"><div class="h">한눈에 요약</div><p>세 종류 신호는 서로 보완적이다. 현재 검색 근거의 품질, 직전 반복 대비 검색·추론 변화, 원 질문과 현재 탐색의 정렬도를 결합한다. 또 정답 예측용으로 SBERT 교차 인코더 회귀기를 학습하고, 최근 1·3·5회 출력의 흐름을 묶는다.</p></div>
+<p class="lead">두 시스템(Search-R1, R1-Searcher)과 HotpotQA·2Wiki·MuSiQue에서 시험했다.</p><p>학습 예측기는 답 품질에 더 잘 맞았고 최고 Pearson r은 0.438, Kendall τ는 0.345였다. 효용 예측은 더 어렵고 최고 상관이 낮았다. 이 상관계수는 “예측이 완벽하다”가 아니라 실제 점수와 어느 정도 같이 움직인다는 뜻이다.</p><div class="call ar"><div class="ct">초등학생도 이해하는 설명</div><p>검색 내용만 보지 말고, 이전에 찾은 것과 달라졌는지, 아직 원래 질문에 답하고 있는지도 같이 확인한다.</p></div><div class="tbl-wrap"><div class="tbl-cap"><span class="tn">TABLE 2</span>두 에이전트 RAG 실험의 데이터와 평균 궤적</div>
+<div class="tbl-scroll"><table><thead><tr><th>시스템</th><th>데이터셋</th><th>최종 F1</th><th>초기 대비 ΔF1</th><th>반복당 효용</th><th>평균 반복 수</th><th>질문 수</th></tr></thead><tbody><tr><td>Search-R1</td><td>HotpotQA</td><td>.549</td><td>.265</td><td>.097</td><td>2.730</td><td>7,405</td></tr><tr><td>Search-R1</td><td>2Wiki</td><td>.429</td><td>.155</td><td>.045</td><td>3.463</td><td>12,576</td></tr><tr><td>Search-R1</td><td>MuSiQue</td><td>.274</td><td>.155</td><td>.047</td><td>3.337</td><td>2,417</td></tr><tr><td>R1-Searcher</td><td>HotpotQA</td><td>.529</td><td>.408</td><td>.177</td><td>2.311</td><td>7,405</td></tr><tr><td>R1-Searcher</td><td>2Wiki</td><td>.454</td><td>.386</td><td>.161</td><td>2.386</td><td>12,576</td></tr><tr><td>R1-Searcher</td><td>MuSiQue</td><td>.272</td><td>.223</td><td>.081</td><td>2.718</td><td>2,417</td></tr></tbody></table></div><div class="tbl-foot">F1은 0~1 사이의 답 겹침 지표. 각 데이터셋의 질문 수는 개발 분할 기준이다.</div></div><div class="tbl-wrap"><div class="tbl-cap"><span class="tn">TABLE 3</span>품질/효용 예측 상관계수: Pearson r / Kendall τ</div>
+<div class="tbl-scroll"><table><thead><tr><th>에이전트</th><th>학습 없는 신호</th><th>학습 예측기</th><th>답 신뢰도</th><th>효용 w=1</th><th>효용 w=3</th><th>효용 w=5</th><th>답 품질 w=1</th><th>답 품질 w=3</th><th>답 품질 w=5</th></tr></thead><tbody><tr><td>Search-R1</td><td>없음</td><td>있음</td><td>없음</td><td>.201/.140</td><td>.216/.148</td><td>.227/.162</td><td>.343/.257</td><td>.363/.272</td><td>.358/.270</td></tr><tr><td>Search-R1</td><td>있음</td><td>없음</td><td>없음</td><td>.295/.200</td><td>.293/.196</td><td>.293/.195</td><td>.418/.331</td><td>.420/.332</td><td>.419/.330</td></tr><tr><td>Search-R1</td><td>없음</td><td>없음</td><td>있음</td><td>.166/.109</td><td>.184/.112</td><td>.194/.125</td><td>.345/.257</td><td>.352/.263</td><td>.351/.264</td></tr><tr><td>Search-R1</td><td>있음</td><td>있음</td><td>없음</td><td>.299/.200</td><td>.299/.199</td><td>.294/.194</td><td>.422/.332</td><td>.424/.335</td><td>.424/.335</td></tr><tr><td>Search-R1</td><td>있음</td><td>없음</td><td>있음</td><td>.232/.147</td><td>.250/.162</td><td>.259/.176</td><td>.379/.285</td><td>.387/.293</td><td>.390/.295</td></tr><tr><td>Search-R1</td><td>없음</td><td>있음</td><td>있음</td><td>.306/.206</td><td>.302/.200</td><td>.306/.204</td><td>.431/.341</td><td>.432/.341</td><td>.433/.341</td></tr><tr><td>Search-R1</td><td>있음</td><td>있음</td><td>있음</td><td>.308/.204</td><td>.312/.208</td><td>.311/.205</td><td>.438/.345</td><td>.434/.344</td><td>.436/.344</td></tr><tr><td>R1-Searcher</td><td>없음</td><td>있음</td><td>없음</td><td>.200/.154</td><td>.232/.189</td><td>.220/.181</td><td>.222/.170</td><td>.302/.221</td><td>.307/.227</td></tr><tr><td>R1-Searcher</td><td>있음</td><td>없음</td><td>없음</td><td>.309/.243</td><td>.313/.245</td><td>.310/.242</td><td>.390/.314</td><td>.391/.314</td><td>.389/.310</td></tr><tr><td>R1-Searcher</td><td>없음</td><td>없음</td><td>있음</td><td>.093/.063</td><td>.108/.089</td><td>.062/.035</td><td>.090/.048</td><td>.095/.055</td><td>.107/.070</td></tr><tr><td>R1-Searcher</td><td>있음</td><td>있음</td><td>없음</td><td>.314/.247</td><td>.315/.248</td><td>.321/.250</td><td>.393/.317</td><td>.398/.319</td><td>.398/.320</td></tr><tr><td>R1-Searcher</td><td>있음</td><td>없음</td><td>있음</td><td>.229/.178</td><td>.234/.186</td><td>.232/.187</td><td>.257/.191</td><td>.293/.215</td><td>.293/.216</td></tr><tr><td>R1-Searcher</td><td>없음</td><td>있음</td><td>있음</td><td>.309/.242</td><td>.313/.244</td><td>.311/.244</td><td>.379/.308</td><td>.396/.316</td><td>.393/.315</td></tr><tr><td>R1-Searcher</td><td>있음</td><td>있음</td><td>있음</td><td>.312/.244</td><td>.320/.247</td><td>.321/.249</td><td>.388/.313</td><td>.401/.320</td><td>.394/.317</td></tr></tbody></table></div><div class="tbl-foot">w는 최근 반복을 몇 개 묶어 보는 창 크기. 숫자는 r/τ이며 높은 양의 상관일수록 실제 품질·효용과 함께 움직인다.</div></div>
+</section>
+<section class="ch" id="c4">
+<div class="ch-eyebrow"><span class="cnum">04</span><span class="clabel">Early stopping · 조기 종료</span></div>
+<h2 class="ch-title">답이 충분히 좋고 다음 검색의 이득도 작으면 멈춘다</h2>
+<div class="tldr"><div class="h">한눈에 요약</div><p>논문은 현재 답 품질 예측과 직전 반복의 효용 예측을 함께 써 멈출지를 결정한다. 고정 반복 수와 달리 질문별 검색 경로마다 다른 시점에 멈추므로, 쉬운 질문은 빨리 끝내고 어려운 질문에는 더 검색을 허용한다.</p></div>
+<p class="lead">Search-R1에서 평균 반복 수는 3.21에서 2.86으로 10.89% 줄었고, 자연 종료 답 품질의 97.60%를 보존했다.</p><p>답 품질 임계값과 효용 임계값에 따라 절약량과 품질 손실을 조절한다. probing을 켜면 매번 추가 답 생성을 해야 해 비용이 들고, 저자들은 검색 로그에서 직접 뽑는 신호만 쓰는 방식도 실용적이라고 설명한다.</p><div class="call ar"><div class="ct">초등학생도 이해하는 설명</div><p>답을 이미 충분히 맞혔고 다음 힌트가 별 도움이 안 될 것 같으면 그 문제는 멈춘다. 모두에게 똑같이 세 번만 검색하게 하는 것보다 낫다.</p></div><figure>
+<div class="fig-top"><span class="fnum">FIG 2</span><span class="ftitle">높은 답 품질인지와 방금 개선됐는지를 조합한 네 상태</span></div>
+<div class="imgbox"><img alt="높은 답 품질인지와 방금 개선됐는지를 조합한 네 상태" decoding="async" loading="lazy" src="/paper-assets/9cfee01565a5ed65b9ec492fcb4214aa7368400e55aed2a8fca7bb13dc3a4e9f.png"/></div>
+<figcaption>답이 좋고 효용도 양수인지, 답이 낮거나 멈춰 있는지를 나눠 조기 종료를 정한다.</figcaption>
+</figure><figure>
+<div class="fig-top"><span class="fnum">FIG 5</span><span class="ftitle">검색 횟수와 답 품질 사이의 절충</span></div>
+<div class="imgbox"><img alt="검색 횟수와 답 품질 사이의 절충" decoding="async" loading="lazy" src="/paper-assets/ad450eb37d561034593e6d1aeafc41f6de2ddb538579acbd487c358d440890ca.png"/></div>
+<figcaption>일부 설정은 자연 종료보다 평균 반복을 줄이면서 답 품질 대부분을 유지한다.</figcaption>
+</figure><div class="tbl-wrap"><div class="tbl-cap"><span class="tn">TABLE 4</span>Search-R1의 학습 없는 신호만 비교: 답 품질 예측 r / τ</div>
+<div class="tbl-scroll"><table><thead><tr><th>신호</th><th>w=1</th><th>w=3</th><th>w=5</th></tr></thead><tbody><tr><td>현재 반복</td><td>.323 / .239</td><td>.351 / .260</td><td>.347 / .260</td></tr><tr><td>반복 간 변화</td><td>.312 / .233</td><td>.331 / .249</td><td>.334 / .251</td></tr><tr><td>원 질문과 정렬</td><td>.306 / .223</td><td>.326 / .239</td><td>.330 / .247</td></tr><tr><td>모두 결합</td><td>.343 / .257</td><td>.363 / .272</td><td>.358 / .270</td></tr></tbody></table></div><div class="tbl-foot">각 창 크기에서 세 신호를 합치면 단일 신호보다 일관되게 나았다.</div></div>
+</section>
+<section class="ch" id="c5">
+<div class="ch-eyebrow"><span class="cnum">05</span><span class="clabel">Limits · 해석 경계</span></div>
+<h2 class="ch-title">10.89% 반복 절감은 두 시스템·세 QA 벤치마크에서의 결과다</h2>
+<div class="tldr"><div class="h">한눈에 요약</div><p>저자들은 아직 단순한 조기 종료 규칙만 시험했다. 데이터는 다중 홉 QA이고, 중간 답 F1은 긴 서술형 답의 세밀한 개선을 놓칠 수 있다. probing을 위한 추가 답 생성도 실제 비용 계산에 반영해야 한다.</p></div>
+<p class="lead">그러므로 “모든 RAG 검색 호출을 11% 줄일 수 있다”가 아니라, 특정 agentic QA 구성에서 품질 예측을 멈춤 기준으로 쓸 가능성을 보였다고 읽어야 한다.</p><p>실무 적용 전에는 생성 토큰, retriever 호출, 실제 비용과 지연, 보존된 정답 품질을 함께 기록해야 한다. 예측 오차가 크면 너무 일찍 멈춰 근거를 놓칠 수 있으므로 안전 임계값과 검증 세트가 필요하다.</p><div class="call ar"><div class="ct">초등학생도 이해하는 설명</div><p>한 학급의 세 종류 문제에서 잘 됐다고 해서 모든 과목 시험에도 그대로 통한다고 장담할 수는 없다.</p></div><div class="call ar"><div class="ct">우리 RAG 설계에 주는 점</div><p>검색기만 평가하지 말고, 반복별 중간 답이 얼마나 좋아졌는지와 검색 비용을 함께 로그로 남기면 조기 종료 정책을 평가할 근거가 생긴다.</p></div>
+</section>
+<section class="ch" id="gloss">
+<div class="ch-eyebrow"><span class="cnum">＋</span><span class="clabel">Glossary · 핵심 용어</span></div>
+<h2 class="ch-title">핵심 용어 정리</h2>
+<div class="tldr"><div class="h">한눈에 요약</div><p>논문의 주장을 따라가는 데 필요한 용어만 간결하게 모았다.</p></div>
+<div class="gloss"><div class="gitem"><div class="term">agentic RAG<span class="en">에이전트형 검색 증강 생성</span></div><p>LLM이 답을 생각하는 도중 여러 번 검색 도구를 호출하는 방식.</p></div><div class="gitem"><div class="term">부분 답 품질<span class="en">Partial answer quality</span></div><p>중간 시점 답을 정답과 비교한 점수. 이 논문은 F1을 사용한다.</p></div><div class="gitem"><div class="term">부분 효용<span class="en">Partial utility</span></div><p>이번 검색-추론 반복이 이전 답 품질을 얼마나 올리거나 낮췄는지.</p></div><div class="gitem"><div class="term">F1<span class="en">F1 score</span></div><p>필요한 답 내용을 빠뜨리지 않는 정도와 틀린 내용을 덜 넣는 정도를 함께 보는 점수.</p></div><div class="gitem"><div class="term">조기 종료<span class="en">Early stopping</span></div><p>답이 충분할 때 불필요한 다음 반복을 수행하지 않고 멈추는 것.</p></div><div class="gitem"><div class="term">Pearson r<span class="en">피어슨 상관계수</span></div><p>예측 숫자와 실제 숫자가 함께 오르내리는 정도. 1에 가까울수록 같은 방향으로 움직인다.</p></div></div>
+</section>
+<div class="call ar"><div class="ct">초등학생도 이해하는 설명</div><p>이 용어들을 알면 논문의 핵심 주장과 실험 결과를 더 쉽게 따라갈 수 있다.</p></div>
+<section class="ch" id="take">
+<div class="ch-eyebrow"><span class="cnum">＋</span><span class="clabel">One-page Summary · 한 장 정리</span></div>
+<h2 class="ch-title">이 논문을 한 장으로</h2>
+<div class="tldr"><div class="h">한눈에 요약</div><p>문제, 방법, 증거, 한계를 한 번에 다시 정리한다.</p></div>
+<div class="takeaways"><div class="take"><div class="n">01</div><div class="body"><b>반복 검색이 길다고 답이 계속 좋아지는 것은 아니다.</b></div></div><div class="take"><div class="n">02</div><div class="body">답의 현재 품질 F1과 직전 반복의 변화량을 별도로 정의한다.</div></div><div class="take"><div class="n">03</div><div class="body">현재 검색, 반복 간 변화, 원 질문과의 정렬 신호를 결합해 품질·효용을 예측한다.</div></div><div class="take"><div class="n">04</div><div class="body">Search-R1에서 평균 반복 3.21→2.86(−10.89%), 자연 종료 품질의 97.60%를 보존했다.</div></div><div class="take"><div class="n">05</div><div class="body">답 품질은 효용보다 예측이 쉬웠고, 최고 Pearson r은 0.438이었다.</div></div><div class="take"><div class="n">06</div><div class="body">추가 probing 비용과 다른 도메인으로의 일반화는 아직 검증이 필요하다.</div></div></div>
+</section>
+<div class="call ar"><div class="ct">초등학생도 이해하는 설명</div><p>이 요점만 기억해도 논문이 무엇을 했고 무엇까지 증명했는지 다시 설명할 수 있다.</p></div>

@@ -26,6 +26,34 @@ pnpm preview
 `build`는 Astro·TypeScript 검사와 Markdown 메타데이터 검증 뒤 정적 HTML을 생성한다.
 RSS와 사이트맵도 빌드된다. 글은 각각 실제 HTML 경로로 생성되어 새로고침과 직접 접근이 가능하다.
 
+## 논문 노트
+
+`/papers/`에서 107편의 한국어 해설을 검색하고 여섯 주제별 읽기 순서를 확인할 수 있다.
+개별 노트는 `/papers/<id>/`이며 원문 저자와 공식 출처 링크를 표시한다.
+읽기 가이드 글은 `/posts/paper-reading-map/`으로 게시하며 기존 RSS에도 포함된다.
+
+- 분류와 추천 읽기 순서: `src/data/paper-topics.json`
+- 공개용 메타데이터: `src/data/papers.json`
+- 정리한 해설 본문: `src/content/papers/`
+- 그림과 표 이미지: `public/paper-assets/`
+
+바탕 화면의 원본 library 자료에서 다시 가져올 때:
+
+```bash
+uv run scripts/import-papers.py ../library
+pnpm build
+```
+
+importer는 주제에 등록되어 있고 유효한 PDF와 한국어 해설이 함께 있는 자료만 가져온다.
+주제를 먼저 지정하지 않은 신규 해설은 가져오기를 중단하므로 `paper-topics.json`에 먼저 분류한다.
+원문 PDF는 복사하지 않고 공식 원문에 연결한다. 메타데이터의 개인 컴퓨터 경로와 실행 기록은 가져오지 않는다.
+본문은 스크립트·인라인 스타일·이벤트 속성을 제거하고, 수식과 그림·표를 유지한다.
+내장 이미지는 내용 해시로 중복 제거한 별도 파일로 저장하고 지연 로딩한다.
+소스 라이브러리는 수정하지 않으며 가져오기 결과는 `scripts/paper-import-report.json`에 기록한다.
+
+`pnpm build`는 논문 분류·출처·본문·목차·이미지 참조도 검사한다.
+현재 해설이 없는 10편은 게시하지 않았으며, 그중 세 PDF는 404 HTML이라 가져오기 보고서에서 별도로 구분한다.
+
 ## 새 글 작성
 
 `src/content/posts/`에 Markdown 파일을 추가한다. 파일명이 URL의 slug다.
@@ -44,7 +72,7 @@ draft: true
 ```
 
 본문은 `##` 제목부터 작성한다. 해당 제목으로 목차가 자동 생성된다.
-category는 `LLM Ops`, `Applied AI`, `Backend`, `Agentic AI` 중 하나다.
+category는 `LLM Ops`, `Applied AI`, `Backend`, `Agentic AI`, `Research Notes` 중 하나다.
 `order`는 같은 작성일의 표시 순서를 정한다. `draft: true`인 글은 목록·상세 경로·RSS에서 제외된다.
 글을 게시하려면 `draft`를 제거하거나 `false`로 바꾼다.
 

@@ -1,0 +1,61 @@
+<section class="ch" id="c1">
+<div class="ch-eyebrow"><span class="cnum">01</span><span class="clabel">Background · 배경</span></div>
+<h2 class="ch-title">LLM에게 지식 그래프의 사용 설명서를 먼저 건넨다</h2>
+<div class="tldr"><div class="h">한눈에 요약</div><p>EXYGEN은 자연어 질문을 SPARQL로 바꾸는 KG 질의 시스템이다. 그래프 전체를 LLM 프롬프트에 넣지 않고, 구조 요약과 작은 triple 샘플을 검색해 제공한다.</p></div>
+<div class="call ar"><div class="ct">정말 쉽게 한 문장</div><p>도서관 책장을 통째로 외우게 하지 말고, <strong>책장 규칙과 관련 예시 몇 개</strong>를 먼저 보여준 뒤 질문을 SQL처럼 바꾸게 한다.</p></div><div class="call ar"><div class="ct">초등학생도 이해하는 설명</div><p>“누가 누구의 선생님이야?”라는 질문에 책장 전체를 주는 대신, 라벨 붙은 책장 지도와 관련 책 몇 권만 보여주는 것이다.</p></div><p class="lead">그래프의 ‘무엇이 어떻게 연결되는가’를 알려주는 구조 컨텍스트가 핵심이다.</p><p>저자들은 VoID 통계, ShEx 모양(schema), 검색된 RDF triple, 질문–쿼리 예시(QQP)를 별도 인덱스에 저장해 질의 때 필요한 조각만 붙인다.</p><figure>
+<div class="fig-top"><span class="fnum">FIG 1</span><span class="ftitle">EXYGEN-RAG 전체 파이프라인</span></div>
+<div class="imgbox"><img alt="EXYGEN-RAG 전체 파이프라인" decoding="async" loading="lazy" src="/paper-assets/982c622c88708489d560c07b33a40a46f11cfb08a8f28c56e785e03d942cfe71.png"/></div>
+<figcaption>KG를 읽어 VoID·ShEx를 만들고, 이 산출물과 triple을 semantic retrieval로 찾아 LLM이 SPARQL을 생성·실행한다.</figcaption>
+</figure>
+</section>
+<section class="ch" id="c2">
+<div class="ch-eyebrow"><span class="cnum">02</span><span class="clabel">Method · 방법</span></div>
+<h2 class="ch-title">ShEx는 그래프의 문법책, QQP는 풀이 예시다</h2>
+<div class="tldr"><div class="h">한눈에 요약</div><p>VoID는 클래스·predicate 통계를, ShEx는 각 클래스가 가질 수 있는 속성·개수·값 타입을 사람이 읽기 좋게 표현한다. QQP는 실제 질문과 SPARQL 쌍으로 사용법을 보여준다.</p></div>
+<div class="call ar"><div class="ct">초등학생도 이해하는 설명</div><p>ShEx는 “학생에게는 이름표가 꼭 하나 있어야 한다” 같은 문법책이고, QQP는 선생님이 푼 문제 한두 개다.</p></div><p class="lead">질문은 Qwen3-Embedding-0.6B로 벡터화하고, ChromaDB에서 각 컨텍스트 유형별 top-k를 따로 검색한다.</p><p>중요한 점은 컨텍스트를 한 바구니에 섞지 않는 것이다. schema와 triple과 예시를 각각 알맞은 granularity로 뽑아 LLM 입력에 이어 붙인다.</p><figure>
+<div class="fig-top"><span class="fnum">FIG 2</span><span class="ftitle">ShEx 모양 예시</span></div>
+<div class="imgbox"><img alt="ShEx 모양 예시" decoding="async" loading="lazy" src="/paper-assets/5ae9fb5a29d3c9cfa1539e47e81373169b69c156e52314e88d19a68dcda747b2.png"/></div>
+<figcaption>클래스의 타입·속성·값 타입·카디널리티를 명시해 SPARQL이 써야 할 구조를 제한한다.</figcaption>
+</figure><div class="tbl-wrap"><div class="tbl-cap"><span class="tn">TABLE 1</span>SciQA text-to-SPARQL 핵심 결과</div>
+<div class="tbl-scroll"><table><thead><tr><th>컨텍스트</th><th>모델</th><th>실행률</th><th>EMRelEx</th><th>F1</th></tr></thead><tbody><tr><td>ShEx</td><td>Qwen3-Coder-30B</td><td>.976</td><td>0</td><td>.371</td></tr><tr><td>ShEx</td><td>DeepSeek-V3.1</td><td>.994</td><td>0</td><td>.381</td></tr><tr><td>ShEx+triple+QQP</td><td>DeepSeek-V3.1</td><td>.986</td><td>.272</td><td>.765</td></tr><tr><td>VoID+ShEx+triple+QQP</td><td>DeepSeek-V3.1</td><td>.978</td><td>.419</td><td>.770</td></tr></tbody></table></div><div class="tbl-foot">EMRelEx는 쿼리 실행 결과가 정답과 같은지, F1은 쿼리 문자열 겹침을 나타낸다.</div></div>
+</section>
+<section class="ch" id="c3">
+<div class="ch-eyebrow"><span class="cnum">03</span><span class="clabel">Results · 결과</span></div>
+<h2 class="ch-title">실행 가능성과 정답은 다른 문제였다</h2>
+<div class="tldr"><div class="h">한눈에 요약</div><p>ShEx만 넣어도 큰 모델의 실행률은 0.97 이상이었지만 EMRelEx는 0이었다. DeepSeek-V3.1에 VoID+ShEx+검색 triple+QQP를 모두 넣었을 때 실행 결과 EMRelEx가 0.419로 최고였다.</p></div>
+<div class="call ar"><div class="ct">초등학생도 이해하는 설명</div><p>문장이 문법에 맞게 쓰였다는 것과, 문제의 정답을 맞혔다는 것은 다르다. 숙제 문장이 말이 돼도 답이 틀릴 수 있다.</p></div><p class="lead">논문이 강조하는 교훈은 쿼리 글자 모양 F1만 보고 성공했다고 말하면 안 된다는 것이다.</p><p>대표 사례에서 F1=0.9464인 쿼리도 prefix 이름이 달라 실행에 실패했다. QQP가 정답에 크게 기여했지만, Qwen2.5-3B는 QQP를 넣자 실행률이 거의 0으로 떨어지는 등 모델 규모와 컨텍스트 조합의 상호작용도 컸다.</p><div class="stat-row"><div class="stat"><div class="v arb">0.419</div><div class="l">최고 실행 결과 EM</div></div><div class="stat"><div class="v">0.97+</div><div class="l">ShEx 단독 대형 모델 실행률</div></div><div class="stat"><div class="v">513</div><div class="l">SciQA 테스트 질문</div></div></div><figure>
+<div class="fig-top"><span class="fnum">FIG 3</span><span class="ftitle">정답 쿼리와 겉보기로 비슷한 실패 쿼리</span></div>
+<div class="imgbox"><img alt="정답 쿼리와 겉보기로 비슷한 실패 쿼리" decoding="async" loading="lazy" src="/paper-assets/eae1f3d80429fe7ce953a57602e83b02199e45eafdebc4c4f7d787d5ecb5f5dd.png"/></div>
+<figcaption>prefix 선언과 실제 사용 이름이 달라 문자열 F1은 높지만 실행 결과는 틀린 사례다.</figcaption>
+</figure>
+</section>
+<section class="ch" id="c4">
+<div class="ch-eyebrow"><span class="cnum">04</span><span class="clabel">Scaling · 확장</span></div>
+<h2 class="ch-title">그래프가 커질수록 전체를 읽지 말고 대표 샘플을 읽는다</h2>
+<div class="tldr"><div class="h">한눈에 요약</div><p>VoID·ShEx 생성은 full-scan SPARQL 집계 때문에 느리거나 timeout이 난다. EXYGEN은 predicate가 골고루 나타나도록 병렬 random walk와 의미/degree 기반 이웃 선택을 사용한다.</p></div>
+<div class="call ar"><div class="ct">초등학생도 이해하는 설명</div><p>도시의 모든 집을 방문하지 않고, 동네마다 대표 집을 골라 주소 체계가 어떤지 알아내는 방식이다.</p></div><p class="lead">두 홉 random walk가 비용과 coverage의 균형이 좋았고, OCM에서는 semantic similarity &lt;0.6가 2.41분에 76.64% predicate coverage를 달성했다.</p><p>GESIS는 97.52M triple의 0.42%만 샘플해도 metadata 생성 시간이 19분 21초에서 13.77초로 줄었다. ORKG는 triple 수보다 세밀한 ontology 조합이 문제라 전체 생성이 불가능했고 18% 샘플이 유일한 실행 경로였다.</p><div class="tbl-wrap"><div class="tbl-cap"><span class="tn">TABLE 2</span>대규모 KG 샘플링 결과</div>
+<div class="tbl-scroll"><table><thead><tr><th>KG·전략</th><th>샘플 triple</th><th>PredCov</th><th>MissTrip</th><th>시간</th></tr></thead><tbody><tr><td>GESIS·brute force 2-hop</td><td>52,681</td><td>30.62%</td><td>0.82%</td><td>1.67분</td></tr><tr><td>GESIS·semantic &lt;0.8</td><td>411,600</td><td>57.86%</td><td>0.42%</td><td>95.82분</td></tr><tr><td>OCM·semantic &lt;0.6</td><td>100,229</td><td>76.64%</td><td>0.0049%</td><td>2.41분</td></tr><tr><td>OCM·top-40 degree</td><td>250,480</td><td>76.64%</td><td>0.0049%</td><td>22.60분</td></tr></tbody></table></div></div><div class="tbl-wrap"><div class="tbl-cap"><span class="tn">TABLE 3</span>전체 그래프와 샘플 그래프의 메타데이터 생성</div>
+<div class="tbl-scroll"><table><thead><tr><th>KG</th><th>전체 시간</th><th>샘플 시간</th><th>샘플링률</th></tr></thead><tbody><tr><td>GESIS</td><td>19분 21초</td><td>13.77초</td><td>0.42%</td></tr><tr><td>OpenCitations Meta</td><td>64분 16초</td><td>11.34초</td><td>&lt;0.01%</td></tr><tr><td>ORKG</td><td>실행 불가</td><td>43분 37초</td><td>18.0%</td></tr></tbody></table></div><div class="tbl-foot">GESIS·OCM은 80배 이상 빨라졌고, ORKG는 전체 생성이 불가능해 샘플링이 유일한 경로였다.</div></div><figure>
+<div class="fig-top"><span class="fnum">FIG 3</span><span class="ftitle">질문–쿼리 예시와 확장 결과</span></div>
+<div class="imgbox"><img alt="질문–쿼리 예시와 확장 결과" decoding="async" loading="lazy" src="/paper-assets/eae1f3d80429fe7ce953a57602e83b02199e45eafdebc4c4f7d787d5ecb5f5dd.png"/></div>
+<figcaption>샘플링·구조 컨텍스트가 실제 질의 생성에 어떤 정보를 주는지 보여주는 원문 그림.</figcaption>
+</figure>
+</section>
+<section class="ch" id="c5">
+<div class="ch-eyebrow"><span class="cnum">05</span><span class="clabel">Limits · 한계</span></div>
+<h2 class="ch-title">예시가 없으면 schema만으로는 정답까지 못 간다</h2>
+<div class="tldr"><div class="h">한눈에 요약</div><p>EXYGEN은 fine-tuning 없이 구조화 컨텍스트가 실행 가능성을 높인다는 점을 보였지만, SciQA 하나의 벤치마크에 의존하고 curated question-query examples가 여전히 결정적이다.</p></div>
+<div class="call ar"><div class="ct">초등학생도 이해하는 설명</div><p>문법책만 주면 문장은 만들 수 있지만, 실제 문제를 푸는 예시가 있어야 어떤 답을 써야 하는지 배운다.</p></div><p class="lead">샘플링은 그래프를 이해하기 위한 metadata를 싸게 만드는 장치이지, 그래프의 모든 사실을 보존하는 검색 인덱스와 같은 것은 아니다.</p><p>저자들은 synthetic exemplar 생성이나 실행 피드백을 이용해 QQP 의존을 줄이는 후속 연구를 제안한다. 또한 논문에 직접 확인된 소속은 모두 Odoma Ltd.이며, 연구 결과를 다른 KG·LLM·endpoint로 일반화하려면 별도 검증이 필요하다.</p><div class="call arb"><div class="ct">검색 경험칙</div><p>ShEx·VoID·retrieved triples·question-query pairs가 보이면 ‘그래프의 구조를 알려주는 KG-RAG’다. HNSW/Vamana만 보이면 지식 그래프가 아니라 벡터 검색 내부 인덱스일 가능성이 높다.</p></div>
+</section>
+<section class="ch" id="gloss">
+<div class="ch-eyebrow"><span class="cnum">＋</span><span class="clabel">Glossary · 핵심 용어</span></div>
+<h2 class="ch-title">핵심 용어 정리</h2>
+<div class="tldr"><div class="h">한눈에 요약</div><p>논문의 주장을 따라가는 데 필요한 용어만 간결하게 모았다.</p></div>
+<div class="gloss"><div class="gitem"><div class="term">VoID<span class="en">Vocabulary of Interlinked Datasets</span></div><p>RDF 데이터셋의 클래스·predicate 통계를 설명하는 표준 어휘.</p></div><div class="gitem"><div class="term">ShEx<span class="en">Shape Expressions</span></div><p>클래스별 속성·값 타입·카디널리티를 표현하는 KG schema 언어.</p></div><div class="gitem"><div class="term">SPARQL<span class="en">SPARQL</span></div><p>RDF 지식 그래프에 질문하는 구조화 질의 언어.</p></div><div class="gitem"><div class="term">EMRelEx<span class="en">Execution-based Exact Match Relaxed</span></div><p>생성 쿼리를 실제 실행한 결과 집합이 정답과 같은지 비교하는 지표.</p></div><div class="gitem"><div class="term">Predicate coverage<span class="en">Predicate coverage</span></div><p>샘플 안에 원 그래프의 서로 다른 관계(predicate)가 한 번 이상 등장한 비율.</p></div><div class="gitem"><div class="term">QQP<span class="en">Question-query pair</span></div><p>자연어 질문과 정답 SPARQL을 함께 묶은 few-shot 예시.</p></div></div>
+</section>
+<section class="ch" id="take">
+<div class="ch-eyebrow"><span class="cnum">＋</span><span class="clabel">One-page Summary · 한 장 정리</span></div>
+<h2 class="ch-title">이 논문을 한 장으로</h2>
+<div class="tldr"><div class="h">한눈에 요약</div><p>문제, 방법, 증거, 한계를 한 번에 다시 정리한다.</p></div>
+<div class="takeaways"><div class="take"><div class="n">01</div><div class="body">LLM에 그래프 전체 대신 schema·통계·triple·질의 예시를 검색해 준다.</div></div><div class="take"><div class="n">02</div><div class="body">ShEx는 실행 가능한 쿼리 구조를 잡는 데 특히 중요했다.</div></div><div class="take"><div class="n">03</div><div class="body">ShEx 단독으로 실행률은 높아도 정답 결과는 0일 수 있다.</div></div><div class="take"><div class="n">04</div><div class="body">DeepSeek-V3.1+전체 컨텍스트의 실행 결과 EMRelEx는 0.419였다.</div></div><div class="take"><div class="n">05</div><div class="body">GESIS metadata 생성은 19분 21초에서 13.77초로 줄었다.</div></div><div class="take"><div class="n">06</div><div class="body">ORKG는 세밀한 ontology 때문에 full generation이 불가능해 sampling이 유일했다.</div></div><div class="take"><div class="n">07</div><div class="body">curated QQP 의존과 SciQA 단일 벤치마크는 아직 남은 한계다.</div></div></div>
+</section>

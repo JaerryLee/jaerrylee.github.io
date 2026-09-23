@@ -1,0 +1,864 @@
+<section class="ch" id="c1">
+<div class="ch-eyebrow"><span class="cnum">01</span><span class="clabel">Problem · 문제</span></div>
+<h2 class="ch-title">실패 한 번을 통째로 저장하면 잘못된 교훈이 쌓인다</h2>
+<div class="tldr"><div class="h">한눈에 요약</div><p>장기 에이전트 과제는 계획이 틀렸을 수도, 실행이 틀렸을 수도 있다. 기존 경험 메모리는 둘을 분리하지 않은 채 성공·실패 궤적을 압축해 저장하므로 다음 과제에 맞지 않거나 서로 모순되는 조언이 누적된다.</p></div>
+<p class="lead">CHIME은 경험을 저장하기 전에 <strong>어느 층의 잘못인지 먼저 귀속</strong>한다.</p><p>계획 메모리에는 전략·분해·의사결정 교훈을, 실행 메모리에는 도구 사용·검증·운영 교훈을 둔다. 성공 결과만 보고 모든 단계를 강화하지 않는 것이 출발점이다.</p><figure>
+<div class="fig-top"><span class="fnum">FIG 1</span><span class="ftitle">결과 기반 단일 메모리와 CHIME 비교</span></div>
+<div class="imgbox"><img alt="결과 기반 단일 메모리와 CHIME 비교" decoding="async" loading="lazy" src="/paper-assets/4ef21cdeb7f58b43364997633ce6baaa5da3e93a644ecb32386ea55362c13e21.png"/></div>
+<figcaption>같은 실패에서도 계획과 실행의 책임을 분리하면 저장할 교훈이 달라진다.</figcaption>
+</figure>
+</section>
+<section class="ch" id="c2">
+<div class="ch-eyebrow"><span class="cnum">02</span><span class="clabel">Method · 방법</span></div>
+<h2 class="ch-title">귀속 게이트 뒤에 계층 메모리와 가치 기반 진화를 둔다</h2>
+<div class="tldr"><div class="h">한눈에 요약</div><p>귀속 게이트는 한 에피소드를 계획·실행·둘 다·둘 다 아님으로 분류하고 신뢰도와 오도성 여부를 기록한다. 선택된 층의 메모리만 갱신하며, 가치 점수로 검색·병합·정리해 중복과 낡은 교훈을 억제한다.</p></div>
+<p class="lead">핵심은 메모리를 많이 쌓는 것이 아니라 다음 과제의 의사결정에 실제로 기여한 기억을 남기는 것이다.</p><p>계획 단계에서는 계획 메모리를, 도구 실행 단계에서는 실행 메모리를 따로 검색한다. 에피소드 결과가 나온 뒤 귀속 결과에 따라 관련 기억의 가치를 올리거나 내린다.</p><figure>
+<div class="fig-top"><span class="fnum">FIG 2</span><span class="ftitle">계층 메모리·귀속 게이트·진화 루프</span></div>
+<div class="imgbox"><img alt="계층 메모리·귀속 게이트·진화 루프" decoding="async" loading="lazy" src="/paper-assets/b26da4b8af3f6c6edb6c5254f5a8e8c4007a191f7c59f5d8dad4a12c68d1211b.png"/></div>
+<figcaption>계획과 실행을 분리해 검색하고 결과 뒤에 책임 층과 메모리 가치를 갱신한다.</figcaption>
+</figure>
+</section>
+<section class="ch" id="c3">
+<div class="ch-eyebrow"><span class="cnum">03</span><span class="clabel">Results · 결과</span></div>
+<h2 class="ch-title">강한 기준선보다 평균 2.96·3.68점 높았다</h2>
+<div class="tldr"><div class="h">한눈에 요약</div><p>네 개 장기 과제 벤치마크에서 CHIME은 Qwen3.5-Flash 기준 가장 강한 비교법보다 평균 2.96점, DeepSeek-V4-Flash에서는 3.68점 높았다. 절제 실험도 귀속, 계층 분리, 가치 기반 진화가 각각 기여함을 보여준다.</p></div>
+<p class="lead">성능 개선과 동시에 저장 메모리는 129개로, A-MapReduce의 3,585개보다 훨씬 적었다.</p><p>이는 단순 압축률만의 승리가 아니다. 계획 고가치 메모리의 정확도는 21.7%에서 50.8%, 실행 메모리는 23.7%에서 35.4%로 높아졌다.</p><div class="tbl-wrap"><div class="tbl-cap"><span class="tn">TABLE 1</span>두 백본·네 벤치마크 주요 결과</div><div class="tbl-scroll"><table>
+<thead class="ltx_thead">
+<tr class="ltx_tr" id="S4.T1.1.1">
+<th class="ltx_td ltx_nopad_l ltx_th ltx_th_row ltx_border_tt" id="S4.T1.1.1.1"></th>
+<th class="ltx_td ltx_align_center ltx_th ltx_th_column ltx_border_tt" colspan="2" id="S4.T1.1.1.2"><math class="ltx_Math" display="inline" id="S4.T1.m1"><semantics><msup><mi>τ</mi><mn>2</mn></msup><annotation encoding="application/x-tex">\tau^{2}</annotation></semantics></math><span class="ltx_text ltx_font_bold" id="S4.T1.1.1.2.1">-Bench</span></th>
+<th class="ltx_td ltx_align_center ltx_th ltx_th_column ltx_border_tt" colspan="2" id="S4.T1.1.1.3"><span class="ltx_text ltx_font_bold" id="S4.T1.1.1.3.1">VitaBench</span></th>
+<th class="ltx_td ltx_align_center ltx_th ltx_th_column ltx_border_tt" colspan="2" id="S4.T1.1.1.4"><span class="ltx_text ltx_font_bold" id="S4.T1.1.1.4.1">BrowseComp-ZH</span></th>
+<th class="ltx_td ltx_align_center ltx_th ltx_th_column ltx_border_tt" colspan="2" id="S4.T1.1.1.5"><span class="ltx_text ltx_font_bold" id="S4.T1.1.1.5.1">BFCL-v4</span></th>
+<th class="ltx_td ltx_align_center ltx_th ltx_th_column ltx_border_tt" colspan="2" id="S4.T1.1.1.6"><span class="ltx_text ltx_font_bold" id="S4.T1.1.1.6.1">Average</span></th></tr>
+<tr class="ltx_tr" id="S4.T1.1.2">
+<th class="ltx_td ltx_align_left ltx_th ltx_th_column ltx_th_row" id="S4.T1.1.2.1"><span class="ltx_text ltx_font_bold" id="S4.T1.1.2.1.1">Method</span></th>
+<th class="ltx_td ltx_align_center ltx_th ltx_th_column ltx_border_t" id="S4.T1.1.2.2"><span class="ltx_text ltx_font_bold" id="S4.T1.1.2.2.1">Train</span></th>
+<th class="ltx_td ltx_align_center ltx_th ltx_th_column ltx_border_t" id="S4.T1.1.2.3"><span class="ltx_text ltx_font_bold" id="S4.T1.1.2.3.1">Eval</span></th>
+<th class="ltx_td ltx_align_center ltx_th ltx_th_column ltx_border_t" id="S4.T1.1.2.4"><span class="ltx_text ltx_font_bold" id="S4.T1.1.2.4.1">Train</span></th>
+<th class="ltx_td ltx_align_center ltx_th ltx_th_column ltx_border_t" id="S4.T1.1.2.5"><span class="ltx_text ltx_font_bold" id="S4.T1.1.2.5.1">Eval</span></th>
+<th class="ltx_td ltx_align_center ltx_th ltx_th_column ltx_border_t" id="S4.T1.1.2.6"><span class="ltx_text ltx_font_bold" id="S4.T1.1.2.6.1">Train</span></th>
+<th class="ltx_td ltx_align_center ltx_th ltx_th_column ltx_border_t" id="S4.T1.1.2.7"><span class="ltx_text ltx_font_bold" id="S4.T1.1.2.7.1">Eval</span></th>
+<th class="ltx_td ltx_align_center ltx_th ltx_th_column ltx_border_t" id="S4.T1.1.2.8"><span class="ltx_text ltx_font_bold" id="S4.T1.1.2.8.1">Train</span></th>
+<th class="ltx_td ltx_align_center ltx_th ltx_th_column ltx_border_t" id="S4.T1.1.2.9"><span class="ltx_text ltx_font_bold" id="S4.T1.1.2.9.1">Eval</span></th>
+<th class="ltx_td ltx_align_center ltx_th ltx_th_column ltx_border_t" id="S4.T1.1.2.10"><span class="ltx_text ltx_font_bold" id="S4.T1.1.2.10.1">Train</span></th>
+<th class="ltx_td ltx_nopad_r ltx_align_center ltx_th ltx_th_column ltx_border_t" id="S4.T1.1.2.11"><span class="ltx_text ltx_font_bold" id="S4.T1.1.2.11.1">Eval</span></th></tr>
+<tr class="ltx_tr" id="S4.T1.1.3">
+<th class="ltx_td ltx_align_center ltx_th ltx_th_column ltx_th_row ltx_border_t" colspan="11" id="S4.T1.1.3.1"><span class="ltx_text ltx_font_bold" id="S4.T1.1.3.1.1">Qwen3.5-Flash</span></th></tr>
+</thead>
+<tbody class="ltx_tbody">
+<tr class="ltx_tr" id="S4.T1.1.4">
+<th class="ltx_td ltx_align_left ltx_th ltx_th_row ltx_border_t" id="S4.T1.1.4.1">Qwen3.5-Flash No-Plan</th>
+<td class="ltx_td ltx_align_center ltx_border_t" id="S4.T1.1.4.2">21.68</td>
+<td class="ltx_td ltx_align_center ltx_border_t" id="S4.T1.1.4.3">22.32</td>
+<td class="ltx_td ltx_align_center ltx_border_t" id="S4.T1.1.4.4">9.40</td>
+<td class="ltx_td ltx_align_center ltx_border_t" id="S4.T1.1.4.5">8.89</td>
+<td class="ltx_td ltx_align_center ltx_border_t" id="S4.T1.1.4.6">20.20</td>
+<td class="ltx_td ltx_align_center ltx_border_t" id="S4.T1.1.4.7">21.25</td>
+<td class="ltx_td ltx_align_center ltx_border_t" id="S4.T1.1.4.8">71.33</td>
+<td class="ltx_td ltx_align_center ltx_border_t" id="S4.T1.1.4.9">70.86</td>
+<td class="ltx_td ltx_align_center ltx_border_t" id="S4.T1.1.4.10">30.65</td>
+<td class="ltx_td ltx_nopad_r ltx_align_center ltx_border_t" id="S4.T1.1.4.11">30.83</td></tr>
+<tr class="ltx_tr" id="S4.T1.1.5">
+<th class="ltx_td ltx_align_left ltx_th ltx_th_row" id="S4.T1.1.5.1">WebAnchor <cite class="ltx_cite ltx_citemacro_citep">(Yu et al., 2026)</cite></th>
+<td class="ltx_td ltx_align_center" id="S4.T1.1.5.2">24.77</td>
+<td class="ltx_td ltx_align_center" id="S4.T1.1.5.3">23.45</td>
+<td class="ltx_td ltx_align_center" id="S4.T1.1.5.4">14.76</td>
+<td class="ltx_td ltx_align_center" id="S4.T1.1.5.5">11.94</td>
+<td class="ltx_td ltx_align_center" id="S4.T1.1.5.6">17.68</td>
+<td class="ltx_td ltx_align_center" id="S4.T1.1.5.7">21.98</td>
+<td class="ltx_td ltx_align_center" id="S4.T1.1.5.8">69.36</td>
+<td class="ltx_td ltx_align_center" id="S4.T1.1.5.9">70.26</td>
+<td class="ltx_td ltx_align_center" id="S4.T1.1.5.10">31.64</td>
+<td class="ltx_td ltx_nopad_r ltx_align_center" id="S4.T1.1.5.11">31.91</td></tr>
+<tr class="ltx_tr" id="S4.T1.1.6">
+<th class="ltx_td ltx_align_left ltx_th ltx_th_row" id="S4.T1.1.6.1">TodoEvolve <cite class="ltx_cite ltx_citemacro_citep">(Liu et al., 2026)</cite></th>
+<td class="ltx_td ltx_align_center" id="S4.T1.1.6.2">20.13</td>
+<td class="ltx_td ltx_align_center" id="S4.T1.1.6.3">21.28</td>
+<td class="ltx_td ltx_align_center" id="S4.T1.1.6.4">10.60</td>
+<td class="ltx_td ltx_align_center" id="S4.T1.1.6.5">6.11</td>
+<td class="ltx_td ltx_align_center" id="S4.T1.1.6.6">20.88</td>
+<td class="ltx_td ltx_align_center" id="S4.T1.1.6.7">20.51</td>
+<td class="ltx_td ltx_align_center" id="S4.T1.1.6.8">69.75</td>
+<td class="ltx_td ltx_align_center" id="S4.T1.1.6.9">70.20</td>
+<td class="ltx_td ltx_align_center" id="S4.T1.1.6.10">30.34</td>
+<td class="ltx_td ltx_nopad_r ltx_align_center" id="S4.T1.1.6.11">29.53</td></tr>
+<tr class="ltx_tr" id="S4.T1.1.7">
+<th class="ltx_td ltx_align_left ltx_th ltx_th_row" id="S4.T1.1.7.1">A-MapReduce <cite class="ltx_cite ltx_citemacro_citep">(Chen et al., 2026)</cite></th>
+<td class="ltx_td ltx_align_center" id="S4.T1.1.7.2">19.81</td>
+<td class="ltx_td ltx_align_center" id="S4.T1.1.7.3">20.55</td>
+<td class="ltx_td ltx_align_center" id="S4.T1.1.7.4">12.02</td>
+<td class="ltx_td ltx_align_center" id="S4.T1.1.7.5">6.67</td>
+<td class="ltx_td ltx_align_center" id="S4.T1.1.7.6">18.35</td>
+<td class="ltx_td ltx_align_center" id="S4.T1.1.7.7">18.31</td>
+<td class="ltx_td ltx_align_center" id="S4.T1.1.7.8">73.84</td>
+<td class="ltx_td ltx_align_center" id="S4.T1.1.7.9">72.45</td>
+<td class="ltx_td ltx_align_center" id="S4.T1.1.7.10">31.01</td>
+<td class="ltx_td ltx_nopad_r ltx_align_center" id="S4.T1.1.7.11">29.50</td></tr>
+<tr class="ltx_tr" id="S4.T1.1.8">
+<th class="ltx_td ltx_align_left ltx_th ltx_th_row" id="S4.T1.1.8.1"><span class="ltx_text ltx_font_bold" id="S4.T1.1.8.1.1">CHIME</span> (Our Method)</th>
+<td class="ltx_td ltx_align_center" id="S4.T1.1.8.2"><span class="ltx_text ltx_font_bold" id="S4.T1.1.8.2.1">26.25</span></td>
+<td class="ltx_td ltx_align_center" id="S4.T1.1.8.3"><span class="ltx_text ltx_font_bold" id="S4.T1.1.8.3.1">25.92</span></td>
+<td class="ltx_td ltx_align_center" id="S4.T1.1.8.4"><span class="ltx_text ltx_font_bold" id="S4.T1.1.8.4.1">16.19</span></td>
+<td class="ltx_td ltx_align_center" id="S4.T1.1.8.5"><span class="ltx_text ltx_font_bold" id="S4.T1.1.8.5.1">15.83</span></td>
+<td class="ltx_td ltx_align_center" id="S4.T1.1.8.6"><span class="ltx_text ltx_font_bold" id="S4.T1.1.8.6.1">23.74</span></td>
+<td class="ltx_td ltx_align_center" id="S4.T1.1.8.7"><span class="ltx_text ltx_font_bold" id="S4.T1.1.8.7.1">23.81</span></td>
+<td class="ltx_td ltx_align_center" id="S4.T1.1.8.8"><span class="ltx_text ltx_font_bold" id="S4.T1.1.8.8.1">73.90</span></td>
+<td class="ltx_td ltx_align_center" id="S4.T1.1.8.9"><span class="ltx_text ltx_font_bold" id="S4.T1.1.8.9.1">73.91</span></td>
+<td class="ltx_td ltx_align_center" id="S4.T1.1.8.10"><span class="ltx_text ltx_font_bold" id="S4.T1.1.8.10.1">35.02</span></td>
+<td class="ltx_td ltx_nopad_r ltx_align_center" id="S4.T1.1.8.11"><span class="ltx_text ltx_font_bold" id="S4.T1.1.8.11.1">34.87</span></td></tr>
+<tr class="ltx_tr" id="S4.T1.1.9">
+<th class="ltx_td ltx_align_center ltx_th ltx_th_row ltx_border_t" colspan="11" id="S4.T1.1.9.1"><span class="ltx_text ltx_font_bold" id="S4.T1.1.9.1.1">DeepSeek-V4-Flash</span></th></tr>
+<tr class="ltx_tr" id="S4.T1.1.10">
+<th class="ltx_td ltx_align_left ltx_th ltx_th_row ltx_border_t" id="S4.T1.1.10.1">DeepSeek-V4-Flash No-Plan</th>
+<td class="ltx_td ltx_align_center ltx_border_t" id="S4.T1.1.10.2">31.42</td>
+<td class="ltx_td ltx_align_center ltx_border_t" id="S4.T1.1.10.3">32.86</td>
+<td class="ltx_td ltx_align_center ltx_border_t" id="S4.T1.1.10.4">16.31</td>
+<td class="ltx_td ltx_align_center ltx_border_t" id="S4.T1.1.10.5">11.11</td>
+<td class="ltx_td ltx_align_center ltx_border_t" id="S4.T1.1.10.6">26.94</td>
+<td class="ltx_td ltx_align_center ltx_border_t" id="S4.T1.1.10.7">23.81</td>
+<td class="ltx_td ltx_align_center ltx_border_t" id="S4.T1.1.10.8">63.75</td>
+<td class="ltx_td ltx_align_center ltx_border_t" id="S4.T1.1.10.9">64.15</td>
+<td class="ltx_td ltx_align_center ltx_border_t" id="S4.T1.1.10.10">34.61</td>
+<td class="ltx_td ltx_nopad_r ltx_align_center ltx_border_t" id="S4.T1.1.10.11">32.98</td></tr>
+<tr class="ltx_tr" id="S4.T1.1.11">
+<th class="ltx_td ltx_align_left ltx_th ltx_th_row" id="S4.T1.1.11.1">WebAnchor <cite class="ltx_cite ltx_citemacro_cite">Yu et al. (2026)</cite></th>
+<td class="ltx_td ltx_align_center" id="S4.T1.1.11.2">31.30</td>
+<td class="ltx_td ltx_align_center" id="S4.T1.1.11.3">29.61</td>
+<td class="ltx_td ltx_align_center" id="S4.T1.1.11.4">22.62</td>
+<td class="ltx_td ltx_align_center" id="S4.T1.1.11.5">17.50</td>
+<td class="ltx_td ltx_align_center" id="S4.T1.1.11.6">29.46</td>
+<td class="ltx_td ltx_align_center" id="S4.T1.1.11.7">24.54</td>
+<td class="ltx_td ltx_align_center" id="S4.T1.1.11.8">58.27</td>
+<td class="ltx_td ltx_align_center" id="S4.T1.1.11.9">60.88</td>
+<td class="ltx_td ltx_align_center" id="S4.T1.1.11.10">35.41</td>
+<td class="ltx_td ltx_nopad_r ltx_align_center" id="S4.T1.1.11.11">33.13</td></tr>
+<tr class="ltx_tr" id="S4.T1.1.12">
+<th class="ltx_td ltx_align_left ltx_th ltx_th_row" id="S4.T1.1.12.1">TodoEvolve <cite class="ltx_cite ltx_citemacro_cite">Liu et al. (2026)</cite></th>
+<td class="ltx_td ltx_align_center" id="S4.T1.1.12.2">28.45</td>
+<td class="ltx_td ltx_align_center" id="S4.T1.1.12.3">26.18</td>
+<td class="ltx_td ltx_align_center" id="S4.T1.1.12.4">18.57</td>
+<td class="ltx_td ltx_align_center" id="S4.T1.1.12.5">15.56</td>
+<td class="ltx_td ltx_align_center" id="S4.T1.1.12.6">26.26</td>
+<td class="ltx_td ltx_align_center" id="S4.T1.1.12.7">22.34</td>
+<td class="ltx_td ltx_align_center" id="S4.T1.1.12.8">56.29</td>
+<td class="ltx_td ltx_align_center" id="S4.T1.1.12.9">58.32</td>
+<td class="ltx_td ltx_align_center" id="S4.T1.1.12.10">32.39</td>
+<td class="ltx_td ltx_nopad_r ltx_align_center" id="S4.T1.1.12.11">30.60</td></tr>
+<tr class="ltx_tr" id="S4.T1.1.13">
+<th class="ltx_td ltx_align_left ltx_th ltx_th_row" id="S4.T1.1.13.1">A-MapReduce <cite class="ltx_cite ltx_citemacro_cite">Chen et al. (2026)</cite></th>
+<td class="ltx_td ltx_align_center" id="S4.T1.1.13.2">30.55</td>
+<td class="ltx_td ltx_align_center" id="S4.T1.1.13.3">30.95</td>
+<td class="ltx_td ltx_align_center" id="S4.T1.1.13.4">21.07</td>
+<td class="ltx_td ltx_align_center" id="S4.T1.1.13.5">15.83</td>
+<td class="ltx_td ltx_align_center" id="S4.T1.1.13.6">27.61</td>
+<td class="ltx_td ltx_align_center" id="S4.T1.1.13.7">24.54</td>
+<td class="ltx_td ltx_align_center" id="S4.T1.1.13.8"><span class="ltx_text ltx_font_bold" id="S4.T1.1.13.8.1">69.18</span></td>
+<td class="ltx_td ltx_align_center" id="S4.T1.1.13.9"><span class="ltx_text ltx_font_bold" id="S4.T1.1.13.9.1">69.98</span></td>
+<td class="ltx_td ltx_align_center" id="S4.T1.1.13.10">37.10</td>
+<td class="ltx_td ltx_nopad_r ltx_align_center" id="S4.T1.1.13.11">35.33</td></tr>
+<tr class="ltx_tr" id="S4.T1.1.14">
+<th class="ltx_td ltx_align_left ltx_th ltx_th_row ltx_border_bb" id="S4.T1.1.14.1"><span class="ltx_text ltx_font_bold" id="S4.T1.1.14.1.1">CHIME</span> (Our Method)</th>
+<td class="ltx_td ltx_align_center ltx_border_bb" id="S4.T1.1.14.2"><span class="ltx_text ltx_font_bold" id="S4.T1.1.14.2.1">33.15</span></td>
+<td class="ltx_td ltx_align_center ltx_border_bb" id="S4.T1.1.14.3"><span class="ltx_text ltx_font_bold" id="S4.T1.1.14.3.1">36.28</span></td>
+<td class="ltx_td ltx_align_center ltx_border_bb" id="S4.T1.1.14.4"><span class="ltx_text ltx_font_bold" id="S4.T1.1.14.4.1">22.98</span></td>
+<td class="ltx_td ltx_align_center ltx_border_bb" id="S4.T1.1.14.5"><span class="ltx_text ltx_font_bold" id="S4.T1.1.14.5.1">21.11</span></td>
+<td class="ltx_td ltx_align_center ltx_border_bb" id="S4.T1.1.14.6"><span class="ltx_text ltx_font_bold" id="S4.T1.1.14.6.1">29.97</span></td>
+<td class="ltx_td ltx_align_center ltx_border_bb" id="S4.T1.1.14.7"><span class="ltx_text ltx_font_bold" id="S4.T1.1.14.7.1">31.50</span></td>
+<td class="ltx_td ltx_align_center ltx_border_bb" id="S4.T1.1.14.8">65.89</td>
+<td class="ltx_td ltx_align_center ltx_border_bb" id="S4.T1.1.14.9">67.15</td>
+<td class="ltx_td ltx_align_center ltx_border_bb" id="S4.T1.1.14.10"><span class="ltx_text ltx_font_bold" id="S4.T1.1.14.10.1">38.00</span></td>
+<td class="ltx_td ltx_nopad_r ltx_align_center ltx_border_bb" id="S4.T1.1.14.11"><span class="ltx_text ltx_font_bold" id="S4.T1.1.14.11.1">39.01</span></td></tr>
+</tbody>
+</table></div><div class="tbl-foot">원문 arXiv HTML의 셀과 수치를 순서대로 재구성했다.</div></div><div class="tbl-wrap"><div class="tbl-cap"><span class="tn">TABLE 2</span>CHIME 구성요소 절제</div><div class="tbl-scroll"><table>
+<tbody class="ltx_tbody">
+<tr class="ltx_tr" id="S4.T2.1.1">
+<th class="ltx_td ltx_nopad_l ltx_th ltx_th_row ltx_border_tt" id="S4.T2.1.1.1"></th>
+<td class="ltx_td ltx_align_center ltx_border_tt" colspan="2" id="S4.T2.1.1.2"><math class="ltx_Math" display="inline" id="S4.T2.m1"><semantics><msup><mi>τ</mi><mn>2</mn></msup><annotation encoding="application/x-tex">\tau^{2}</annotation></semantics></math><span class="ltx_text ltx_font_bold" id="S4.T2.1.1.2.1">-Bench</span></td>
+<td class="ltx_td ltx_align_center ltx_border_tt" colspan="2" id="S4.T2.1.1.3"><span class="ltx_text ltx_font_bold" id="S4.T2.1.1.3.1">VitaBench</span></td>
+<td class="ltx_td ltx_align_center ltx_border_tt" colspan="2" id="S4.T2.1.1.4"><span class="ltx_text ltx_font_bold" id="S4.T2.1.1.4.1">BrowseComp-ZH</span></td>
+<td class="ltx_td ltx_align_center ltx_border_tt" colspan="2" id="S4.T2.1.1.5"><span class="ltx_text ltx_font_bold" id="S4.T2.1.1.5.1">BFCL-v4</span></td>
+<td class="ltx_td ltx_align_center ltx_border_tt" colspan="2" id="S4.T2.1.1.6"><span class="ltx_text ltx_font_bold" id="S4.T2.1.1.6.1">Average</span></td></tr>
+<tr class="ltx_tr" id="S4.T2.1.2">
+<th class="ltx_td ltx_align_left ltx_th ltx_th_row" id="S4.T2.1.2.1"><span class="ltx_text ltx_font_bold" id="S4.T2.1.2.1.1">Method</span></th>
+<td class="ltx_td ltx_align_center ltx_border_t" id="S4.T2.1.2.2"><span class="ltx_text ltx_font_bold" id="S4.T2.1.2.2.1">Train</span></td>
+<td class="ltx_td ltx_align_center ltx_border_t" id="S4.T2.1.2.3"><span class="ltx_text ltx_font_bold" id="S4.T2.1.2.3.1">Eval</span></td>
+<td class="ltx_td ltx_align_center ltx_border_t" id="S4.T2.1.2.4"><span class="ltx_text ltx_font_bold" id="S4.T2.1.2.4.1">Train</span></td>
+<td class="ltx_td ltx_align_center ltx_border_t" id="S4.T2.1.2.5"><span class="ltx_text ltx_font_bold" id="S4.T2.1.2.5.1">Eval</span></td>
+<td class="ltx_td ltx_align_center ltx_border_t" id="S4.T2.1.2.6"><span class="ltx_text ltx_font_bold" id="S4.T2.1.2.6.1">Train</span></td>
+<td class="ltx_td ltx_align_center ltx_border_t" id="S4.T2.1.2.7"><span class="ltx_text ltx_font_bold" id="S4.T2.1.2.7.1">Eval</span></td>
+<td class="ltx_td ltx_align_center ltx_border_t" id="S4.T2.1.2.8"><span class="ltx_text ltx_font_bold" id="S4.T2.1.2.8.1">Train</span></td>
+<td class="ltx_td ltx_align_center ltx_border_t" id="S4.T2.1.2.9"><span class="ltx_text ltx_font_bold" id="S4.T2.1.2.9.1">Eval</span></td>
+<td class="ltx_td ltx_align_center ltx_border_t" id="S4.T2.1.2.10"><span class="ltx_text ltx_font_bold" id="S4.T2.1.2.10.1">Train</span></td>
+<td class="ltx_td ltx_nopad_r ltx_align_center ltx_border_t" id="S4.T2.1.2.11"><span class="ltx_text ltx_font_bold" id="S4.T2.1.2.11.1">Eval</span></td></tr>
+<tr class="ltx_tr" id="S4.T2.1.3">
+<th class="ltx_td ltx_align_left ltx_th ltx_th_row ltx_border_t" id="S4.T2.1.3.1"><span class="ltx_text ltx_font_bold" id="S4.T2.1.3.1.1">CHIME</span></th>
+<td class="ltx_td ltx_align_center ltx_border_t" id="S4.T2.1.3.2"><span class="ltx_text ltx_font_bold" id="S4.T2.1.3.2.1">26.25</span></td>
+<td class="ltx_td ltx_align_center ltx_border_t" id="S4.T2.1.3.3"><span class="ltx_text ltx_font_bold" id="S4.T2.1.3.3.1">25.92</span></td>
+<td class="ltx_td ltx_align_center ltx_border_t" id="S4.T2.1.3.4">16.19</td>
+<td class="ltx_td ltx_align_center ltx_border_t" id="S4.T2.1.3.5"><span class="ltx_text ltx_font_bold" id="S4.T2.1.3.5.1">15.83</span></td>
+<td class="ltx_td ltx_align_center ltx_border_t" id="S4.T2.1.3.6"><span class="ltx_text ltx_font_bold" id="S4.T2.1.3.6.1">23.74</span></td>
+<td class="ltx_td ltx_align_center ltx_border_t" id="S4.T2.1.3.7"><span class="ltx_text ltx_font_bold" id="S4.T2.1.3.7.1">23.81</span></td>
+<td class="ltx_td ltx_align_center ltx_border_t" id="S4.T2.1.3.8"><span class="ltx_text ltx_font_bold" id="S4.T2.1.3.8.1">73.90</span></td>
+<td class="ltx_td ltx_align_center ltx_border_t" id="S4.T2.1.3.9"><span class="ltx_text ltx_font_bold" id="S4.T2.1.3.9.1">73.91</span></td>
+<td class="ltx_td ltx_align_center ltx_border_t" id="S4.T2.1.3.10"><span class="ltx_text ltx_font_bold" id="S4.T2.1.3.10.1">35.02</span></td>
+<td class="ltx_td ltx_nopad_r ltx_align_center ltx_border_t" id="S4.T2.1.3.11"><span class="ltx_text ltx_font_bold" id="S4.T2.1.3.11.1">34.87</span></td></tr>
+<tr class="ltx_tr" id="S4.T2.1.4">
+<th class="ltx_td ltx_align_left ltx_th ltx_th_row ltx_border_t" colspan="11" id="S4.T2.1.4.1"><span class="ltx_text ltx_font_italic" id="S4.T2.1.4.1.1">Hierarchical Memory Design</span></th></tr>
+<tr class="ltx_tr" id="S4.T2.1.5">
+<th class="ltx_td ltx_align_left ltx_th ltx_th_row" id="S4.T2.1.5.1">   w/o Plan Memory</th>
+<td class="ltx_td ltx_align_center" id="S4.T2.1.5.2">22.96</td>
+<td class="ltx_td ltx_align_center" id="S4.T2.1.5.3">23.11</td>
+<td class="ltx_td ltx_align_center" id="S4.T2.1.5.4">15.95</td>
+<td class="ltx_td ltx_align_center" id="S4.T2.1.5.5">12.22</td>
+<td class="ltx_td ltx_align_center" id="S4.T2.1.5.6">20.71</td>
+<td class="ltx_td ltx_align_center" id="S4.T2.1.5.7">20.51</td>
+<td class="ltx_td ltx_align_center" id="S4.T2.1.5.8">69.52</td>
+<td class="ltx_td ltx_align_center" id="S4.T2.1.5.9">70.60</td>
+<td class="ltx_td ltx_align_center" id="S4.T2.1.5.10">32.29<sub class="ltx_sub" id="S4.T2.1.5.10.1"><span class="ltx_text ltx_font_italic" id="S4.T2.1.5.10.1.1">↓2.7</span></sub></td>
+<td class="ltx_td ltx_nopad_r ltx_align_center" id="S4.T2.1.5.11">31.61<sub class="ltx_sub" id="S4.T2.1.5.11.1"><span class="ltx_text ltx_font_italic" id="S4.T2.1.5.11.1.1">↓3.3</span></sub></td></tr>
+<tr class="ltx_tr" id="S4.T2.1.6">
+<th class="ltx_td ltx_align_left ltx_th ltx_th_row" id="S4.T2.1.6.1">   w/o Execution Memory</th>
+<td class="ltx_td ltx_align_center" id="S4.T2.1.6.2">24.38</td>
+<td class="ltx_td ltx_align_center" id="S4.T2.1.6.3">25.14</td>
+<td class="ltx_td ltx_align_center" id="S4.T2.1.6.4">15.47</td>
+<td class="ltx_td ltx_align_center" id="S4.T2.1.6.5">12.50</td>
+<td class="ltx_td ltx_align_center" id="S4.T2.1.6.6">20.88</td>
+<td class="ltx_td ltx_align_center" id="S4.T2.1.6.7">9.16</td>
+<td class="ltx_td ltx_align_center" id="S4.T2.1.6.8">72.93</td>
+<td class="ltx_td ltx_align_center" id="S4.T2.1.6.9">73.42</td>
+<td class="ltx_td ltx_align_center" id="S4.T2.1.6.10">33.42<sub class="ltx_sub" id="S4.T2.1.6.10.1"><span class="ltx_text ltx_font_italic" id="S4.T2.1.6.10.1.1">↓1.6</span></sub></td>
+<td class="ltx_td ltx_nopad_r ltx_align_center" id="S4.T2.1.6.11">30.06<sub class="ltx_sub" id="S4.T2.1.6.11.1"><span class="ltx_text ltx_font_italic" id="S4.T2.1.6.11.1.1">↓4.8</span></sub></td></tr>
+<tr class="ltx_tr" id="S4.T2.1.7">
+<th class="ltx_td ltx_align_left ltx_th ltx_th_row" id="S4.T2.1.7.1">   w/o All Memory</th>
+<td class="ltx_td ltx_align_center" id="S4.T2.1.7.2">24.05</td>
+<td class="ltx_td ltx_align_center" id="S4.T2.1.7.3">23.67</td>
+<td class="ltx_td ltx_align_center" id="S4.T2.1.7.4">13.22</td>
+<td class="ltx_td ltx_align_center" id="S4.T2.1.7.5">12.50</td>
+<td class="ltx_td ltx_align_center" id="S4.T2.1.7.6">19.70</td>
+<td class="ltx_td ltx_align_center" id="S4.T2.1.7.7">19.78</td>
+<td class="ltx_td ltx_align_center" id="S4.T2.1.7.8">69.52</td>
+<td class="ltx_td ltx_align_center" id="S4.T2.1.7.9">70.99</td>
+<td class="ltx_td ltx_align_center" id="S4.T2.1.7.10">31.62<sub class="ltx_sub" id="S4.T2.1.7.10.1"><span class="ltx_text ltx_font_italic" id="S4.T2.1.7.10.1.1">↓3.4</span></sub></td>
+<td class="ltx_td ltx_nopad_r ltx_align_center" id="S4.T2.1.7.11">31.74<sub class="ltx_sub" id="S4.T2.1.7.11.1"><span class="ltx_text ltx_font_italic" id="S4.T2.1.7.11.1.1">↓3.1</span></sub></td></tr>
+<tr class="ltx_tr" id="S4.T2.1.8">
+<th class="ltx_td ltx_align_left ltx_th ltx_th_row" id="S4.T2.1.8.1">   w/o Hierarchical Bank</th>
+<td class="ltx_td ltx_align_center" id="S4.T2.1.8.2">24.87</td>
+<td class="ltx_td ltx_align_center" id="S4.T2.1.8.3">22.76</td>
+<td class="ltx_td ltx_align_center" id="S4.T2.1.8.4">15.60</td>
+<td class="ltx_td ltx_align_center" id="S4.T2.1.8.5">11.11</td>
+<td class="ltx_td ltx_align_center" id="S4.T2.1.8.6">21.04</td>
+<td class="ltx_td ltx_align_center" id="S4.T2.1.8.7">19.41</td>
+<td class="ltx_td ltx_align_center" id="S4.T2.1.8.8">72.63</td>
+<td class="ltx_td ltx_align_center" id="S4.T2.1.8.9">71.79</td>
+<td class="ltx_td ltx_align_center" id="S4.T2.1.8.10">33.54<sub class="ltx_sub" id="S4.T2.1.8.10.1"><span class="ltx_text ltx_font_italic" id="S4.T2.1.8.10.1.1">↓1.5</span></sub></td>
+<td class="ltx_td ltx_nopad_r ltx_align_center" id="S4.T2.1.8.11">31.27<sub class="ltx_sub" id="S4.T2.1.8.11.1"><span class="ltx_text ltx_font_italic" id="S4.T2.1.8.11.1.1">↓3.6</span></sub></td></tr>
+<tr class="ltx_tr" id="S4.T2.1.9">
+<th class="ltx_td ltx_align_left ltx_th ltx_th_row ltx_border_t" colspan="11" id="S4.T2.1.9.1"><span class="ltx_text ltx_font_italic" id="S4.T2.1.9.1.1">Credit Attribution and Memory Evolution</span></th></tr>
+<tr class="ltx_tr" id="S4.T2.1.10">
+<th class="ltx_td ltx_align_left ltx_th ltx_th_row" id="S4.T2.1.10.1">   w/o Attribution Gate</th>
+<td class="ltx_td ltx_align_center" id="S4.T2.1.10.2">21.21</td>
+<td class="ltx_td ltx_align_center" id="S4.T2.1.10.3">22.28</td>
+<td class="ltx_td ltx_align_center" id="S4.T2.1.10.4"><span class="ltx_text ltx_font_bold" id="S4.T2.1.10.4.1">17.02</span></td>
+<td class="ltx_td ltx_align_center" id="S4.T2.1.10.5">12.50</td>
+<td class="ltx_td ltx_align_center" id="S4.T2.1.10.6">20.20</td>
+<td class="ltx_td ltx_align_center" id="S4.T2.1.10.7">22.71</td>
+<td class="ltx_td ltx_align_center" id="S4.T2.1.10.8">73.40</td>
+<td class="ltx_td ltx_align_center" id="S4.T2.1.10.9">72.23</td>
+<td class="ltx_td ltx_align_center" id="S4.T2.1.10.10">32.96<sub class="ltx_sub" id="S4.T2.1.10.10.1"><span class="ltx_text ltx_font_italic" id="S4.T2.1.10.10.1.1">↓2.1</span></sub></td>
+<td class="ltx_td ltx_nopad_r ltx_align_center" id="S4.T2.1.10.11">32.43<sub class="ltx_sub" id="S4.T2.1.10.11.1"><span class="ltx_text ltx_font_italic" id="S4.T2.1.10.11.1.1">↓2.4</span></sub></td></tr>
+<tr class="ltx_tr" id="S4.T2.1.11">
+<th class="ltx_td ltx_align_left ltx_th ltx_th_row" id="S4.T2.1.11.1">   w/o Credit Rerank</th>
+<td class="ltx_td ltx_align_center" id="S4.T2.1.11.2">24.32</td>
+<td class="ltx_td ltx_align_center" id="S4.T2.1.11.3">24.75</td>
+<td class="ltx_td ltx_align_center" id="S4.T2.1.11.4">16.31</td>
+<td class="ltx_td ltx_align_center" id="S4.T2.1.11.5">10.83</td>
+<td class="ltx_td ltx_align_center" id="S4.T2.1.11.6">21.72</td>
+<td class="ltx_td ltx_align_center" id="S4.T2.1.11.7">23.44</td>
+<td class="ltx_td ltx_align_center" id="S4.T2.1.11.8">73.75</td>
+<td class="ltx_td ltx_align_center" id="S4.T2.1.11.9">72.28</td>
+<td class="ltx_td ltx_align_center" id="S4.T2.1.11.10">34.03<sub class="ltx_sub" id="S4.T2.1.11.10.1"><span class="ltx_text ltx_font_italic" id="S4.T2.1.11.10.1.1">↓1.0</span></sub></td>
+<td class="ltx_td ltx_nopad_r ltx_align_center" id="S4.T2.1.11.11">32.83<sub class="ltx_sub" id="S4.T2.1.11.11.1"><span class="ltx_text ltx_font_italic" id="S4.T2.1.11.11.1.1">↓2.0</span></sub></td></tr>
+<tr class="ltx_tr" id="S4.T2.1.12">
+<th class="ltx_td ltx_align_left ltx_th ltx_th_row ltx_border_bb" id="S4.T2.1.12.1">   w/o Memory Evolution</th>
+<td class="ltx_td ltx_align_center ltx_border_bb" id="S4.T2.1.12.2">25.61</td>
+<td class="ltx_td ltx_align_center ltx_border_bb" id="S4.T2.1.12.3">24.32</td>
+<td class="ltx_td ltx_align_center ltx_border_bb" id="S4.T2.1.12.4">16.79</td>
+<td class="ltx_td ltx_align_center ltx_border_bb" id="S4.T2.1.12.5">8.61</td>
+<td class="ltx_td ltx_align_center ltx_border_bb" id="S4.T2.1.12.6">20.71</td>
+<td class="ltx_td ltx_align_center ltx_border_bb" id="S4.T2.1.12.7">22.34</td>
+<td class="ltx_td ltx_align_center ltx_border_bb" id="S4.T2.1.12.8">73.79</td>
+<td class="ltx_td ltx_align_center ltx_border_bb" id="S4.T2.1.12.9">72.05</td>
+<td class="ltx_td ltx_align_center ltx_border_bb" id="S4.T2.1.12.10">34.23<sub class="ltx_sub" id="S4.T2.1.12.10.1"><span class="ltx_text ltx_font_italic" id="S4.T2.1.12.10.1.1">↓0.8</span></sub></td>
+<td class="ltx_td ltx_nopad_r ltx_align_center ltx_border_bb" id="S4.T2.1.12.11">31.83<sub class="ltx_sub" id="S4.T2.1.12.11.1"><span class="ltx_text ltx_font_italic" id="S4.T2.1.12.11.1.1">↓3.0</span></sub></td></tr>
+</tbody>
+</table></div><div class="tbl-foot">원문 arXiv HTML의 셀과 수치를 순서대로 재구성했다.</div></div>
+</section>
+<section class="ch" id="c4">
+<div class="ch-eyebrow"><span class="cnum">04</span><span class="clabel">Analysis · 분석</span></div>
+<h2 class="ch-title">귀속은 대체로 안정적이고 실패의 절반 이상을 구했다</h2>
+<div class="tldr"><div class="h">한눈에 요약</div><p>귀속 게이트 안정성은 조건별 87.8–97.9%였고, 실패 에피소드 중 56.3–67.6%를 이후 메모리 진화로 구제했다. 백본 간 메모리 전이에서도 A-MapReduce보다 2.25–4.68점 높았다.</p></div>
+<p class="lead">같은 벤치마크 안에서 전이한 메모리가 다른 벤치마크로 옮긴 메모리보다 더 강했다.</p><p>즉 CHIME이 범용 절차 지식을 어느 정도 추출하지만, 도메인과 과제 구조에 묶인 기억도 상당하다. 메모리 가치 구간과 누적량 분석은 적은 수의 고가치 기억을 유지하는 설계를 지지한다.</p><figure>
+<div class="fig-top"><span class="fnum">FIG 3</span><span class="ftitle">메모리 축적량과 정확도</span></div>
+<div class="imgbox"><img alt="메모리 축적량과 정확도" decoding="async" loading="lazy" src="/paper-assets/b51c754157d191ba9d35be7c1a7ace875887cfc4c33cb4659dcc16a770b9b8f5.png"/></div>
+<figcaption>CHIME은 비교법보다 작은 메모리 은행을 유지하면서 정확성을 높인다.</figcaption>
+</figure><figure>
+<div class="fig-top"><span class="fnum">FIG 4</span><span class="ftitle">메모리 가치 구간별 다운스트림 정확도</span></div>
+<div class="imgbox"><img alt="메모리 가치 구간별 다운스트림 정확도" decoding="async" loading="lazy" src="/paper-assets/8745dacda24bb30f1f9be1e34dc96279095b5b32b18c51e1ed0b605325c148b6.png"/></div>
+<figcaption>높게 평가된 기억일수록 실제 다음 과제 성공과 더 잘 연결된다.</figcaption>
+</figure><div class="tbl-wrap"><div class="tbl-cap"><span class="tn">TABLE 3</span>메모리 정확성·비중복성·일반성</div><div class="tbl-scroll"><table>
+<thead class="ltx_thead">
+<tr class="ltx_tr" id="S6.T3.1.1">
+<th class="ltx_td ltx_align_left ltx_th ltx_th_column ltx_th_row ltx_border_tt" id="S6.T3.1.1.1"><span class="ltx_text ltx_font_bold" id="S6.T3.1.1.1.1">Method</span></th>
+<th class="ltx_td ltx_align_center ltx_th ltx_th_column ltx_border_tt" id="S6.T3.1.1.2"><span class="ltx_text ltx_font_bold" id="S6.T3.1.1.2.1">Corr.</span></th>
+<th class="ltx_td ltx_align_center ltx_th ltx_th_column ltx_border_tt" id="S6.T3.1.1.3"><span class="ltx_text ltx_font_bold" id="S6.T3.1.1.3.1">Non-R.</span></th>
+<th class="ltx_td ltx_align_center ltx_th ltx_th_column ltx_border_tt" id="S6.T3.1.1.4"><span class="ltx_text ltx_font_bold" id="S6.T3.1.1.4.1">Gen.</span></th>
+<th class="ltx_td ltx_nopad_r ltx_align_center ltx_th ltx_th_column ltx_border_tt" id="S6.T3.1.1.5"><span class="ltx_text ltx_font_bold" id="S6.T3.1.1.5.1">All</span></th></tr>
+</thead>
+<tbody class="ltx_tbody">
+<tr class="ltx_tr" id="S6.T3.1.2">
+<th class="ltx_td ltx_align_left ltx_th ltx_th_row ltx_border_t" id="S6.T3.1.2.1"><span class="ltx_text ltx_font_bold" id="S6.T3.1.2.1.1">CHIME</span></th>
+<td class="ltx_td ltx_align_center ltx_border_t" id="S6.T3.1.2.2"><span class="ltx_text ltx_font_bold" id="S6.T3.1.2.2.1">81.20</span></td>
+<td class="ltx_td ltx_align_center ltx_border_t" id="S6.T3.1.2.3"><span class="ltx_text ltx_font_bold" id="S6.T3.1.2.3.1">93.60</span></td>
+<td class="ltx_td ltx_align_center ltx_border_t" id="S6.T3.1.2.4"><span class="ltx_text ltx_font_bold" id="S6.T3.1.2.4.1">90.13</span></td>
+<td class="ltx_td ltx_nopad_r ltx_align_center ltx_border_t" id="S6.T3.1.2.5"><span class="ltx_text ltx_font_bold" id="S6.T3.1.2.5.1">81.04</span></td></tr>
+<tr class="ltx_tr" id="S6.T3.1.3">
+<th class="ltx_td ltx_align_left ltx_th ltx_th_row" id="S6.T3.1.3.1">A-MapReduce</th>
+<td class="ltx_td ltx_align_center" id="S6.T3.1.3.2">36.08</td>
+<td class="ltx_td ltx_align_center" id="S6.T3.1.3.3">81.65</td>
+<td class="ltx_td ltx_align_center" id="S6.T3.1.3.4">75.32</td>
+<td class="ltx_td ltx_nopad_r ltx_align_center" id="S6.T3.1.3.5">36.08</td></tr>
+<tr class="ltx_tr" id="S6.T3.1.4">
+<th class="ltx_td ltx_align_left ltx_th ltx_th_row ltx_border_bb" id="S6.T3.1.4.1">w/o Attribution Gate</th>
+<td class="ltx_td ltx_align_center ltx_border_bb" id="S6.T3.1.4.2">37.09</td>
+<td class="ltx_td ltx_align_center ltx_border_bb" id="S6.T3.1.4.3">25.77</td>
+<td class="ltx_td ltx_align_center ltx_border_bb" id="S6.T3.1.4.4">30.53</td>
+<td class="ltx_td ltx_nopad_r ltx_align_center ltx_border_bb" id="S6.T3.1.4.5">21.38</td></tr>
+</tbody>
+</table></div><div class="tbl-foot">원문 arXiv HTML의 셀과 수치를 순서대로 재구성했다.</div></div><div class="tbl-wrap"><div class="tbl-cap"><span class="tn">TABLE 4</span>크레딧 귀속 게이트 안정성·구제율</div><div class="tbl-scroll"><table>
+<thead class="ltx_thead">
+<tr class="ltx_tr" id="S6.T4.1.1">
+<th class="ltx_td ltx_align_left ltx_th ltx_th_column ltx_th_row ltx_border_tt" id="S6.T4.1.1.1"><span class="ltx_text ltx_font_bold" id="S6.T4.1.1.1.1">Benchmark</span></th>
+<th class="ltx_td ltx_align_left ltx_th ltx_th_column ltx_th_row ltx_border_tt" id="S6.T4.1.1.2"><span class="ltx_text ltx_font_bold" id="S6.T4.1.1.2.1">Stage</span></th>
+<th class="ltx_td ltx_align_center ltx_th ltx_th_column ltx_border_tt" id="S6.T4.1.1.3"><span class="ltx_text ltx_font_bold" id="S6.T4.1.1.3.1">Stability</span></th>
+<th class="ltx_td ltx_nopad_r ltx_align_center ltx_th ltx_th_column ltx_border_tt" id="S6.T4.1.1.4"><span class="ltx_text ltx_font_bold" id="S6.T4.1.1.4.1">Rescued</span></th></tr>
+</thead>
+<tbody class="ltx_tbody">
+<tr class="ltx_tr" id="S6.T4.1.2">
+<th class="ltx_td ltx_align_left ltx_th ltx_th_row ltx_border_t" id="S6.T4.1.2.1">VitaBench</th>
+<th class="ltx_td ltx_align_left ltx_th ltx_th_row ltx_border_t" id="S6.T4.1.2.2"><em class="ltx_emph ltx_font_italic" id="S6.T4.1.2.2.1">planning</em></th>
+<td class="ltx_td ltx_align_center ltx_border_t" id="S6.T4.1.2.3">91.7</td>
+<td class="ltx_td ltx_nopad_r ltx_align_center ltx_border_t" id="S6.T4.1.2.4">67.6</td></tr>
+<tr class="ltx_tr" id="S6.T4.1.3">
+<th class="ltx_td ltx_nopad_l ltx_th ltx_th_row" id="S6.T4.1.3.1"></th>
+<th class="ltx_td ltx_align_left ltx_th ltx_th_row" id="S6.T4.1.3.2"><em class="ltx_emph ltx_font_italic" id="S6.T4.1.3.2.1">execution</em></th>
+<td class="ltx_td ltx_align_center" id="S6.T4.1.3.3">97.9</td>
+<td class="ltx_td ltx_nopad_r ltx_align_center" id="S6.T4.1.3.4">60.2</td></tr>
+<tr class="ltx_tr" id="S6.T4.1.4">
+<th class="ltx_td ltx_align_left ltx_th ltx_th_row ltx_border_t" id="S6.T4.1.4.1">BFCL-v4</th>
+<th class="ltx_td ltx_align_left ltx_th ltx_th_row ltx_border_t" id="S6.T4.1.4.2"><em class="ltx_emph ltx_font_italic" id="S6.T4.1.4.2.1">planning</em></th>
+<td class="ltx_td ltx_align_center ltx_border_t" id="S6.T4.1.4.3">87.8</td>
+<td class="ltx_td ltx_nopad_r ltx_align_center ltx_border_t" id="S6.T4.1.4.4">64.7</td></tr>
+<tr class="ltx_tr" id="S6.T4.1.5">
+<th class="ltx_td ltx_nopad_l ltx_th ltx_th_row ltx_border_bb" id="S6.T4.1.5.1"></th>
+<th class="ltx_td ltx_align_left ltx_th ltx_th_row ltx_border_bb" id="S6.T4.1.5.2"><em class="ltx_emph ltx_font_italic" id="S6.T4.1.5.2.1">execution</em></th>
+<td class="ltx_td ltx_align_center ltx_border_bb" id="S6.T4.1.5.3">92.9</td>
+<td class="ltx_td ltx_nopad_r ltx_align_center ltx_border_bb" id="S6.T4.1.5.4">56.3</td></tr>
+</tbody>
+</table></div><div class="tbl-foot">원문 arXiv HTML의 셀과 수치를 순서대로 재구성했다.</div></div><div class="tbl-wrap"><div class="tbl-cap"><span class="tn">TABLE 5</span>더 강한 귀속 모델의 효과</div><div class="tbl-scroll"><table>
+<thead class="ltx_thead">
+<tr class="ltx_tr" id="S6.T5.1.1">
+<th class="ltx_td ltx_align_left ltx_th ltx_th_column ltx_th_row ltx_border_tt" id="S6.T5.1.1.1"><span class="ltx_text ltx_font_bold" id="S6.T5.1.1.1.1">Benchmark</span></th>
+<th class="ltx_td ltx_align_center ltx_th ltx_th_column ltx_border_tt" id="S6.T5.1.1.2"><span class="ltx_text ltx_font_bold" id="S6.T5.1.1.2.1">Self-Reflect</span></th>
+<th class="ltx_td ltx_align_center ltx_th ltx_th_column ltx_border_tt" id="S6.T5.1.1.3"><span class="ltx_text ltx_font_bold" id="S6.T5.1.1.3.1">Qwen3.7-Flash</span></th>
+<th class="ltx_td ltx_nopad_r ltx_align_center ltx_th ltx_th_column ltx_border_tt" id="S6.T5.1.1.4"><math class="ltx_Math" display="inline" id="S6.T5.m1"><semantics><mi mathvariant="normal">Δ</mi><annotation encoding="application/x-tex">\Delta</annotation></semantics></math></th></tr>
+</thead>
+<tbody class="ltx_tbody">
+<tr class="ltx_tr" id="S6.T5.1.2">
+<th class="ltx_td ltx_align_left ltx_th ltx_th_row ltx_border_t" id="S6.T5.1.2.1"><math class="ltx_Math" display="inline" id="S6.T5.m2"><semantics><msup><mi>τ</mi><mn>2</mn></msup><annotation encoding="application/x-tex">\tau^{2}</annotation></semantics></math>-Bench</th>
+<td class="ltx_td ltx_align_center ltx_border_t" id="S6.T5.1.2.2">23.80</td>
+<td class="ltx_td ltx_align_center ltx_border_t" id="S6.T5.1.2.3"><span class="ltx_text ltx_font_bold" id="S6.T5.1.2.3.1">26.92</span></td>
+<td class="ltx_td ltx_nopad_r ltx_align_center ltx_border_t" id="S6.T5.1.2.4">+3.12</td></tr>
+<tr class="ltx_tr" id="S6.T5.1.3">
+<th class="ltx_td ltx_align_left ltx_th ltx_th_row" id="S6.T5.1.3.1">VitaBench</th>
+<td class="ltx_td ltx_align_center" id="S6.T5.1.3.2">12.50</td>
+<td class="ltx_td ltx_align_center" id="S6.T5.1.3.3"><span class="ltx_text ltx_font_bold" id="S6.T5.1.3.3.1">15.00</span></td>
+<td class="ltx_td ltx_nopad_r ltx_align_center" id="S6.T5.1.3.4">+2.50</td></tr>
+<tr class="ltx_tr" id="S6.T5.1.4">
+<th class="ltx_td ltx_align_left ltx_th ltx_th_row ltx_border_bb" id="S6.T5.1.4.1">BFCL-v4</th>
+<td class="ltx_td ltx_align_center ltx_border_bb" id="S6.T5.1.4.2">72.45</td>
+<td class="ltx_td ltx_align_center ltx_border_bb" id="S6.T5.1.4.3"><span class="ltx_text ltx_font_bold" id="S6.T5.1.4.3.1">74.70</span></td>
+<td class="ltx_td ltx_nopad_r ltx_align_center ltx_border_bb" id="S6.T5.1.4.4">+2.25</td></tr>
+</tbody>
+</table></div><div class="tbl-foot">원문 arXiv HTML의 셀과 수치를 순서대로 재구성했다.</div></div><div class="tbl-wrap"><div class="tbl-cap"><span class="tn">TABLE 6</span>백본 간 메모리 전이</div><div class="tbl-scroll"><table>
+<tbody class="ltx_tbody">
+<tr class="ltx_tr" id="S6.T6.1.1">
+<th class="ltx_td ltx_align_left ltx_th ltx_th_row ltx_border_tt" id="S6.T6.1.1.1"><span class="ltx_text ltx_font_bold" id="S6.T6.1.1.1.1">Benchmark</span></th>
+<td class="ltx_td ltx_align_center ltx_border_tt" id="S6.T6.1.1.2"><span class="ltx_text ltx_font_bold" id="S6.T6.1.1.2.1">w/o Mem.</span></td>
+<td class="ltx_td ltx_align_center ltx_border_tt" id="S6.T6.1.1.3"><span class="ltx_text ltx_font_bold" id="S6.T6.1.1.3.1">A-Map.</span></td>
+<td class="ltx_td ltx_align_center ltx_border_tt" id="S6.T6.1.1.4"><span class="ltx_text ltx_font_bold" id="S6.T6.1.1.4.1">CHIME</span></td>
+<td class="ltx_td ltx_nopad_r ltx_align_center ltx_border_tt" id="S6.T6.1.1.5"><span class="ltx_text ltx_font_bold" id="S6.T6.1.1.5.1">Self</span></td></tr>
+<tr class="ltx_tr" id="S6.T6.1.2">
+<th class="ltx_td ltx_align_left ltx_th ltx_th_row ltx_border_t" colspan="5" id="S6.T6.1.2.1"><em class="ltx_emph ltx_font_italic" id="S6.T6.1.2.1.1">DeepSeek-V4-Flash <math class="ltx_Math" display="inline" id="S6.T6.m1"><semantics><mo stretchy="false">→</mo><annotation encoding="application/x-tex">\to</annotation></semantics></math> Qwen3.5-Flash</em></th></tr>
+<tr class="ltx_tr" id="S6.T6.1.3">
+<th class="ltx_td ltx_align_left ltx_th ltx_th_row" id="S6.T6.1.3.1"><math class="ltx_Math" display="inline" id="S6.T6.m2"><semantics><msup><mi>τ</mi><mn>2</mn></msup><annotation encoding="application/x-tex">\tau^{2}</annotation></semantics></math>-Bench</th>
+<td class="ltx_td ltx_align_center" id="S6.T6.1.3.2">24.45</td>
+<td class="ltx_td ltx_align_center" id="S6.T6.1.3.3">21.72</td>
+<td class="ltx_td ltx_align_center" id="S6.T6.1.3.4"><span class="ltx_text ltx_font_bold" id="S6.T6.1.3.4.1">26.40</span></td>
+<td class="ltx_td ltx_nopad_r ltx_align_center" id="S6.T6.1.3.5">25.92</td></tr>
+<tr class="ltx_tr" id="S6.T6.1.4">
+<th class="ltx_td ltx_align_left ltx_th ltx_th_row" id="S6.T6.1.4.1">BFCL-v4</th>
+<td class="ltx_td ltx_align_center" id="S6.T6.1.4.2">70.86</td>
+<td class="ltx_td ltx_align_center" id="S6.T6.1.4.3">71.66</td>
+<td class="ltx_td ltx_align_center" id="S6.T6.1.4.4"><span class="ltx_text ltx_font_bold" id="S6.T6.1.4.4.1">73.91</span></td>
+<td class="ltx_td ltx_nopad_r ltx_align_center" id="S6.T6.1.4.5"><span class="ltx_text ltx_font_bold" id="S6.T6.1.4.5.1">73.91</span></td></tr>
+<tr class="ltx_tr" id="S6.T6.1.5">
+<th class="ltx_td ltx_align_left ltx_th ltx_th_row ltx_border_t" colspan="5" id="S6.T6.1.5.1"><em class="ltx_emph ltx_font_italic" id="S6.T6.1.5.1.1">Qwen3.5-Flash <math class="ltx_Math" display="inline" id="S6.T6.m3"><semantics><mo stretchy="false">→</mo><annotation encoding="application/x-tex">\to</annotation></semantics></math> DeepSeek-V4-Flash</em></th></tr>
+<tr class="ltx_tr" id="S6.T6.1.6">
+<th class="ltx_td ltx_align_left ltx_th ltx_th_row" id="S6.T6.1.6.1"><math class="ltx_Math" display="inline" id="S6.T6.m4"><semantics><msup><mi>τ</mi><mn>2</mn></msup><annotation encoding="application/x-tex">\tau^{2}</annotation></semantics></math>-Bench</th>
+<td class="ltx_td ltx_align_center" id="S6.T6.1.6.2">30.04</td>
+<td class="ltx_td ltx_align_center" id="S6.T6.1.6.3">28.22</td>
+<td class="ltx_td ltx_align_center" id="S6.T6.1.6.4">30.82</td>
+<td class="ltx_td ltx_nopad_r ltx_align_center" id="S6.T6.1.6.5"><span class="ltx_text ltx_font_bold" id="S6.T6.1.6.5.1">36.28</span></td></tr>
+<tr class="ltx_tr" id="S6.T6.1.7">
+<th class="ltx_td ltx_align_left ltx_th ltx_th_row ltx_border_bb" id="S6.T6.1.7.1">BFCL-v4</th>
+<td class="ltx_td ltx_align_center ltx_border_bb" id="S6.T6.1.7.2">60.13</td>
+<td class="ltx_td ltx_align_center ltx_border_bb" id="S6.T6.1.7.3">61.85</td>
+<td class="ltx_td ltx_align_center ltx_border_bb" id="S6.T6.1.7.4">65.43</td>
+<td class="ltx_td ltx_nopad_r ltx_align_center ltx_border_bb" id="S6.T6.1.7.5"><span class="ltx_text ltx_font_bold" id="S6.T6.1.7.5.1">67.15</span></td></tr>
+</tbody>
+</table></div><div class="tbl-foot">원문 arXiv HTML의 셀과 수치를 순서대로 재구성했다.</div></div>
+</section>
+<section class="ch" id="c5">
+<div class="ch-eyebrow"><span class="cnum">05</span><span class="clabel">Cases &amp; limits · 사례와 한계</span></div>
+<h2 class="ch-title">메모리는 백본이 할 수 없는 일을 대신하지 못한다</h2>
+<div class="tldr"><div class="h">한눈에 요약</div><p>계획·실행 사례는 한 실패에서 어떤 교훈을 어느 은행에 넣는지 보여준다. 하지만 실패 구제율이 56.3–67.6%라는 것은 상당한 실패가 남는다는 뜻이며, 백본이 근본적으로 수행하지 못하는 능력을 메모리만으로 만들 수는 없다.</p></div>
+<p class="lead">책임 귀속 자체도 LLM 판단이므로 틀리면 잘못된 층의 기억을 강화할 수 있다.</p><p>네 벤치마크와 두 백본을 넘은 외부 환경, 장기간 실제 도구 변화, 악성·오염 경험에서의 안전성은 추가 검증이 필요하다. 구현 파라미터는 공개돼 있지만 결과를 범용 장기기억 해법으로 확대 해석해서는 안 된다.</p><figure>
+<div class="fig-top"><span class="fnum">FIG 5</span><span class="ftitle">계획 메모리 사례</span></div>
+<div class="imgbox"><img alt="계획 메모리 사례" decoding="async" loading="lazy" src="/paper-assets/41cd8ff3f3b342632982b99f2b822f226156d04df7f1263544df941f9b493414.png"/></div>
+<figcaption>전략 선택과 하위 목표 분해에 관한 교훈을 계획 층에 저장한다.</figcaption>
+</figure><figure>
+<div class="fig-top"><span class="fnum">FIG 6</span><span class="ftitle">실행 메모리 사례</span></div>
+<div class="imgbox"><img alt="실행 메모리 사례" decoding="async" loading="lazy" src="/paper-assets/3af88869c01dc1795891254afed17d9d1fc4ab6d634939b06cbdaf4240699ad4.png"/></div>
+<figcaption>도구 호출과 결과 검증의 운영 교훈은 실행 층으로 분리한다.</figcaption>
+</figure><figure>
+<div class="fig-top"><span class="fnum">FIG 7</span><span class="ftitle">실패를 계획층에 귀속하는 사례</span></div>
+<div class="imgbox"><img alt="실패를 계획층에 귀속하는 사례" decoding="async" loading="lazy" src="/paper-assets/fd2f0dad30e455ab433eab553aa8e4ea59d759eaec81bbf364f40bc61d39ff01.png"/></div>
+<figcaption>같은 실패 궤적에서도 원인이 계획인지 실행인지 판정하는 예다.</figcaption>
+</figure><div class="tbl-wrap"><div class="tbl-cap"><span class="tn">TABLE 7</span>주요 실험 구현 파라미터</div><div class="tbl-scroll"><table>
+<tbody class="ltx_tbody">
+<tr class="ltx_tr" id="A1.T7.1.1">
+<td class="ltx_td ltx_align_left ltx_align_top ltx_border_tt" id="A1.T7.1.1.1">
+<span class="ltx_inline-block ltx_align_top" id="A1.T7.1.1.1.1">
+<span class="ltx_p" id="A1.T7.1.1.1.1.1"><span class="ltx_text ltx_font_bold" id="A1.T7.1.1.1.1.1.1">Component</span></span>
+</span></td>
+<td class="ltx_td ltx_align_left ltx_align_top ltx_border_tt" id="A1.T7.1.1.2">
+<span class="ltx_inline-block ltx_align_top" id="A1.T7.1.1.2.1">
+<span class="ltx_p" id="A1.T7.1.1.2.1.1"><span class="ltx_text ltx_font_bold" id="A1.T7.1.1.2.1.1.1">Setting</span></span>
+</span></td>
+<td class="ltx_td ltx_nopad_r ltx_align_left ltx_align_top ltx_border_tt" id="A1.T7.1.1.3">
+<span class="ltx_inline-block ltx_align_top" id="A1.T7.1.1.3.1">
+<span class="ltx_p" id="A1.T7.1.1.3.1.1"><span class="ltx_text ltx_font_bold" id="A1.T7.1.1.3.1.1.1">Value</span></span>
+</span></td></tr>
+<tr class="ltx_tr" id="A1.T7.1.2">
+<td class="ltx_td ltx_align_left ltx_align_top ltx_border_t" id="A1.T7.1.2.1">
+<span class="ltx_inline-block ltx_align_top" id="A1.T7.1.2.1.1">
+<span class="ltx_p" id="A1.T7.1.2.1.1.1"><span class="ltx_text ltx_font_italic" id="A1.T7.1.2.1.1.1.1">Models and decoding</span></span>
+</span></td>
+<td class="ltx_td ltx_align_left ltx_align_top ltx_border_t" id="A1.T7.1.2.2">
+<span class="ltx_inline-block ltx_align_top" id="A1.T7.1.2.2.1">
+<span class="ltx_p" id="A1.T7.1.2.2.1.1">Agent backbone</span>
+</span></td>
+<td class="ltx_td ltx_nopad_r ltx_align_left ltx_align_top ltx_border_t" id="A1.T7.1.2.3">
+<span class="ltx_inline-block ltx_align_top" id="A1.T7.1.2.3.1">
+<span class="ltx_p" id="A1.T7.1.2.3.1.1">qwen3.5-flash or deepseek-v4-flash</span>
+</span></td></tr>
+<tr class="ltx_tr" id="A1.T7.1.3">
+<td class="ltx_td ltx_align_left ltx_align_top" id="A1.T7.1.3.1"></td>
+<td class="ltx_td ltx_align_left ltx_align_top" id="A1.T7.1.3.2">
+<span class="ltx_inline-block ltx_align_top" id="A1.T7.1.3.2.1">
+<span class="ltx_p" id="A1.T7.1.3.2.1.1">Evaluation-side LLM</span>
+</span></td>
+<td class="ltx_td ltx_nopad_r ltx_align_left ltx_align_top" id="A1.T7.1.3.3">
+<span class="ltx_inline-block ltx_align_top" id="A1.T7.1.3.3.1">
+<span class="ltx_p" id="A1.T7.1.3.3.1.1">qwen3.6-flash</span>
+</span></td></tr>
+<tr class="ltx_tr" id="A1.T7.1.4">
+<td class="ltx_td ltx_align_left ltx_align_top" id="A1.T7.1.4.1"></td>
+<td class="ltx_td ltx_align_left ltx_align_top" id="A1.T7.1.4.2">
+<span class="ltx_inline-block ltx_align_top" id="A1.T7.1.4.2.1">
+<span class="ltx_p" id="A1.T7.1.4.2.1.1">Default decoding</span>
+</span></td>
+<td class="ltx_td ltx_nopad_r ltx_align_left ltx_align_top" id="A1.T7.1.4.3">
+<span class="ltx_inline-block ltx_align_top" id="A1.T7.1.4.3.1">
+<span class="ltx_p" id="A1.T7.1.4.3.1.1">Temperature <math class="ltx_Math" display="inline" id="A1.T7.m1"><semantics><mn>0.0</mn><annotation encoding="application/x-tex">0.0</annotation></semantics></math>; thinking disabled</span>
+</span></td></tr>
+<tr class="ltx_tr" id="A1.T7.1.5">
+<td class="ltx_td ltx_align_left ltx_align_top" id="A1.T7.1.5.1"></td>
+<td class="ltx_td ltx_align_left ltx_align_top" id="A1.T7.1.5.2">
+<span class="ltx_inline-block ltx_align_top" id="A1.T7.1.5.2.1">
+<span class="ltx_p" id="A1.T7.1.5.2.1.1">WebAnchor plan generation</span>
+</span></td>
+<td class="ltx_td ltx_nopad_r ltx_align_left ltx_align_top" id="A1.T7.1.5.3">
+<span class="ltx_inline-block ltx_align_top" id="A1.T7.1.5.3.1">
+<span class="ltx_p" id="A1.T7.1.5.3.1.1">Four candidates; temperature <math class="ltx_Math" display="inline" id="A1.T7.m2"><semantics><mn>0.6</mn><annotation encoding="application/x-tex">0.6</annotation></semantics></math></span>
+</span></td></tr>
+<tr class="ltx_tr" id="A1.T7.1.6">
+<td class="ltx_td ltx_align_left ltx_align_top" id="A1.T7.1.6.1"></td>
+<td class="ltx_td ltx_align_left ltx_align_top" id="A1.T7.1.6.2">
+<span class="ltx_inline-block ltx_align_top" id="A1.T7.1.6.2.1">
+<span class="ltx_p" id="A1.T7.1.6.2.1.1">Maximum input/output length</span>
+</span></td>
+<td class="ltx_td ltx_nopad_r ltx_align_left ltx_align_top" id="A1.T7.1.6.3">
+<span class="ltx_inline-block ltx_align_top" id="A1.T7.1.6.3.1">
+<span class="ltx_p" id="A1.T7.1.6.3.1.1"><math class="ltx_Math" display="inline" id="A1.T7.m3"><semantics><mn>245,000</mn><annotation encoding="application/x-tex">245{,}000</annotation></semantics></math> / <math class="ltx_Math" display="inline" id="A1.T7.m4"><semantics><mn>16,384</mn><annotation encoding="application/x-tex">16{,}384</annotation></semantics></math> tokens</span>
+</span></td></tr>
+<tr class="ltx_tr" id="A1.T7.1.7">
+<td class="ltx_td ltx_align_left ltx_align_top" id="A1.T7.1.7.1"></td>
+<td class="ltx_td ltx_align_left ltx_align_top" id="A1.T7.1.7.2">
+<span class="ltx_inline-block ltx_align_top" id="A1.T7.1.7.2.1">
+<span class="ltx_p" id="A1.T7.1.7.2.1.1">Request policy</span>
+</span></td>
+<td class="ltx_td ltx_nopad_r ltx_align_left ltx_align_top" id="A1.T7.1.7.3">
+<span class="ltx_inline-block ltx_align_top" id="A1.T7.1.7.3.1">
+<span class="ltx_p" id="A1.T7.1.7.3.1.1"><math class="ltx_Math" display="inline" id="A1.T7.m5"><semantics><mn>2,400</mn><annotation encoding="application/x-tex">2{,}400</annotation></semantics></math>-s timeout; at most 15 retries; 50-s base retry interval</span>
+</span></td></tr>
+<tr class="ltx_tr" id="A1.T7.1.8">
+<td class="ltx_td ltx_align_left ltx_align_top ltx_border_t" id="A1.T7.1.8.1">
+<span class="ltx_inline-block ltx_align_top" id="A1.T7.1.8.1.1">
+<span class="ltx_p" id="A1.T7.1.8.1.1.1"><span class="ltx_text ltx_font_italic" id="A1.T7.1.8.1.1.1.1">Retrieval and reranking</span></span>
+</span></td>
+<td class="ltx_td ltx_align_left ltx_align_top ltx_border_t" id="A1.T7.1.8.2">
+<span class="ltx_inline-block ltx_align_top" id="A1.T7.1.8.2.1">
+<span class="ltx_p" id="A1.T7.1.8.2.1.1">Embedding configuration</span>
+</span></td>
+<td class="ltx_td ltx_nopad_r ltx_align_left ltx_align_top ltx_border_t" id="A1.T7.1.8.3">
+<span class="ltx_inline-block ltx_align_top" id="A1.T7.1.8.3.1">
+<span class="ltx_p" id="A1.T7.1.8.3.1.1">Qwen3-Embedding-0.6B; batch size 16; maximum length <math class="ltx_Math" display="inline" id="A1.T7.m6"><semantics><mn>16,384</mn><annotation encoding="application/x-tex">16{,}384</annotation></semantics></math></span>
+</span></td></tr>
+<tr class="ltx_tr" id="A1.T7.1.9">
+<td class="ltx_td ltx_align_left ltx_align_top" id="A1.T7.1.9.1"></td>
+<td class="ltx_td ltx_align_left ltx_align_top" id="A1.T7.1.9.2">
+<span class="ltx_inline-block ltx_align_top" id="A1.T7.1.9.2.1">
+<span class="ltx_p" id="A1.T7.1.9.2.1.1">Candidate/retrieved set sizes</span>
+</span></td>
+<td class="ltx_td ltx_nopad_r ltx_align_left ltx_align_top" id="A1.T7.1.9.3">
+<span class="ltx_inline-block ltx_align_top" id="A1.T7.1.9.3.1">
+<span class="ltx_p" id="A1.T7.1.9.3.1.1"><math class="ltx_Math" display="inline" id="A1.T7.m7"><semantics><mrow><mrow><mo stretchy="false">(</mo><mi>N</mi><mo>,</mo><mi>K</mi><mo stretchy="false">)</mo></mrow><mo>=</mo><mrow><mo stretchy="false">(</mo><mn>20</mn><mo>,</mo><mn>3</mn><mo stretchy="false">)</mo></mrow></mrow><annotation encoding="application/x-tex">(N,K)=(20,3)</annotation></semantics></math> per memory layer</span>
+</span></td></tr>
+<tr class="ltx_tr" id="A1.T7.1.10">
+<td class="ltx_td ltx_align_left ltx_align_top" id="A1.T7.1.10.1"></td>
+<td class="ltx_td ltx_align_left ltx_align_top" id="A1.T7.1.10.2">
+<span class="ltx_inline-block ltx_align_top" id="A1.T7.1.10.2.1">
+<span class="ltx_p" id="A1.T7.1.10.2.1.1">Candidate similarity threshold</span>
+</span></td>
+<td class="ltx_td ltx_nopad_r ltx_align_left ltx_align_top" id="A1.T7.1.10.3">
+<span class="ltx_inline-block ltx_align_top" id="A1.T7.1.10.3.1">
+<span class="ltx_p" id="A1.T7.1.10.3.1.1"><math class="ltx_Math" display="inline" id="A1.T7.m8"><semantics><mn>0.3</mn><annotation encoding="application/x-tex">0.3</annotation></semantics></math></span>
+</span></td></tr>
+<tr class="ltx_tr" id="A1.T7.1.11">
+<td class="ltx_td ltx_align_left ltx_align_top" id="A1.T7.1.11.1"></td>
+<td class="ltx_td ltx_align_left ltx_align_top" id="A1.T7.1.11.2">
+<span class="ltx_inline-block ltx_align_top" id="A1.T7.1.11.2.1">
+<span class="ltx_p" id="A1.T7.1.11.2.1.1">Reranking parameters</span>
+</span></td>
+<td class="ltx_td ltx_nopad_r ltx_align_left ltx_align_top" id="A1.T7.1.11.3">
+<span class="ltx_inline-block ltx_align_top" id="A1.T7.1.11.3.1">
+<span class="ltx_p" id="A1.T7.1.11.3.1.1"><math class="ltx_Math" display="inline" id="A1.T7.m9"><semantics><mrow><mi>λ</mi><mo>=</mo><mn>3.0</mn></mrow><annotation encoding="application/x-tex">\lambda=3.0</annotation></semantics></math>, <math class="ltx_Math" display="inline" id="A1.T7.m10"><semantics><mrow><mi>α</mi><mo>=</mo><mn>1.0</mn></mrow><annotation encoding="application/x-tex">\alpha=1.0</annotation></semantics></math>, and <math class="ltx_Math" display="inline" id="A1.T7.m11"><semantics><mrow><mi>β</mi><mo>=</mo><mn>0.2</mn></mrow><annotation encoding="application/x-tex">\beta=0.2</annotation></semantics></math></span>
+</span></td></tr>
+<tr class="ltx_tr" id="A1.T7.1.12">
+<td class="ltx_td ltx_align_left ltx_align_top" id="A1.T7.1.12.1"></td>
+<td class="ltx_td ltx_align_left ltx_align_top" id="A1.T7.1.12.2">
+<span class="ltx_inline-block ltx_align_top" id="A1.T7.1.12.2.1">
+<span class="ltx_p" id="A1.T7.1.12.2.1.1">Near-tie relevance margin</span>
+</span></td>
+<td class="ltx_td ltx_nopad_r ltx_align_left ltx_align_top" id="A1.T7.1.12.3">
+<span class="ltx_inline-block ltx_align_top" id="A1.T7.1.12.3.1">
+<span class="ltx_p" id="A1.T7.1.12.3.1.1"><math class="ltx_Math" display="inline" id="A1.T7.m12"><semantics><mn>0.03</mn><annotation encoding="application/x-tex">0.03</annotation></semantics></math></span>
+</span></td></tr>
+<tr class="ltx_tr" id="A1.T7.1.13">
+<td class="ltx_td ltx_align_left ltx_align_top ltx_border_t" id="A1.T7.1.13.1">
+<span class="ltx_inline-block ltx_align_top" id="A1.T7.1.13.1.1">
+<span class="ltx_p" id="A1.T7.1.13.1.1.1"><span class="ltx_text ltx_font_italic" id="A1.T7.1.13.1.1.1.1">Memory evolution</span></span>
+</span></td>
+<td class="ltx_td ltx_align_left ltx_align_top ltx_border_t" id="A1.T7.1.13.2">
+<span class="ltx_inline-block ltx_align_top" id="A1.T7.1.13.2.1">
+<span class="ltx_p" id="A1.T7.1.13.2.1.1">Update confidence threshold</span>
+</span></td>
+<td class="ltx_td ltx_nopad_r ltx_align_left ltx_align_top ltx_border_t" id="A1.T7.1.13.3">
+<span class="ltx_inline-block ltx_align_top" id="A1.T7.1.13.3.1">
+<span class="ltx_p" id="A1.T7.1.13.3.1.1"><math class="ltx_Math" display="inline" id="A1.T7.m13"><semantics><mrow><msub><mi>θ</mi><mi>conf</mi></msub><mo>=</mo><mn>0.5</mn></mrow><annotation encoding="application/x-tex">\theta_{\mathrm{conf}}=0.5</annotation></semantics></math></span>
+</span></td></tr>
+<tr class="ltx_tr" id="A1.T7.1.14">
+<td class="ltx_td ltx_align_left ltx_align_top" id="A1.T7.1.14.1"></td>
+<td class="ltx_td ltx_align_left ltx_align_top" id="A1.T7.1.14.2">
+<span class="ltx_inline-block ltx_align_top" id="A1.T7.1.14.2.1">
+<span class="ltx_p" id="A1.T7.1.14.2.1.1">Experience-addition threshold</span>
+</span></td>
+<td class="ltx_td ltx_nopad_r ltx_align_left ltx_align_top" id="A1.T7.1.14.3">
+<span class="ltx_inline-block ltx_align_top" id="A1.T7.1.14.3.1">
+<span class="ltx_p" id="A1.T7.1.14.3.1.1"><math class="ltx_Math" display="inline" id="A1.T7.m14"><semantics><mn>0.1</mn><annotation encoding="application/x-tex">0.1</annotation></semantics></math></span>
+</span></td></tr>
+<tr class="ltx_tr" id="A1.T7.1.15">
+<td class="ltx_td ltx_align_left ltx_align_top" id="A1.T7.1.15.1"></td>
+<td class="ltx_td ltx_align_left ltx_align_top" id="A1.T7.1.15.2">
+<span class="ltx_inline-block ltx_align_top" id="A1.T7.1.15.2.1">
+<span class="ltx_p" id="A1.T7.1.15.2.1.1">Initial memory state</span>
+</span></td>
+<td class="ltx_td ltx_nopad_r ltx_align_left ltx_align_top" id="A1.T7.1.15.3">
+<span class="ltx_inline-block ltx_align_top" id="A1.T7.1.15.3.1">
+<span class="ltx_p" id="A1.T7.1.15.3.1.1"><math class="ltx_Math" display="inline" id="A1.T7.m15"><semantics><mrow><mrow><mo stretchy="false">(</mo><msub><mi>v</mi><mi>i</mi></msub><mo>,</mo><msub><mi>n</mi><mi>i</mi></msub><mo stretchy="false">)</mo></mrow><mo>=</mo><mrow><mo stretchy="false">(</mo><mn>0</mn><mo>,</mo><mn>0</mn><mo stretchy="false">)</mo></mrow></mrow><annotation encoding="application/x-tex">(v_{i},n_{i})=(0,0)</annotation></semantics></math></span>
+</span></td></tr>
+<tr class="ltx_tr" id="A1.T7.1.16">
+<td class="ltx_td ltx_align_left ltx_align_top" id="A1.T7.1.16.1"></td>
+<td class="ltx_td ltx_align_left ltx_align_top" id="A1.T7.1.16.2">
+<span class="ltx_inline-block ltx_align_top" id="A1.T7.1.16.2.1">
+<span class="ltx_p" id="A1.T7.1.16.2.1.1">Merge threshold</span>
+</span></td>
+<td class="ltx_td ltx_nopad_r ltx_align_left ltx_align_top" id="A1.T7.1.16.3">
+<span class="ltx_inline-block ltx_align_top" id="A1.T7.1.16.3.1">
+<span class="ltx_p" id="A1.T7.1.16.3.1.1"><math class="ltx_Math" display="inline" id="A1.T7.m16"><semantics><mrow><msub><mi>θ</mi><mi>merge</mi></msub><mo>=</mo><mn>0.88</mn></mrow><annotation encoding="application/x-tex">\theta_{\mathrm{merge}}=0.88</annotation></semantics></math></span>
+</span></td></tr>
+<tr class="ltx_tr" id="A1.T7.1.17">
+<td class="ltx_td ltx_align_left ltx_align_top" id="A1.T7.1.17.1"></td>
+<td class="ltx_td ltx_align_left ltx_align_top" id="A1.T7.1.17.2">
+<span class="ltx_inline-block ltx_align_top" id="A1.T7.1.17.2.1">
+<span class="ltx_p" id="A1.T7.1.17.2.1.1">Pruning thresholds</span>
+</span></td>
+<td class="ltx_td ltx_nopad_r ltx_align_left ltx_align_top" id="A1.T7.1.17.3">
+<span class="ltx_inline-block ltx_align_top" id="A1.T7.1.17.3.1">
+<span class="ltx_p" id="A1.T7.1.17.3.1.1"><math class="ltx_Math" display="inline" id="A1.T7.m17"><semantics><mrow><msub><mi>n</mi><mi>min</mi></msub><mo>=</mo><mn>3</mn></mrow><annotation encoding="application/x-tex">n_{\min}=3</annotation></semantics></math> and <math class="ltx_Math" display="inline" id="A1.T7.m18"><semantics><mrow><msub><mi>θ</mi><mi>prune</mi></msub><mo>=</mo><mrow><mo>−</mo><mn>0.1</mn></mrow></mrow><annotation encoding="application/x-tex">\theta_{\mathrm{prune}}=-0.1</annotation></semantics></math></span>
+</span></td></tr>
+<tr class="ltx_tr" id="A1.T7.1.18">
+<td class="ltx_td ltx_align_left ltx_align_top" id="A1.T7.1.18.1"></td>
+<td class="ltx_td ltx_align_left ltx_align_top" id="A1.T7.1.18.2">
+<span class="ltx_inline-block ltx_align_top" id="A1.T7.1.18.2.1">
+<span class="ltx_p" id="A1.T7.1.18.2.1.1">Memory capacity</span>
+</span></td>
+<td class="ltx_td ltx_nopad_r ltx_align_left ltx_align_top" id="A1.T7.1.18.3">
+<span class="ltx_inline-block ltx_align_top" id="A1.T7.1.18.3.1">
+<span class="ltx_p" id="A1.T7.1.18.3.1.1">Unlimited</span>
+</span></td></tr>
+<tr class="ltx_tr" id="A1.T7.1.19">
+<td class="ltx_td ltx_align_left ltx_align_top ltx_border_t" id="A1.T7.1.19.1">
+<span class="ltx_inline-block ltx_align_top" id="A1.T7.1.19.1.1">
+<span class="ltx_p" id="A1.T7.1.19.1.1.1"><span class="ltx_text ltx_font_italic" id="A1.T7.1.19.1.1.1.1">Evaluation protocol</span></span>
+</span></td>
+<td class="ltx_td ltx_align_left ltx_align_top ltx_border_t" id="A1.T7.1.19.2">
+<span class="ltx_inline-block ltx_align_top" id="A1.T7.1.19.2.1">
+<span class="ltx_p" id="A1.T7.1.19.2.1.1">Train/eval split</span>
+</span></td>
+<td class="ltx_td ltx_nopad_r ltx_align_left ltx_align_top ltx_border_t" id="A1.T7.1.19.3">
+<span class="ltx_inline-block ltx_align_top" id="A1.T7.1.19.3.1">
+<span class="ltx_p" id="A1.T7.1.19.3.1.1"><math class="ltx_Math" display="inline" id="A1.T7.m19"><semantics><mrow><mn>7</mn><mo>:</mo><mn>3</mn></mrow><annotation encoding="application/x-tex">7{:}3</annotation></semantics></math> within each benchmark domain</span>
+</span></td></tr>
+<tr class="ltx_tr" id="A1.T7.1.20">
+<td class="ltx_td ltx_align_left ltx_align_top" id="A1.T7.1.20.1"></td>
+<td class="ltx_td ltx_align_left ltx_align_top" id="A1.T7.1.20.2">
+<span class="ltx_inline-block ltx_align_top" id="A1.T7.1.20.2.1">
+<span class="ltx_p" id="A1.T7.1.20.2.1.1">Selected memory checkpoint</span>
+</span></td>
+<td class="ltx_td ltx_nopad_r ltx_align_left ltx_align_top" id="A1.T7.1.20.3">
+<span class="ltx_inline-block ltx_align_top" id="A1.T7.1.20.3.1">
+<span class="ltx_p" id="A1.T7.1.20.3.1.1">Epoch 2 for <math class="ltx_Math" display="inline" id="A1.T7.m20"><semantics><msup><mi>τ</mi><mn>2</mn></msup><annotation encoding="application/x-tex">\tau^{2}</annotation></semantics></math>-Bench, VitaBench, and BFCL-v4; epoch 5 for BrowseComp-ZH</span>
+</span></td></tr>
+<tr class="ltx_tr" id="A1.T7.1.21">
+<td class="ltx_td ltx_align_left ltx_align_top ltx_border_t" id="A1.T7.1.21.1">
+<span class="ltx_inline-block ltx_align_top" id="A1.T7.1.21.1.1">
+<span class="ltx_p" id="A1.T7.1.21.1.1.1"><math class="ltx_Math" display="inline" id="A1.T7.m21"><semantics><msup><mi>τ</mi><mn>2</mn></msup><annotation encoding="application/x-tex">\tau^{2}</annotation></semantics></math><span class="ltx_text ltx_font_italic" id="A1.T7.1.21.1.1.1.1">-Bench</span></span>
+</span></td>
+<td class="ltx_td ltx_align_left ltx_align_top ltx_border_t" id="A1.T7.1.21.2">
+<span class="ltx_inline-block ltx_align_top" id="A1.T7.1.21.2.1">
+<span class="ltx_p" id="A1.T7.1.21.2.1.1">User-simulator LLM</span>
+</span></td>
+<td class="ltx_td ltx_nopad_r ltx_align_left ltx_align_top ltx_border_t" id="A1.T7.1.21.3">
+<span class="ltx_inline-block ltx_align_top" id="A1.T7.1.21.3.1">
+<span class="ltx_p" id="A1.T7.1.21.3.1.1">qwen3.6-flash</span>
+</span></td></tr>
+<tr class="ltx_tr" id="A1.T7.1.22">
+<td class="ltx_td ltx_align_left ltx_align_top" id="A1.T7.1.22.1"></td>
+<td class="ltx_td ltx_align_left ltx_align_top" id="A1.T7.1.22.2">
+<span class="ltx_inline-block ltx_align_top" id="A1.T7.1.22.2.1">
+<span class="ltx_p" id="A1.T7.1.22.2.1.1">Interaction controls</span>
+</span></td>
+<td class="ltx_td ltx_nopad_r ltx_align_left ltx_align_top" id="A1.T7.1.22.3">
+<span class="ltx_inline-block ltx_align_top" id="A1.T7.1.22.3.1">
+<span class="ltx_p" id="A1.T7.1.22.3.1.1">100 steps; at most 10 errors; seed 42</span>
+</span></td></tr>
+<tr class="ltx_tr" id="A1.T7.1.23">
+<td class="ltx_td ltx_align_left ltx_align_top" id="A1.T7.1.23.1"></td>
+<td class="ltx_td ltx_align_left ltx_align_top" id="A1.T7.1.23.2">
+<span class="ltx_inline-block ltx_align_top" id="A1.T7.1.23.2.1">
+<span class="ltx_p" id="A1.T7.1.23.2.1.1">Subprocess timeout</span>
+</span></td>
+<td class="ltx_td ltx_nopad_r ltx_align_left ltx_align_top" id="A1.T7.1.23.3">
+<span class="ltx_inline-block ltx_align_top" id="A1.T7.1.23.3.1">
+<span class="ltx_p" id="A1.T7.1.23.3.1.1"><math class="ltx_Math" display="inline" id="A1.T7.m22"><semantics><mn>3,600</mn><annotation encoding="application/x-tex">3{,}600</annotation></semantics></math> s</span>
+</span></td></tr>
+<tr class="ltx_tr" id="A1.T7.1.24">
+<td class="ltx_td ltx_align_left ltx_align_top" id="A1.T7.1.24.1"></td>
+<td class="ltx_td ltx_align_left ltx_align_top" id="A1.T7.1.24.2">
+<span class="ltx_inline-block ltx_align_top" id="A1.T7.1.24.2.1">
+<span class="ltx_p" id="A1.T7.1.24.2.1.1">Knowledge retrieval</span>
+</span></td>
+<td class="ltx_td ltx_nopad_r ltx_align_left ltx_align_top" id="A1.T7.1.24.3">
+<span class="ltx_inline-block ltx_align_top" id="A1.T7.1.24.3.1">
+<span class="ltx_p" id="A1.T7.1.24.3.1.1">Local embedding retrieval; Top-<math class="ltx_Math" display="inline" id="A1.T7.m23"><semantics><mn>8</mn><annotation encoding="application/x-tex">8</annotation></semantics></math></span>
+</span></td></tr>
+<tr class="ltx_tr" id="A1.T7.1.25">
+<td class="ltx_td ltx_align_left ltx_align_top ltx_border_t" id="A1.T7.1.25.1">
+<span class="ltx_inline-block ltx_align_top" id="A1.T7.1.25.1.1">
+<span class="ltx_p" id="A1.T7.1.25.1.1.1"><span class="ltx_text ltx_font_italic" id="A1.T7.1.25.1.1.1.1">VitaBench</span></span>
+</span></td>
+<td class="ltx_td ltx_align_left ltx_align_top ltx_border_t" id="A1.T7.1.25.2">
+<span class="ltx_inline-block ltx_align_top" id="A1.T7.1.25.2.1">
+<span class="ltx_p" id="A1.T7.1.25.2.1.1">User-simulator LLM</span>
+</span></td>
+<td class="ltx_td ltx_nopad_r ltx_align_left ltx_align_top ltx_border_t" id="A1.T7.1.25.3">
+<span class="ltx_inline-block ltx_align_top" id="A1.T7.1.25.3.1">
+<span class="ltx_p" id="A1.T7.1.25.3.1.1">qwen3.6-flash</span>
+</span></td></tr>
+<tr class="ltx_tr" id="A1.T7.1.26">
+<td class="ltx_td ltx_align_left ltx_align_top" id="A1.T7.1.26.1"></td>
+<td class="ltx_td ltx_align_left ltx_align_top" id="A1.T7.1.26.2">
+<span class="ltx_inline-block ltx_align_top" id="A1.T7.1.26.2.1">
+<span class="ltx_p" id="A1.T7.1.26.2.1.1">Agent/user configuration</span>
+</span></td>
+<td class="ltx_td ltx_nopad_r ltx_align_left ltx_align_top" id="A1.T7.1.26.3">
+<span class="ltx_inline-block ltx_align_top" id="A1.T7.1.26.3.1">
+<span class="ltx_p" id="A1.T7.1.26.3.1.1">llm_agent/user_simulator</span>
+</span></td></tr>
+<tr class="ltx_tr" id="A1.T7.1.27">
+<td class="ltx_td ltx_align_left ltx_align_top" id="A1.T7.1.27.1"></td>
+<td class="ltx_td ltx_align_left ltx_align_top" id="A1.T7.1.27.2">
+<span class="ltx_inline-block ltx_align_top" id="A1.T7.1.27.2.1">
+<span class="ltx_p" id="A1.T7.1.27.2.1.1">Benchmark language</span>
+</span></td>
+<td class="ltx_td ltx_nopad_r ltx_align_left ltx_align_top" id="A1.T7.1.27.3">
+<span class="ltx_inline-block ltx_align_top" id="A1.T7.1.27.3.1">
+<span class="ltx_p" id="A1.T7.1.27.3.1.1">English</span>
+</span></td></tr>
+<tr class="ltx_tr" id="A1.T7.1.28">
+<td class="ltx_td ltx_align_left ltx_align_top" id="A1.T7.1.28.1"></td>
+<td class="ltx_td ltx_align_left ltx_align_top" id="A1.T7.1.28.2">
+<span class="ltx_inline-block ltx_align_top" id="A1.T7.1.28.2.1">
+<span class="ltx_p" id="A1.T7.1.28.2.1.1">Interaction controls</span>
+</span></td>
+<td class="ltx_td ltx_nopad_r ltx_align_left ltx_align_top" id="A1.T7.1.28.3">
+<span class="ltx_inline-block ltx_align_top" id="A1.T7.1.28.3.1">
+<span class="ltx_p" id="A1.T7.1.28.3.1.1">100 steps; at most 10 errors; seed 42</span>
+</span></td></tr>
+<tr class="ltx_tr" id="A1.T7.1.29">
+<td class="ltx_td ltx_align_left ltx_align_top ltx_border_t" id="A1.T7.1.29.1">
+<span class="ltx_inline-block ltx_align_top" id="A1.T7.1.29.1.1">
+<span class="ltx_p" id="A1.T7.1.29.1.1.1"><span class="ltx_text ltx_font_italic" id="A1.T7.1.29.1.1.1.1">BrowseComp-ZH</span></span>
+</span></td>
+<td class="ltx_td ltx_align_left ltx_align_top ltx_border_t" id="A1.T7.1.29.2">
+<span class="ltx_inline-block ltx_align_top" id="A1.T7.1.29.2.1">
+<span class="ltx_p" id="A1.T7.1.29.2.1.1">Search framework</span>
+</span></td>
+<td class="ltx_td ltx_nopad_r ltx_align_left ltx_align_top ltx_border_t" id="A1.T7.1.29.3">
+<span class="ltx_inline-block ltx_align_top" id="A1.T7.1.29.3.1">
+<span class="ltx_p" id="A1.T7.1.29.3.1.1">smolagents</span>
+</span></td></tr>
+<tr class="ltx_tr" id="A1.T7.1.30">
+<td class="ltx_td ltx_align_left ltx_align_top" id="A1.T7.1.30.1"></td>
+<td class="ltx_td ltx_align_left ltx_align_top" id="A1.T7.1.30.2">
+<span class="ltx_inline-block ltx_align_top" id="A1.T7.1.30.2.1">
+<span class="ltx_p" id="A1.T7.1.30.2.1.1">Search-agent backbone</span>
+</span></td>
+<td class="ltx_td ltx_nopad_r ltx_align_left ltx_align_top" id="A1.T7.1.30.3">
+<span class="ltx_inline-block ltx_align_top" id="A1.T7.1.30.3.1">
+<span class="ltx_p" id="A1.T7.1.30.3.1.1">qwen3.5-flash or deepseek-v4-flash, matching the evaluated backbone</span>
+</span></td></tr>
+<tr class="ltx_tr" id="A1.T7.1.31">
+<td class="ltx_td ltx_align_left ltx_align_top" id="A1.T7.1.31.1"></td>
+<td class="ltx_td ltx_align_left ltx_align_top" id="A1.T7.1.31.2">
+<span class="ltx_inline-block ltx_align_top" id="A1.T7.1.31.2.1">
+<span class="ltx_p" id="A1.T7.1.31.2.1.1">Search configuration</span>
+</span></td>
+<td class="ltx_td ltx_nopad_r ltx_align_left ltx_align_top" id="A1.T7.1.31.3">
+<span class="ltx_inline-block ltx_align_top" id="A1.T7.1.31.3.1">
+<span class="ltx_p" id="A1.T7.1.31.3.1.1">Top-<math class="ltx_Math" display="inline" id="A1.T7.m24"><semantics><mn>10</mn><annotation encoding="application/x-tex">10</annotation></semantics></math>; at most 10 search steps</span>
+</span></td></tr>
+<tr class="ltx_tr" id="A1.T7.1.32">
+<td class="ltx_td ltx_align_left ltx_align_top" id="A1.T7.1.32.1"></td>
+<td class="ltx_td ltx_align_left ltx_align_top" id="A1.T7.1.32.2">
+<span class="ltx_inline-block ltx_align_top" id="A1.T7.1.32.2.1">
+<span class="ltx_p" id="A1.T7.1.32.2.1.1">Search/page-fetch timeout</span>
+</span></td>
+<td class="ltx_td ltx_nopad_r ltx_align_left ltx_align_top" id="A1.T7.1.32.3">
+<span class="ltx_inline-block ltx_align_top" id="A1.T7.1.32.3.1">
+<span class="ltx_p" id="A1.T7.1.32.3.1.1">120 s each</span>
+</span></td></tr>
+<tr class="ltx_tr" id="A1.T7.1.33">
+<td class="ltx_td ltx_align_left ltx_align_top" id="A1.T7.1.33.1"></td>
+<td class="ltx_td ltx_align_left ltx_align_top" id="A1.T7.1.33.2">
+<span class="ltx_inline-block ltx_align_top" id="A1.T7.1.33.2.1">
+<span class="ltx_p" id="A1.T7.1.33.2.1.1">Page-length limit</span>
+</span></td>
+<td class="ltx_td ltx_nopad_r ltx_align_left ltx_align_top" id="A1.T7.1.33.3">
+<span class="ltx_inline-block ltx_align_top" id="A1.T7.1.33.3.1">
+<span class="ltx_p" id="A1.T7.1.33.3.1.1"><math class="ltx_Math" display="inline" id="A1.T7.m25"><semantics><mn>40,000</mn><annotation encoding="application/x-tex">40{,}000</annotation></semantics></math> characters</span>
+</span></td></tr>
+<tr class="ltx_tr" id="A1.T7.1.34">
+<td class="ltx_td ltx_align_left ltx_align_top" id="A1.T7.1.34.1"></td>
+<td class="ltx_td ltx_align_left ltx_align_top" id="A1.T7.1.34.2">
+<span class="ltx_inline-block ltx_align_top" id="A1.T7.1.34.2.1">
+<span class="ltx_p" id="A1.T7.1.34.2.1.1">Answer judge</span>
+</span></td>
+<td class="ltx_td ltx_nopad_r ltx_align_left ltx_align_top" id="A1.T7.1.34.3">
+<span class="ltx_inline-block ltx_align_top" id="A1.T7.1.34.3.1">
+<span class="ltx_p" id="A1.T7.1.34.3.1.1">Deterministic qwen3.6-flash</span>
+</span></td></tr>
+<tr class="ltx_tr" id="A1.T7.1.35">
+<td class="ltx_td ltx_align_left ltx_align_top ltx_border_t" id="A1.T7.1.35.1">
+<span class="ltx_inline-block ltx_align_top" id="A1.T7.1.35.1.1">
+<span class="ltx_p" id="A1.T7.1.35.1.1.1"><span class="ltx_text ltx_font_italic" id="A1.T7.1.35.1.1.1.1">BFCL-v4</span></span>
+</span></td>
+<td class="ltx_td ltx_align_left ltx_align_top ltx_border_t" id="A1.T7.1.35.2">
+<span class="ltx_inline-block ltx_align_top" id="A1.T7.1.35.2.1">
+<span class="ltx_p" id="A1.T7.1.35.2.1.1">Evaluator</span>
+</span></td>
+<td class="ltx_td ltx_nopad_r ltx_align_left ltx_align_top ltx_border_t" id="A1.T7.1.35.3">
+<span class="ltx_inline-block ltx_align_top" id="A1.T7.1.35.3.1">
+<span class="ltx_p" id="A1.T7.1.35.3.1.1">qwen3.6-flash checker</span>
+</span></td></tr>
+<tr class="ltx_tr" id="A1.T7.1.36">
+<td class="ltx_td ltx_align_left ltx_align_top" id="A1.T7.1.36.1"></td>
+<td class="ltx_td ltx_align_left ltx_align_top" id="A1.T7.1.36.2">
+<span class="ltx_inline-block ltx_align_top" id="A1.T7.1.36.2.1">
+<span class="ltx_p" id="A1.T7.1.36.2.1.1">Search configuration</span>
+</span></td>
+<td class="ltx_td ltx_nopad_r ltx_align_left ltx_align_top" id="A1.T7.1.36.3">
+<span class="ltx_inline-block ltx_align_top" id="A1.T7.1.36.3.1">
+<span class="ltx_p" id="A1.T7.1.36.3.1.1">Top-<math class="ltx_Math" display="inline" id="A1.T7.m26"><semantics><mn>10</mn><annotation encoding="application/x-tex">10</annotation></semantics></math>; at most 10 tool/search steps</span>
+</span></td></tr>
+<tr class="ltx_tr" id="A1.T7.1.37">
+<td class="ltx_td ltx_align_left ltx_align_top ltx_border_bb ltx_border_t" id="A1.T7.1.37.1">
+<span class="ltx_inline-block ltx_align_top" id="A1.T7.1.37.1.1">
+<span class="ltx_p" id="A1.T7.1.37.1.1.1"><span class="ltx_text ltx_font_italic" id="A1.T7.1.37.1.1.1.1">Shared execution</span></span>
+</span></td>
+<td class="ltx_td ltx_align_left ltx_align_top ltx_border_bb ltx_border_t" id="A1.T7.1.37.2">
+<span class="ltx_inline-block ltx_align_top" id="A1.T7.1.37.2.1">
+<span class="ltx_p" id="A1.T7.1.37.2.1.1">Episode concurrency</span>
+</span></td>
+<td class="ltx_td ltx_nopad_r ltx_align_left ltx_align_top ltx_border_bb ltx_border_t" id="A1.T7.1.37.3">
+<span class="ltx_inline-block ltx_align_top" id="A1.T7.1.37.3.1">
+<span class="ltx_p" id="A1.T7.1.37.3.1.1">16 for <math class="ltx_Math" display="inline" id="A1.T7.m27"><semantics><msup><mi>τ</mi><mn>2</mn></msup><annotation encoding="application/x-tex">\tau^{2}</annotation></semantics></math>-Bench, BrowseComp-ZH, and BFCL-v4; 8 for VitaBench</span>
+</span></td></tr>
+</tbody>
+</table></div><div class="tbl-foot">원문 arXiv HTML의 셀과 수치를 순서대로 재구성했다.</div></div>
+</section>
+<section class="ch" id="gloss">
+<div class="ch-eyebrow"><span class="cnum">＋</span><span class="clabel">Glossary · 핵심 용어</span></div>
+<h2 class="ch-title">핵심 용어 정리</h2>
+<div class="tldr"><div class="h">한눈에 요약</div><p>논문의 주장을 따라가는 데 필요한 용어만 간결하게 모았다.</p></div>
+<div class="gloss"><div class="gitem"><div class="term">크레딧 귀속<span class="en">Credit assignment</span></div><p>성공이나 실패의 책임을 계획·실행 등 실제 원인에 배분하는 과정.</p></div><div class="gitem"><div class="term">계획 메모리<span class="en">Planning memory</span></div><p>전략 선택, 과제 분해, 의사결정에 관한 장기 교훈.</p></div><div class="gitem"><div class="term">실행 메모리<span class="en">Execution memory</span></div><p>도구 사용, 중간 결과 확인, 오류 복구에 관한 운영 교훈.</p></div><div class="gitem"><div class="term">메모리 진화<span class="en">Memory evolution</span></div><p>새 경험에 따라 기억을 추가·병합·가치 조정·제거하는 갱신 과정.</p></div><div class="gitem"><div class="term">구제율<span class="en">Rescue rate</span></div><p>이전 실패가 진화한 메모리를 사용한 뒤 성공으로 바뀐 비율.</p></div></div>
+</section>
+<section class="ch" id="take">
+<div class="ch-eyebrow"><span class="cnum">＋</span><span class="clabel">One-page Summary · 한 장 정리</span></div>
+<h2 class="ch-title">이 논문을 한 장으로</h2>
+<div class="tldr"><div class="h">한눈에 요약</div><p>문제, 방법, 증거, 한계를 한 번에 다시 정리한다.</p></div>
+<div class="takeaways"><div class="take"><div class="n">01</div><div class="body">실패를 저장하기 전에 원인을 <b>계획·실행·둘 다·둘 다 아님</b>으로 귀속한다.</div></div><div class="take"><div class="n">02</div><div class="body">네 벤치마크에서 강한 기준선보다 평균 2.96·3.68점 높았다.</div></div><div class="take"><div class="n">03</div><div class="body">129개 메모리로 A-MapReduce의 3,585개보다 훨씬 작은 기억 은행을 유지했다.</div></div><div class="take"><div class="n">04</div><div class="body">고가치 기억 정확도는 계획 21.7→50.8%, 실행 23.7→35.4%로 올랐다.</div></div><div class="take"><div class="n">05</div><div class="body">귀속 안정성은 87.8–97.9%, 실패 구제율은 56.3–67.6%였다.</div></div><div class="take"><div class="n">06</div><div class="body">교차 벤치마크 전이는 약하고 백본의 근본 능력 한계는 메모리로 넘지 못한다.</div></div></div>
+</section>

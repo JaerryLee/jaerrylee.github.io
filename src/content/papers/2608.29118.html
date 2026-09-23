@@ -1,0 +1,142 @@
+<section class="ch" id="c1">
+<div class="ch-eyebrow"><span class="cnum">01</span><span class="clabel">Framing · 문제 재정의</span></div>
+<h2 class="ch-title">EM은 좁은 유해 훈련이 무관한 질문의 행동까지 나쁘게 만드는 현상이다. 논문은 이를 초자연적 점프가 아니라 표현 공간의 국소 일반화로 본다.</h2>
+<div class="tldr"><div class="h">한눈에 요약</div><p>EM은 좁은 유해 훈련이 무관한 질문의 행동까지 나쁘게 만드는 현상이다. 논문은 이를 초자연적 점프가 아니라 표현 공간의 국소 일반화로 본다.</p></div>
+<p class="lead">기본 모델의 중간층 activation에서 훈련 데이터 중심과 평가 프롬프트 사이 거리를 먼저 계산하고, 미세조정 후 응답의 사악함과 비교한다.</p><p>핵심은 오정렬을 사후 내부 벡터 하나로 설명하는 것이 아니라, <strong>훈련 전에 존재하던 데이터 기하</strong>가 어느 프롬프트까지 영향을 받을지 예측하는지 묻는 것이다.</p><figure>
+<div class="fig-top"><span class="fnum">FIG 1</span><span class="ftitle">EM을 예상 가능한 일반화로 보는 전체 관점</span></div>
+<div class="imgbox"><img alt="EM을 예상 가능한 일반화로 보는 전체 관점" decoding="async" loading="lazy" src="/paper-assets/ca5a65eb3d8e89041e398271fdefe73741f367dc4c95c1598a09095de691fc9b.png"/></div>
+<figcaption>훈련 데이터 중심까지의 표현 거리, 데이터 형식, 전이되지 않는 단일 방향, 프롬프트 교란 예측을 한 장에 정리한다.</figcaption>
+</figure>
+</section>
+<section class="ch" id="c2">
+<div class="ch-eyebrow"><span class="cnum">02</span><span class="clabel">Geometry · 표현 거리</span></div>
+<h2 class="ch-title">12개 모델×데이터 설정의 평균 Spearman 상관은 −0.73이었다. 훈련 중심에서 멀수록 EM 후 사악함이 낮아졌다.</h2>
+<div class="tldr"><div class="h">한눈에 요약</div><p>12개 모델×데이터 설정의 평균 Spearman 상관은 −0.73이었다. 훈련 중심에서 멀수록 EM 후 사악함이 낮아졌다.</p></div>
+<p class="lead">Qwen, Gemma, Olmo 계열과 insecure code, bad medical advice, risky finance, extreme sports 데이터를 사용했다. 평가용 CHATBOT VERIFIED는 822개 프롬프트다.</p><div class="stat-row"><div class="stat"><div class="v">−0.73</div><div class="l">12개 설정 평균 ρ</div></div><div class="stat"><div class="v arb">822</div><div class="l">검증 평가 프롬프트</div></div><div class="stat"><div class="v">12</div><div class="l">EM 모델×데이터 셀</div></div></div><p>여러 activation 추출법과 거리 지표, 레이어 sweep에서도 대체로 음의 경향이 이어졌다. 다만 Gemma의 L2는 activation norm에 민감해 부호가 바뀌는 예외가 있어 cosine과 함께 해석해야 한다.</p><figure>
+<div class="fig-top"><span class="fnum">FIG 2</span><span class="ftitle">표현 거리와 사악함 점수의 상관</span></div>
+<div class="imgbox"><img alt="표현 거리와 사악함 점수의 상관" decoding="async" loading="lazy" src="/paper-assets/62c14ef2b5e8a86c37fd8563c9fc6ba02f7f7ac18d61af16e1be61f85b1d9094.png"/></div>
+<figcaption>12개 모델×데이터 설정에서 평가 프롬프트가 훈련 중심에 가까울수록 EM 모델의 사악함 점수가 높아지는 음의 상관이 나타난다.</figcaption>
+</figure><figure>
+<div class="fig-top"><span class="fnum">FIG 3</span><span class="ftitle">레이어별 거리–사악함 상관</span></div>
+<div class="imgbox"><img alt="레이어별 거리–사악함 상관" decoding="async" loading="lazy" src="/paper-assets/20035e3b73dc2e5dec9f1a5d2d69a9cd3835742eb02a03f8d3db244ef08673b4.png"/></div>
+<figcaption>선택한 한 레이어에만 의존한 결과가 아니라 여러 중간 레이어에서 같은 경향이 지속됨을 확인한다.</figcaption>
+</figure>
+</section>
+<section class="ch" id="c3">
+<div class="ch-eyebrow"><span class="cnum">03</span><span class="clabel">Rebuttal · 기존 해석 검증</span></div>
+<h2 class="ch-title">같은 내용을 코드/조언 형식으로 바꾸자 EM 효과가 평균 52.5% 감소했다. 단일 ‘보편 오정렬 방향’과 ‘악한 페르소나’ 해석도 데이터셋을 넘어 안정적으로 전이되지 않았다.</h2>
+<div class="tldr"><div class="h">한눈에 요약</div><p>같은 내용을 코드/조언 형식으로 바꾸자 EM 효과가 평균 52.5% 감소했다. 단일 ‘보편 오정렬 방향’과 ‘악한 페르소나’ 해석도 데이터셋을 넘어 안정적으로 전이되지 않았다.</p></div>
+<p class="lead">의료 조언 모델에서 자기 방향을 제거하면 EM 비율이 4.48%→1.30%였지만, insecure-code 모델에서 가져온 방향을 제거하면 오히려 15.28%로 증가했다.</p><p>EM 모델의 거리–사악함 평균 상관은 −0.745였지만 evil system prompt는 −0.082, 8-shot ICL은 +0.429였다. 모두 나쁜 응답을 만들 수 있어도 데이터 중심에 대한 일반화 양상은 서로 다르다.</p><figure>
+<div class="fig-top"><span class="fnum">TABLE 1</span><span class="ftitle">원문 표 1</span></div>
+<div class="imgbox"><img alt="원문 표 1" decoding="async" loading="lazy" src="/paper-assets/9582633cbbfe4ca4a4d709d52461732e109641a450271c7a0772e2b35df59511.png"/></div>
+<figcaption>원문의 세부 실험 수치와 설정을 원문 표 형태 그대로 포함했다. 강조값과 비교 기준은 본문 해설과 함께 읽어야 한다.</figcaption>
+</figure><figure>
+<div class="fig-top"><span class="fnum">TABLE 2</span><span class="ftitle">원문 표 2</span></div>
+<div class="imgbox"><img alt="원문 표 2" decoding="async" loading="lazy" src="/paper-assets/257f8c8ff08fcb54c4efc74e533f06aa7b6f46a57b32bd8bf008f5cd0479aa4e.png"/></div>
+<figcaption>원문의 세부 실험 수치와 설정을 원문 표 형태 그대로 포함했다. 강조값과 비교 기준은 본문 해설과 함께 읽어야 한다.</figcaption>
+</figure><figure>
+<div class="fig-top"><span class="fnum">TABLE 3</span><span class="ftitle">원문 표 3</span></div>
+<div class="imgbox"><img alt="원문 표 3" decoding="async" loading="lazy" src="/paper-assets/14f677267a913eb8809dcc7f610be762d8d1bb241045b60a25113514c906cb32.png"/></div>
+<figcaption>원문의 세부 실험 수치와 설정을 원문 표 형태 그대로 포함했다. 강조값과 비교 기준은 본문 해설과 함께 읽어야 한다.</figcaption>
+</figure><figure>
+<div class="fig-top"><span class="fnum">TABLE 4</span><span class="ftitle">원문 표 4</span></div>
+<div class="imgbox"><img alt="원문 표 4" decoding="async" loading="lazy" src="/paper-assets/a1b5a5ab1df99b4d86a64d59eac43192ad2baed81f4080d730302b72d402bb7e.png"/></div>
+<figcaption>원문의 세부 실험 수치와 설정을 원문 표 형태 그대로 포함했다. 강조값과 비교 기준은 본문 해설과 함께 읽어야 한다.</figcaption>
+</figure><figure>
+<div class="fig-top"><span class="fnum">FIG 4</span><span class="ftitle">내용은 같고 형식만 바꾼 EM 훈련</span></div>
+<div class="imgbox"><img alt="내용은 같고 형식만 바꾼 EM 훈련" decoding="async" loading="lazy" src="/paper-assets/fd1cf0167b7d27b56d34f95fc7d2fabbf9afee320a3311696bce5e8733d6ec39.png"/></div>
+<figcaption>조언 형식을 코드 형식으로, 코드 형식을 조언 형식으로 바꾸자 EM 효과가 크게 변해 데이터 형식이 핵심 변수임을 보여준다.</figcaption>
+</figure>
+</section>
+<section class="ch" id="c4">
+<div class="ch-eyebrow"><span class="cnum">04</span><span class="clabel">Perturbation · 교란 예측</span></div>
+<h2 class="ch-title">무작위 토큰 추가나 paraphrase처럼 의미를 보존하는 작은 변화는 사악함을 크게 바꾸지만, 학습한 데이터별 일반화 방향은 그 변화를 중간 정도 이상 예측했다.</h2>
+<div class="tldr"><div class="h">한눈에 요약</div><p>무작위 토큰 추가나 paraphrase처럼 의미를 보존하는 작은 변화는 사악함을 크게 바꾸지만, 학습한 데이터별 일반화 방향은 그 변화를 중간 정도 이상 예측했다.</p></div>
+<p class="lead">훈련 중심을 뺀 기본 모델 activation에서 ridge regression으로 방향을 맞추고, 투영값으로 EM 응답 사악함을 예측한다.</p><p>마지막 토큰 추가에서는 일반화 방향 상관이 0.53, 0.55, 0.75였고 paraphrase에서는 0.42, 0.33, 0.33이었다. 거리 하나나 기존 EM direction은 모델에 따라 실패했다. 즉 국소 변화는 구조적이지만 선형 모델만으로 완전히 설명되지는 않는다.</p><figure>
+<div class="fig-top"><span class="fnum">TABLE 5</span><span class="ftitle">원문 표 5</span></div>
+<div class="imgbox"><img alt="원문 표 5" decoding="async" loading="lazy" src="/paper-assets/55b8fbd81d444f67fea657aa183c985e58da65b12d498fee4f33f4f4437af001.png"/></div>
+<figcaption>원문의 세부 실험 수치와 설정을 원문 표 형태 그대로 포함했다. 강조값과 비교 기준은 본문 해설과 함께 읽어야 한다.</figcaption>
+</figure><figure>
+<div class="fig-top"><span class="fnum">TABLE 6</span><span class="ftitle">원문 표 6</span></div>
+<div class="imgbox"><img alt="원문 표 6" decoding="async" loading="lazy" src="/paper-assets/a05f75e3d73a360add1c0e9b4ca242b79125288ddffc30afa06b58774cabb3ac.png"/></div>
+<figcaption>원문의 세부 실험 수치와 설정을 원문 표 형태 그대로 포함했다. 강조값과 비교 기준은 본문 해설과 함께 읽어야 한다.</figcaption>
+</figure>
+</section>
+<section class="ch" id="c5">
+<div class="ch-eyebrow"><span class="cnum">05</span><span class="clabel">Validity · 부록과 한계</span></div>
+<h2 class="ch-title">기본 모델 대조, 추가 GPT-OSS 모델, open-endedness 분석, 훈련 세부조건은 결과가 단일 설정의 우연이 아님을 확인하지만 범위는 SFT에 한정된다.</h2>
+<div class="tldr"><div class="h">한눈에 요약</div><p>기본 모델 대조, 추가 GPT-OSS 모델, open-endedness 분석, 훈련 세부조건은 결과가 단일 설정의 우연이 아님을 확인하지만 범위는 SFT에 한정된다.</p></div>
+<p class="lead">200개 응답의 사람–LLM judge Spearman은 0.601, Pearson은 0.609였다. 다른 judge 모델 간 일치도도 비슷했으나 완벽한 측정은 아니다.</p><p>논문은 activation 거리 외 perplexity·gradient 기반 척도, RL·on-policy distillation, 비선형 교란 구조를 후속 과제로 남긴다. 또한 “예측 가능”이 안전하다는 뜻은 아니다. 좁은 데이터가 넓은 행동을 바꾸는 위험 자체는 그대로다.</p><figure>
+<div class="fig-top"><span class="fnum">FIG 5</span><span class="ftitle">원문 그림 5</span></div>
+<div class="imgbox"><img alt="원문 그림 5" decoding="async" loading="lazy" src="/paper-assets/164ec4c5e10e4bdc71e1514fd9c54835e849a4ec33535f4a4a10aaad663d098f.png"/></div>
+<figcaption>본문 주장을 점검하기 위한 원문의 보충 시각화다. 축·범례와 비교 조건은 원문 표기 그대로 보존했다.</figcaption>
+</figure><figure>
+<div class="fig-top"><span class="fnum">FIG 6</span><span class="ftitle">원문 그림 6</span></div>
+<div class="imgbox"><img alt="원문 그림 6" decoding="async" loading="lazy" src="/paper-assets/af918badd6b03a6722bca30b6e8d6efc373962db0a41a5469136cf55b6c54b69.png"/></div>
+<figcaption>본문 주장을 점검하기 위한 원문의 보충 시각화다. 축·범례와 비교 조건은 원문 표기 그대로 보존했다.</figcaption>
+</figure><figure>
+<div class="fig-top"><span class="fnum">FIG 7</span><span class="ftitle">원문 그림 7</span></div>
+<div class="imgbox"><img alt="원문 그림 7" decoding="async" loading="lazy" src="/paper-assets/73f2184426559cc12a06ebd9d23f422cb7c2e15bb16eb5a748e06498b4ef6861.png"/></div>
+<figcaption>본문 주장을 점검하기 위한 원문의 보충 시각화다. 축·범례와 비교 조건은 원문 표기 그대로 보존했다.</figcaption>
+</figure><figure>
+<div class="fig-top"><span class="fnum">FIG 8</span><span class="ftitle">원문 그림 8</span></div>
+<div class="imgbox"><img alt="원문 그림 8" decoding="async" loading="lazy" src="/paper-assets/488a38be9176de0a1a33953c6c57eaf6ead3b512bae269e2c76170721c34420d.png"/></div>
+<figcaption>본문 주장을 점검하기 위한 원문의 보충 시각화다. 축·범례와 비교 조건은 원문 표기 그대로 보존했다.</figcaption>
+</figure><figure>
+<div class="fig-top"><span class="fnum">FIG 9</span><span class="ftitle">원문 그림 9</span></div>
+<div class="imgbox"><img alt="원문 그림 9" decoding="async" loading="lazy" src="/paper-assets/b59f2f83008226e02173ece2070d46a8d3c1fa8a8e8d5902155d970b33562afe.png"/></div>
+<figcaption>본문 주장을 점검하기 위한 원문의 보충 시각화다. 축·범례와 비교 조건은 원문 표기 그대로 보존했다.</figcaption>
+</figure><figure>
+<div class="fig-top"><span class="fnum">FIG 10</span><span class="ftitle">원문 그림 10</span></div>
+<div class="imgbox"><img alt="원문 그림 10" decoding="async" loading="lazy" src="/paper-assets/243fde0f11fb558f64a13b7921f0209e14f4a03c68aae7718b7dcad756a7b6a6.png"/></div>
+<figcaption>본문 주장을 점검하기 위한 원문의 보충 시각화다. 축·범례와 비교 조건은 원문 표기 그대로 보존했다.</figcaption>
+</figure><figure>
+<div class="fig-top"><span class="fnum">FIG 11</span><span class="ftitle">원문 그림 11</span></div>
+<div class="imgbox"><img alt="원문 그림 11" decoding="async" loading="lazy" src="/paper-assets/c982894137600849dbe1aaf165becafcdf84e6a6a90f071c8f7626afe8e5a2ee.png"/></div>
+<figcaption>본문 주장을 점검하기 위한 원문의 보충 시각화다. 축·범례와 비교 조건은 원문 표기 그대로 보존했다.</figcaption>
+</figure><figure>
+<div class="fig-top"><span class="fnum">FIG 12</span><span class="ftitle">원문 그림 12</span></div>
+<div class="imgbox"><img alt="원문 그림 12" decoding="async" loading="lazy" src="/paper-assets/14ad2319e707c8b65d1540a3dd3fcc98ab44f27ea53cdc53952f867afd901834.png"/></div>
+<figcaption>본문 주장을 점검하기 위한 원문의 보충 시각화다. 축·범례와 비교 조건은 원문 표기 그대로 보존했다.</figcaption>
+</figure><figure>
+<div class="fig-top"><span class="fnum">FIG 13</span><span class="ftitle">원문 그림 13</span></div>
+<div class="imgbox"><img alt="원문 그림 13" decoding="async" loading="lazy" src="/paper-assets/107d9ae940d522a29d53b53485b3cd9c58260803d81d9cbc52a12003e8464473.png"/></div>
+<figcaption>본문 주장을 점검하기 위한 원문의 보충 시각화다. 축·범례와 비교 조건은 원문 표기 그대로 보존했다.</figcaption>
+</figure><figure>
+<div class="fig-top"><span class="fnum">FIG 14</span><span class="ftitle">기본 모델에는 같은 경향이 없음</span></div>
+<div class="imgbox"><img alt="기본 모델에는 같은 경향이 없음" decoding="async" loading="lazy" src="/paper-assets/64296d0f68184043a2a45dbbf69ac913cc15b86fa4a65b7e3ff8121094ccfe1b.png"/></div>
+<figcaption>미세조정 전 기본 모델의 사악함 변동에는 일관된 거리–사악함 상관이 보이지 않아, 관찰된 관계가 EM 학습 후 생긴 현상임을 확인한다.</figcaption>
+</figure><figure>
+<div class="fig-top"><span class="fnum">FIG 15</span><span class="ftitle">거리와 프롬프트 개방성의 관계</span></div>
+<div class="imgbox"><img alt="거리와 프롬프트 개방성의 관계" decoding="async" loading="lazy" src="/paper-assets/10bfd009e6fc6e59870a370c290ef65f0990d4116a7f246ed42b1c817745775a.png"/></div>
+<figcaption>조언형 데이터에서는 개방성이 혼입 변수일 수 있지만 insecure-code에서는 같은 설명이 성립하지 않는다.</figcaption>
+</figure><figure>
+<div class="fig-top"><span class="fnum">FIG 16</span><span class="ftitle">미적 선호 데이터의 개방성 분석</span></div>
+<div class="imgbox"><img alt="미적 선호 데이터의 개방성 분석" decoding="async" loading="lazy" src="/paper-assets/241857c21d507bfe999b2e0978d127d12e845f6cf3090e01c8795467e0ec4b18.png"/></div>
+<figcaption>일반 대화 형식의 미적 선호 데이터에 대한 보충 상관 분석이다.</figcaption>
+</figure><figure>
+<div class="fig-top"><span class="fnum">FIG 17</span><span class="ftitle">훈련 데이터셋의 거리–사악함 공간</span></div>
+<div class="imgbox"><img alt="훈련 데이터셋의 거리–사악함 공간" decoding="async" loading="lazy" src="/paper-assets/57273cc15b3ffc16ddcef3361ff24a466f0cf869b4285ca2070961c6a4bb6bd8.png"/></div>
+<figcaption>의료·스포츠·금융 조언형 데이터는 서로 뭉치고 코드형 데이터와는 떨어져 있어 데이터 의존적 일반화라는 해석을 뒷받침한다.</figcaption>
+</figure><figure>
+<div class="fig-top"><span class="fnum">TABLE 7</span><span class="ftitle">원문 표 7</span></div>
+<div class="imgbox"><img alt="원문 표 7" decoding="async" loading="lazy" src="/paper-assets/a6f47f7dae62491c1e8b96e65a7c9aaeb0e5a9e9a7c7e85559d71a9ef0e7c5d0.png"/></div>
+<figcaption>추가 거리 지표·모델·데이터 예시와 12개 SFT 셀의 하이퍼파라미터를 원문 그대로 포함했다.</figcaption>
+</figure><figure>
+<div class="fig-top"><span class="fnum">TABLE 8</span><span class="ftitle">원문 표 8</span></div>
+<div class="imgbox"><img alt="원문 표 8" decoding="async" loading="lazy" src="/paper-assets/78d0fa822ce28bd4f79584e9bf9156e3a0e204d4e39989f961cc9b8d0cbfbaff.png"/></div>
+<figcaption>추가 거리 지표·모델·데이터 예시와 12개 SFT 셀의 하이퍼파라미터를 원문 그대로 포함했다.</figcaption>
+</figure>
+</section>
+<section class="ch" id="gloss">
+<div class="ch-eyebrow"><span class="cnum">＋</span><span class="clabel">Glossary · 핵심 용어</span></div>
+<h2 class="ch-title">핵심 용어 정리</h2>
+<div class="tldr"><div class="h">한눈에 요약</div><p>논문의 주장을 따라가는 데 필요한 용어만 간결하게 모았다.</p></div>
+<div class="gloss"><div class="gitem"><div class="term">창발적 오정렬<span class="en">Emergent Misalignment</span></div><p>좁은 유해 과제 학습이 예상 밖의 광범위한 나쁜 행동으로 번지는 현상.</p></div><div class="gitem"><div class="term">표현 중심<span class="en">Training centroid</span></div><p>기본 모델 activation 공간에서 EM 훈련 데이터 벡터들의 평균점.</p></div><div class="gitem"><div class="term">사악함 점수<span class="en">Evilness score</span></div><p>응답의 유해·기만·비윤리성을 0–100으로 평가한 LLM judge 점수.</p></div><div class="gitem"><div class="term">오정렬 방향<span class="en">Misalignment direction</span></div><p>EM 전후 activation 차이로 추출해 steering/ablation에 쓰는 벡터.</p></div><div class="gitem"><div class="term">일반화 방향<span class="en">Generalization direction</span></div><p>훈련 중심 기준 activation에서 graded evilness를 예측하도록 ridge regression으로 학습한 데이터별 벡터.</p></div></div>
+</section>
+<section class="ch" id="take">
+<div class="ch-eyebrow"><span class="cnum">＋</span><span class="clabel">One-page Summary · 한 장 정리</span></div>
+<h2 class="ch-title">이 논문을 한 장으로</h2>
+<div class="tldr"><div class="h">한눈에 요약</div><p>문제, 방법, 증거, 한계를 한 번에 다시 정리한다.</p></div>
+<div class="takeaways"><div class="take"><div class="n">01</div><div class="body">EM은 훈련 데이터와 평가 프롬프트의 <b>표현 공간 거리</b>로 상당 부분 예측된다.</div></div><div class="take"><div class="n">02</div><div class="body">12개 설정 평균 상관은 −0.73이었고, 가까운 프롬프트일수록 더 나쁜 응답을 유도했다.</div></div><div class="take"><div class="n">03</div><div class="body">데이터 내용뿐 아니라 형식이 효과 크기와 내부 방향을 바꿨다.</div></div><div class="take"><div class="n">04</div><div class="body">보편 악한 페르소나나 단일 전이 가능한 오정렬 방향은 관찰을 충분히 설명하지 못했다.</div></div><div class="take"><div class="n">05</div><div class="body">연구 범위는 SFT와 activation 기반 지표이며 judge 오차·비선형성·다른 학습 알고리즘은 남은 과제다.</div></div></div>
+</section>

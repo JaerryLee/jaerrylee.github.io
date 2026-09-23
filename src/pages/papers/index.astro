@@ -1,0 +1,56 @@
+---
+import Base from '../../layouts/Base.astro'
+import { papers, paperTopics, getPaper, getPaperTopic } from '../../lib/papers'
+---
+
+<Base title="논문 노트 · 이정재의 엔지니어링 노트" description="검색과 RAG, 에이전트 메모리, 평가, 개발 도구, 시스템과 한국어 검색을 다루는 한국어 논문 읽기 노트. 주제별 읽기 순서와 원문 출처를 함께 정리합니다.">
+  <section class="blog-intro paper-intro shell" aria-labelledby="papers-title">
+    <div class="eyebrow">PAPER NOTES</div>
+    <h1 id="papers-title">논문을 읽고,<br /><span>설계의 질문으로 연결하기.</span></h1>
+    <div class="intro-bottom">
+      <p>무엇을 해결했고, 어떤 근거가 있으며, 어디까지 적용할 수 있을까.<br class="desktop-break" /> 주제별 읽기 순서와 한국어 해설을 함께 정리했습니다.</p>
+      <span class="current-focus">{papers.length}편의 노트 · {paperTopics.length}개 주제</span>
+    </div>
+    <a class="paper-guide-link" href="/posts/paper-reading-map/">읽기 가이드: 논문을 설계 판단으로 연결하는 법 ↗</a>
+  </section>
+
+  <section class="reading-paths shell" aria-labelledby="reading-paths-title">
+    <div class="section-heading"><h2 id="reading-paths-title">관심 있는 질문부터</h2><p>각 주제에서 먼저 읽을 세 편을 골랐습니다.</p></div>
+    <div class="topic-grid">
+      {paperTopics.map((topic, index) => <article class="topic-card">
+        <div class="post-meta"><span class="eyebrow">0{index + 1}</span><span>{topic.papers.length}편</span></div>
+        <h3>{topic.label}</h3>
+        <p class="topic-question">{topic.question}</p>
+        <ol>{topic.starters.map(id => <li><a href={`/papers/${id}/`}>{getPaper(id).title}<span aria-hidden="true"> ↗</span></a></li>)}</ol>
+      </article>)}
+    </div>
+  </section>
+
+  <section class="article-list paper-list shell" aria-labelledby="paper-list-title">
+    <div class="section-heading"><h2 id="paper-list-title">전체 논문 노트</h2><p>제목, 주제, 논문 이름으로 찾아보세요.</p></div>
+    <div class="list-tools">
+      <div class="category-filters" role="group" aria-label="논문 주제 필터">
+        <button class="filter active" data-filter="all" aria-pressed="true">전체 <span>{papers.length}</span></button>
+        {paperTopics.map(topic => <button class="filter" data-filter={topic.id} aria-pressed="false">{topic.label} <span>{topic.papers.length}</span></button>)}
+      </div>
+      <label class="search"><span aria-hidden="true">⌕</span><span class="sr-only">논문 제목과 주제 검색</span><input id="post-search" type="search" placeholder="논문 제목·주제 검색" autocomplete="off" /></label>
+    </div>
+    <p class="result-count" id="search-status" role="status">{papers.length}편의 논문</p>
+    <ol class="posts">{papers.map((paper, index) => <li class="post-row" data-post data-category={paper.topic} data-search={`${paper.title} ${paper.originalTitle} ${paper.summary} ${getPaperTopic(paper.topic).label} ${paper.tags.join(' ')} ${paper.id}`.normalize('NFC').toLowerCase()}>
+      <div class="post-number" aria-hidden="true">{String(index + 1).padStart(2, '0')}</div>
+      <div class="post-copy">
+        <div class="post-meta"><span class="category">{getPaperTopic(paper.topic).label}</span><span>한국어 읽기 노트</span></div>
+        <h3><a href={`/papers/${paper.id}/`}>{paper.title}<span class="post-arrow" aria-hidden="true">↗</span></a></h3>
+        <p>{paper.summary}</p>
+        <p class="paper-original-title" lang="en">{paper.originalTitle}</p>
+      </div>
+    </li>)}</ol>
+    <div class="empty-state" id="empty-state" hidden><p>검색 조건에 맞는 논문이 없습니다.</p><button id="reset-search">전체 논문 보기</button></div>
+    <noscript><p class="noscript-note">모든 논문을 표시합니다. 검색과 주제 필터는 JavaScript를 켜면 사용할 수 있습니다.</p></noscript>
+  </section>
+</Base>
+
+<script>
+  import { filterList } from '../../scripts/filter-list'
+  filterList('편의 논문')
+</script>

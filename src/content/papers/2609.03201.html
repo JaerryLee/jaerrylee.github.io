@@ -1,0 +1,349 @@
+<section class="ch" id="c1">
+<div class="ch-eyebrow"><span class="cnum">01</span><span class="clabel">Background · 배경</span></div>
+<h2 class="ch-title">장기 메모리는 ‘비슷한 문장 찾기’만으로 부족하다</h2>
+<div class="tldr"><div class="h">한눈에 요약</div><p>에이전트가 오랫동안 대화하면 같은 사실의 반복, 값의 변경, 서로 모순되는 주장, 과거 상태가 함께 쌓인다. 의미상 가까운 문장만 검색하면 최신값과 폐기된 값을 구분하기 어렵다.</p></div>
+<p class="lead">예를 들어 사용자가 “나는 서울에 산다”라고 했다가 나중에 “부산으로 이사했다”고 말하면, 두 문장은 모두 관련 있지만 현재 답은 하나다.</p><p>기존 텍스트 메모리는 보통 각 항목을 독립 벡터로 저장한다. 반대로 거대한 지식 그래프를 매번 재구성하면 비용과 오류 전파가 커진다. MemoryLACE는 그 중간에서, 원문 메모리는 그대로 두고 꼭 필요한 생애주기 관계만 희소 그래프로 연결한다.</p>
+</section>
+<section class="ch" id="c2">
+<div class="ch-eyebrow"><span class="cnum">02</span><span class="clabel">Lifecycle · 쓰기 단계</span></div>
+<h2 class="ch-title">새 기억 하나를 가까운 후보와만 비교해 관계를 붙인다</h2>
+<div class="tldr"><div class="h">한눈에 요약</div><p>각 메모리는 출처가 보존된 원자적 자연어 문장이다. 새 항목은 제한된 후보 집합과 비교되어 merge·supersession·contradiction·no action 중 하나의 관계를 얻는다.</p></div>
+<p class="lead"><strong>merge</strong>는 같은 증거의 중복, <strong>supersession</strong>은 이전 상태를 대체하는 업데이트, <strong>contradiction</strong>은 같은 범위의 양립 불가능한 주장이다.</p><p>대체된 기억은 지우지 않고 비활성 상태로 남긴다. 덕분에 “예전에는 어디에 살았나” 같은 질문에도 답할 수 있고, 답의 출처도 추적할 수 있다. 여러 후보를 한 번에 복잡하게 판정하지 않고 한 결정씩 처리한 뒤, 작은 로컬 배치에서 빠진 관계를 보완한다.</p><figure>
+<div class="fig-top"><span class="fnum">FIG 1</span><span class="ftitle">생애주기 기반 메모리 구성</span></div>
+<div class="imgbox"><img alt="생애주기 기반 메모리 구성" decoding="async" loading="lazy" src="/paper-assets/627aee5b0683b60850e8bb15bf6070d05f41428c17902fd40be8f78702edf159.png"/></div>
+<figcaption>새 기억을 제한된 후보와 비교해 병합·대체·모순 관계와 활성 상태를 갱신한다.</figcaption>
+</figure>
+</section>
+<section class="ch" id="c3">
+<div class="ch-eyebrow"><span class="cnum">03</span><span class="clabel">Retrieval · 읽기 단계</span></div>
+<h2 class="ch-title">현재 기억을 먼저 찾고, 그 기억의 과거와 충돌 근거를 따라간다</h2>
+<div class="tldr"><div class="h">한눈에 요약</div><p>질의 시 의미·키워드·구조 템플릿·주제 검색 결과를 RRF로 합친다. 먼저 활성 기억만 앵커로 찾고, 이후 생애주기 간선을 따라 과거 버전과 모순 증거를 확장한다.</p></div>
+<p class="lead">검색 결과는 개별 문장 묶음이 아니라 서로 관련된 <strong>evidence unit</strong>으로 만들어 재순위화된다.</p><p>이 순서는 중요하다. 처음부터 모든 과거 기억을 같은 후보 풀에 넣으면 폐기된 정보가 현재 답을 밀어낼 수 있다. MemoryLACE는 현재 상태를 중심으로 찾은 뒤 필요한 경우에만 이전·모순 증거를 붙여, 최신성 질문과 변화 추적 질문을 모두 지원한다.</p><figure>
+<div class="fig-top"><span class="fnum">FIG 2</span><span class="ftitle">관계 인식 증거 검색</span></div>
+<div class="imgbox"><img alt="관계 인식 증거 검색" decoding="async" loading="lazy" src="/paper-assets/5d8db75aa9c73bc43544cd3363a6d26e96af17c50926137ca9c32aa4be2b8a5f.png"/></div>
+<figcaption>네 가지 검색 신호를 융합해 활성 앵커를 찾고, 생애주기 이웃을 확장한 뒤 증거 단위로 묶어 컨텍스트를 만든다.</figcaption>
+</figure>
+</section>
+<section class="ch" id="c4">
+<div class="ch-eyebrow"><span class="cnum">04</span><span class="clabel">Evidence · 실험 결과</span></div>
+<h2 class="ch-title">같은 백본끼리 비교해 평균 성능과 처리시간에서 이득을 보였다</h2>
+<div class="tldr"><div class="h">한눈에 요약</div><p>BEAM 100K 부분집합에서 Qwen3.5-9B MemoryLACE의 종합 점수는 51.9로 Hindsight 50.3, LIGHT 42.1, SimpleMem 30.7보다 높았다. 전체 처리시간은 22시간 30분에서 7시간 31분으로 줄어 2.99배 빨랐다.</p></div>
+<p class="lead">평가는 20개 대화와 400개 질문으로 구성된 BEAM 100K 부분집합, 그리고 51개 시나리오의 StructMemEval을 사용했다.</p><p>GPT-5.5를 백본으로 쓴 StructMemEval에서 상태 추적 14개와 트리 과제 10개는 모두 해결해 각각 100%를 기록했고, 매크로 평균은 Mem-Agent 35.0에서 52.08로 올랐다. 그러나 카운팅은 두 시스템 모두 0%, 추천 시나리오는 MemoryLACE가 8.33%로 더 낮았다. 평균 상승이 모든 메모리 능력의 해결을 뜻하지 않는다.</p><div class="stat-row"><div class="stat"><div class="v">51.9</div><div class="l">BEAM 종합 점수·Qwen3.5-9B</div></div><div class="stat"><div class="v arb">2.99×</div><div class="l">Hindsight 대비 전체 속도</div></div><div class="stat"><div class="v">52.08</div><div class="l">StructMemEval 매크로</div></div></div><div class="tbl-wrap"><div class="tbl-cap"><span class="tn">TABLE I</span>BEAM 100K 능력별 결과</div><div class="tbl-scroll"><table>
+<thead>
+<tr>
+<th><span>Method</span></th>
+<th><span>Backbone</span></th>
+<th><span>Abst.</span></th>
+<th><span>Contr.</span></th>
+<th><span>Event</span></th>
+<th><span>Info.</span></th>
+<th><span>Instr.</span></th>
+<th><span>Update</span></th>
+<th><span>Multi.</span></th>
+<th><span>Pref.</span></th>
+<th><span>Summ.</span></th>
+<th><span>Temp.</span></th>
+<th><span>Overall</span></th></tr>
+</thead>
+<tbody>
+<tr>
+<th><span>SimpleMem</span></th>
+<th><span>Qwen3.5-4B</span></th>
+<td><span>38.8</span></td>
+<td><span>7.2</span></td>
+<td><span>21.9</span></td>
+<td><span>56.0</span></td>
+<td><span>29.4</span></td>
+<td><span>31.9</span></td>
+<td><span>26.9</span></td>
+<td><span>53.1</span></td>
+<td><span>7.7</span></td>
+<td><span>32.5</span></td>
+<td><span>30.5</span></td></tr>
+<tr>
+<th><span>LIGHT</span></th>
+<th><span>Qwen3.5-4B</span></th>
+<td><span>62.5</span></td>
+<td><span>13.8</span></td>
+<td><span>2.6</span></td>
+<td><span>57.3</span></td>
+<td><span>45.0</span></td>
+<td><span>35.6</span></td>
+<td><span>38.7</span></td>
+<td><span>63.3</span></td>
+<td><span>29.8</span></td>
+<td><span>7.5</span></td>
+<td><span>35.6</span></td></tr>
+<tr>
+<th><span>Hindsight</span></th>
+<th><span>Qwen3.5-4B</span></th>
+<td><span>50.0</span></td>
+<td><span>6.6</span></td>
+<td><span>18.7</span></td>
+<td><span>50.0</span></td>
+<td><span>59.4</span></td>
+<td><span>30.0</span></td>
+<td><span>40.3</span></td>
+<td><span>85.0</span></td>
+<td><span>33.4</span></td>
+<td><span>28.1</span></td>
+<td><span>40.1</span></td></tr>
+<tr>
+<th><span>MemLACE</span></th>
+<th><span>Qwen3.5-4B</span></th>
+<td><span>88.8</span></td>
+<td><span>36.6</span></td>
+<td><span>29.3</span></td>
+<td><span>52.9</span></td>
+<td><span>61.9</span></td>
+<td><span>25.0</span></td>
+<td><span>33.8</span></td>
+<td><span>81.3</span></td>
+<td><span>27.8</span></td>
+<td><span>16.9</span></td>
+<td><span>45.4</span></td></tr>
+<tr>
+<th><span>SimpleMem</span></th>
+<th><span>Qwen3.5-9B</span></th>
+<td><span>37.5</span></td>
+<td><span>10.0</span></td>
+<td><span>21.2</span></td>
+<td><span>51.2</span></td>
+<td><span>30.0</span></td>
+<td><span>36.9</span></td>
+<td><span>33.7</span></td>
+<td><span>48.8</span></td>
+<td><span>7.8</span></td>
+<td><span>30.0</span></td>
+<td><span>30.7</span></td></tr>
+<tr>
+<th><span>LIGHT</span></th>
+<th><span>Qwen3.5-9B</span></th>
+<td><span>75.0</span></td>
+<td><span>13.8</span></td>
+<td><span>2.3</span></td>
+<td><span>67.7</span></td>
+<td><span>51.2</span></td>
+<td><span>52.5</span></td>
+<td><span>38.9</span></td>
+<td><span>71.9</span></td>
+<td><span>36.0</span></td>
+<td><span>11.9</span></td>
+<td><span>42.1</span></td></tr>
+<tr>
+<th><span>Hindsight</span></th>
+<th><span>Qwen3.5-9B</span></th>
+<td><span>63.7</span></td>
+<td><span>40.9</span></td>
+<td><span>20.8</span></td>
+<td><span>61.1</span></td>
+<td><span>68.1</span></td>
+<td><span>51.2</span></td>
+<td><span>50.3</span></td>
+<td><span>71.2</span></td>
+<td><span>40.4</span></td>
+<td><span>35.0</span></td>
+<td><span>50.3</span></td></tr>
+<tr>
+<th><span>MemLACE</span></th>
+<th><span>Qwen3.5-9B</span></th>
+<td><span>71.3</span></td>
+<td><span>40.3</span></td>
+<td><span>25.6</span></td>
+<td><span>55.9</span></td>
+<td><span>72.5</span></td>
+<td><span>51.9</span></td>
+<td><span>55.3</span></td>
+<td><span>84.4</span></td>
+<td><span>35.5</span></td>
+<td><span>26.3</span></td>
+<td><span>51.9</span></td></tr>
+</tbody>
+</table></div><div class="tbl-foot">원 논문의 표를 HTML로 재구성했다. 굵게 표시된 값과 통계 표기는 원문 기준이다.</div></div><div class="tbl-wrap"><div class="tbl-cap"><span class="tn">TABLE II</span>BEAM 100K 실행시간 분해</div><div class="tbl-scroll"><table>
+<thead>
+<tr>
+<th><span>Phase</span></th>
+<th><span>MemLACE</span></th>
+<th><span>Hindsight</span></th>
+<th><span>Speedup</span></th></tr>
+</thead>
+<tbody>
+<tr>
+<td><span>Memory construction</span></td>
+<td><span>6 h 06 min</span></td>
+<td><span>18 h 27 min</span></td>
+<td><math><semantics><mrow><mn>3.02</mn><mo>×</mo></mrow><annotation>3.02\times</annotation></semantics></math></td></tr>
+<tr>
+<td><span>Answer generation</span></td>
+<td><span>1 h 25 min</span></td>
+<td><span>4 h 03 min</span></td>
+<td><math><semantics><mrow><mn>2.86</mn><mo>×</mo></mrow><annotation>2.86\times</annotation></semantics></math></td></tr>
+<tr>
+<td><span>Total</span></td>
+<td><span>7 h 31 min</span></td>
+<td><span>22 h 30 min</span></td>
+<td><math><semantics><mrow><mn>2.99</mn><mo>×</mo></mrow><annotation>2.99\times</annotation></semantics></math></td></tr>
+</tbody>
+</table></div><div class="tbl-foot">원 논문의 표를 HTML로 재구성했다. 굵게 표시된 값과 통계 표기는 원문 기준이다.</div></div><div class="tbl-wrap"><div class="tbl-cap"><span class="tn">TABLE III</span>GPT-5.5 StructMemEval 결과</div><div class="tbl-scroll"><table>
+<thead>
+<tr>
+<th><span>Method</span></th>
+<th><span>State</span></th>
+<th><span>Tree</span></th>
+<th><span>Count</span></th>
+<th><span>Recsys</span></th>
+<th><span>Overall</span></th></tr>
+</thead>
+<tbody>
+<tr>
+<th><span>Mem-Agent</span></th>
+<td><span>57.00</span></td>
+<td><span>50.00</span></td>
+<td><span>0.00</span></td>
+<td><span>33.00</span></td>
+<td><span>35.00</span></td></tr>
+<tr>
+<th><span>MemLACE</span></th>
+<td><span>100.00</span></td>
+<td><span>100.00</span></td>
+<td><span>0.00</span></td>
+<td><span>8.33</span></td>
+<td><span>52.08</span></td></tr>
+</tbody>
+</table></div><div class="tbl-foot">원 논문의 표를 HTML로 재구성했다. 굵게 표시된 값과 통계 표기는 원문 기준이다.</div></div>
+</section>
+<section class="ch" id="c5">
+<div class="ch-eyebrow"><span class="cnum">05</span><span class="clabel">Ablation &amp; Limits · 한계</span></div>
+<h2 class="ch-title">핵심 이득은 관계를 저장하는 것보다 검색 때 다시 펼치는 데서 컸다</h2>
+<div class="tldr"><div class="h">한눈에 요약</div><p>생애주기 확장을 제거하면 종합 점수가 51.9에서 46.7로 5.16점 떨어졌고, 시간 인식을 제거하면 46.9로 4.97점 떨어졌다. 모든 주요 요소를 함께 빼면 43.3이었다.</p></div>
+<p class="lead">즉, 그래프를 만들기만 해서는 부족하고 질문 시점에 현재 기억의 과거·충돌 관계를 실제 컨텍스트로 되살리는 과정이 중요하다.</p><p>한편 실험 범위는 BEAM의 20개 대화와 합성 구조 과제 51개로 작고, 일부 평가는 LLM 판정기에 의존한다. 논문에는 독립적인 인간 평가나 장기간 실제 사용자 배포가 없다. 카운팅 실패와 낮은 추천 성능은 희소 관계 그래프만으로 집계·선호 모델링까지 해결되지는 않음을 보여준다.</p><div class="tbl-wrap"><div class="tbl-cap"><span class="tn">TABLE IV</span>MemoryLACE 구성요소 절제</div><div class="tbl-scroll"><table>
+<thead>
+<tr>
+<th><span>Variant</span></th>
+<th><span>Abst.</span></th>
+<th><span>Contr.</span></th>
+<th><span>Event</span></th>
+<th><span>Info.</span></th>
+<th><span>Instr.</span></th>
+<th><span>Update</span></th>
+<th><span>Multi.</span></th>
+<th><span>Pref.</span></th>
+<th><span>Summ.</span></th>
+<th><span>Temp.</span></th>
+<th><span>Overall</span></th>
+<th><math><semantics><mi>Δ</mi><annotation>\Delta</annotation></semantics></math></th></tr>
+<tr>
+<th><span>Full <span>MemLACE</span></span></th>
+<th><span>71.3</span></th>
+<th><span>40.3</span></th>
+<th><span>25.6</span></th>
+<th><span>55.9</span></th>
+<th><span>72.5</span></th>
+<th><span>51.9</span></th>
+<th><span>55.3</span></th>
+<th><span>84.4</span></th>
+<th><span>35.5</span></th>
+<th><span>26.3</span></th>
+<th><span>51.9</span></th>
+<th><span>–</span></th></tr>
+</thead>
+<tbody>
+<tr>
+<td><span>Without both rerankers</span></td>
+<td><span>70.0</span></td>
+<td><span>39.1</span></td>
+<td><span>23.4</span></td>
+<td><span>57.9</span></td>
+<td><span>63.8</span></td>
+<td><span>56.3</span></td>
+<td><span>50.8</span></td>
+<td><span>80.6</span></td>
+<td><span>37.3</span></td>
+<td><span>27.5</span></td>
+<td><span>50.7</span></td>
+<td><span>-1.23</span></td></tr>
+<tr>
+<td><span>Compact merge</span></td>
+<td><span>71.3</span></td>
+<td><span>44.1</span></td>
+<td><span>24.7</span></td>
+<td><span>54.8</span></td>
+<td><span>71.3</span></td>
+<td><span>53.8</span></td>
+<td><span>43.0</span></td>
+<td><span>83.8</span></td>
+<td><span>34.4</span></td>
+<td><span>23.8</span></td>
+<td><span>50.5</span></td>
+<td><span>-1.43</span></td></tr>
+<tr>
+<td><span>Without batch evolution</span></td>
+<td><span>72.5</span></td>
+<td><span>36.9</span></td>
+<td><span>24.1</span></td>
+<td><span>56.5</span></td>
+<td><span>60.6</span></td>
+<td><span>55.0</span></td>
+<td><span>48.2</span></td>
+<td><span>83.3</span></td>
+<td><span>38.1</span></td>
+<td><span>26.9</span></td>
+<td><span>50.2</span></td>
+<td><span>-1.68</span></td></tr>
+<tr>
+<td><span>Without temporal awareness</span></td>
+<td><span>72.5</span></td>
+<td><span>26.6</span></td>
+<td><span>23.8</span></td>
+<td><span>54.4</span></td>
+<td><span>67.5</span></td>
+<td><span>48.8</span></td>
+<td><span>46.9</span></td>
+<td><span>75.6</span></td>
+<td><span>37.0</span></td>
+<td><span>16.3</span></td>
+<td><span>46.9</span></td>
+<td><span>-4.97</span></td></tr>
+<tr>
+<td><span>Without lifecycle expansion</span></td>
+<td><span>73.8</span></td>
+<td><span>40.3</span></td>
+<td><span>23.4</span></td>
+<td><span>47.8</span></td>
+<td><span>69.4</span></td>
+<td><span>35.0</span></td>
+<td><span>42.3</span></td>
+<td><span>85.8</span></td>
+<td><span>35.9</span></td>
+<td><span>13.8</span></td>
+<td><span>46.7</span></td>
+<td><span>-5.16</span></td></tr>
+<tr>
+<td><span>Combined removal</span></td>
+<td><span>67.5</span></td>
+<td><span>23.1</span></td>
+<td><span>25.2</span></td>
+<td><span>48.5</span></td>
+<td><span>69.4</span></td>
+<td><span>36.3</span></td>
+<td><span>37.6</span></td>
+<td><span>78.8</span></td>
+<td><span>35.9</span></td>
+<td><span>11.3</span></td>
+<td><span>43.3</span></td>
+<td><span>-8.55</span></td></tr>
+</tbody>
+</table></div><div class="tbl-foot">원 논문의 표를 HTML로 재구성했다. 굵게 표시된 값과 통계 표기는 원문 기준이다.</div></div><div class="call arb"><div class="ct">가장 중요한 경계</div><p>MemoryLACE는 모든 사실을 정규화한 포괄적 지식 그래프가 아니다. 원문 텍스트를 보존하면서 변경·병합·모순 관계만 국소적으로 연결한 메모리 구조다.</p></div>
+</section>
+<section class="ch" id="gloss">
+<div class="ch-eyebrow"><span class="cnum">＋</span><span class="clabel">Glossary · 핵심 용어</span></div>
+<h2 class="ch-title">핵심 용어 정리</h2>
+<div class="tldr"><div class="h">한눈에 요약</div><p>논문의 주장을 따라가는 데 필요한 용어만 간결하게 모았다.</p></div>
+<div class="gloss"><div class="gitem"><div class="term">원자적 기억<span class="en">Atomic memory</span></div><p>한 가지 사실이나 사건을 담고 원래 출처를 가리키는 작은 자연어 단위.</p></div><div class="gitem"><div class="term">활성 기억<span class="en">Active memory</span></div><p>현재 상태를 나타내어 1차 검색 대상이 되는 기억.</p></div><div class="gitem"><div class="term">대체 관계<span class="en">Supersession</span></div><p>새 기억이 같은 속성의 더 이전 상태를 대신한다는 방향 관계.</p></div><div class="gitem"><div class="term">모순 관계<span class="en">Contradiction</span></div><p>같은 범위에서 동시에 참일 수 없는 두 증거의 연결.</p></div><div class="gitem"><div class="term">RRF<span class="en">Reciprocal Rank Fusion</span></div><p>서로 다른 검색기의 순위들을 순위 역수 점수로 합치는 방식.</p></div><div class="gitem"><div class="term">증거 단위<span class="en">Evidence unit</span></div><p>현재·과거·모순처럼 함께 읽어야 의미가 완성되는 기억 묶음.</p></div></div>
+</section>
+<section class="ch" id="take">
+<div class="ch-eyebrow"><span class="cnum">＋</span><span class="clabel">One-page Summary · 한 장 정리</span></div>
+<h2 class="ch-title">이 논문을 한 장으로</h2>
+<div class="tldr"><div class="h">한눈에 요약</div><p>문제, 방법, 증거, 한계를 한 번에 다시 정리한다.</p></div>
+<div class="takeaways"><div class="take"><div class="n">01</div><div class="body">장기 메모리는 비슷한 문장 검색뿐 아니라 <b>현재·과거·모순의 상태</b>를 구분해야 한다.</div></div><div class="take"><div class="n">02</div><div class="body">원문 기억은 보존하고 merge·supersession·contradiction 관계만 희소하게 추가한다.</div></div><div class="take"><div class="n">03</div><div class="body">활성 기억을 먼저 검색한 다음 관계를 따라 과거와 충돌 증거를 확장한다.</div></div><div class="take"><div class="n">04</div><div class="body">Qwen3.5-9B의 BEAM 종합 점수는 51.9로 비교 시스템 중 가장 높았다.</div></div><div class="take"><div class="n">05</div><div class="body">Hindsight 대비 전체 처리시간은 22시간 30분에서 7시간 31분으로 줄었다.</div></div><div class="take"><div class="n">06</div><div class="body">StructMemEval의 상태·트리 과제는 100%였지만 카운팅은 0%, 추천은 8.33%였다.</div></div><div class="take"><div class="n">07</div><div class="body">작은 부분집합과 자동 판정 의존 때문에 실제 장기 배포 효과는 추가 검증이 필요하다.</div></div></div>
+</section>

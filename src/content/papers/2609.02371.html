@@ -1,0 +1,74 @@
+<section class="ch" id="c1">
+<div class="ch-eyebrow"><span class="cnum">01</span><span class="clabel">Problem · 문제</span></div>
+<h2 class="ch-title">긴 에이전트 궤적에서 원인 단계와 증상을 구분한다</h2>
+<div class="tldr"><div class="h">한눈에 요약</div><p>에이전트 실패는 잘못된 추론, 제어 흐름, 도구 행동이 연쇄되므로 전체 로그를 한 번에 LLM에게 묻는 방식은 원인 위치를 잘못 짚기 쉽다. AgentScope는 로그를 구조화하고 실패 유형별 조건을 따로 검사한다.</p></div>
+<p class="lead">논문은 실패를 추론 4종, 제어 흐름 3종, 행동 3종으로 나눈다.</p><p>목표는 오류를 아무거나 찾는 것이 아니라 최종 실패를 가장 잘 설명하는 <strong>결정적 오류</strong>의 단계와 유형을 고르는 것이다. 이 정의는 최초 이상을 표시하는 기존 Who&amp;When 주석과 충돌할 수 있다.</p><div class="tbl-wrap"><div class="tbl-cap"><span class="tn">TABLE 1</span>에이전트 실패 유형 분류</div>
+<div class="tbl-scroll"><table><thead><tr><th>차원</th><th>유형</th><th>뜻</th></tr></thead><tbody><tr><td>추론</td><td>Wrong Context</td><td>무관·잘못된 문맥을 사용</td></tr><tr><td>추론</td><td>Instruction Unfollowing</td><td>지시·형식·역할을 위반</td></tr><tr><td>추론</td><td>Insufficient Context</td><td>필수 정보가 실제로 없음</td></tr><tr><td>추론</td><td>Context Miss</td><td>있는 문맥을 놓침</td></tr><tr><td>제어 흐름</td><td>Termination Miss</td><td>완료 뒤에도 계속 실행</td></tr><tr><td>제어 흐름</td><td>Premature Termination</td><td>완료 전에 중단</td></tr><tr><td>제어 흐름</td><td>Step Loop</td><td>진전 없이 반복</td></tr><tr><td>행동</td><td>Action Mismatch</td><td>추론 의도와 행동 불일치</td></tr><tr><td>행동</td><td>Invocation Issue</td><td>도구 스키마·인수 오류</td></tr><tr><td>행동</td><td>Execution Failure</td><td>도구 실행 자체가 실패</td></tr></tbody></table></div></div>
+</section>
+<section class="ch" id="c2">
+<div class="ch-eyebrow"><span class="cnum">02</span><span class="clabel">Method · 구조적 진단</span></div>
+<h2 class="ch-title">원시 로그를 Reasoning-Action Graph로 바꾼 뒤 불변식을 검사한다</h2>
+<div class="tldr"><div class="h">한눈에 요약</div><p>각 단계는 역할·내용과 함께 의도/문맥, 추론/행동, 신호/검증을 담는 중간 의미 표현으로 변환된다. 제어·데이터 의존 간선을 연결한 뒤 실패 유형별 neural invariant를 LLM 판정 함수로 검사한다.</p></div>
+<p class="lead">예를 들어 Action Mismatch는 앞선 추론의 목적과 현재 도구·인수·행동이 맞는지 이진 판정한다.</p><p>처리는 ReAG 구성, 후보 실패 탐지, 결정적 오류 선택의 세 단계다. 후보를 바로 하나로 압축하지 않고 근거와 함께 여러 개 보존해 연쇄 증상과 원인을 마지막에 비교한다.</p><figure>
+<div class="fig-top"><span class="fnum">FIG 1</span><span class="ftitle">행동 불일치 판정 프롬프트</span></div>
+<div class="imgbox"><img alt="행동 불일치 판정 프롬프트" decoding="async" loading="lazy" src="/paper-assets/a2f77644bc77b63f4ee9233c9e0b75bfce06d3a23406ff2f9e075eef17eb7bd4.png"/></div>
+<figcaption>앞 단계의 목적과 기대 행동을 실제 도구 호출에 대조하고 JSON으로 불일치 여부와 유형을 반환한다.</figcaption>
+</figure><figure>
+<div class="fig-top"><span class="fnum">FIG 2</span><span class="ftitle">AgentScope의 세 단계</span></div>
+<div class="imgbox"><img alt="AgentScope의 세 단계" decoding="async" loading="lazy" src="/paper-assets/0cd7b407f3b71fb76543e87ee609adc6c357e34717fe4cb54a2ac61b84c8e8d1.png"/></div>
+<figcaption>궤적을 ReAG로 구조화하고 여러 불변식 위반 후보를 만든 뒤 최종 결과를 가장 잘 설명하는 오류를 선택한다.</figcaption>
+</figure>
+</section>
+<section class="ch" id="c3">
+<div class="ch-eyebrow"><span class="cnum">03</span><span class="clabel">Results · 결과</span></div>
+<h2 class="ch-title">구조화는 단일 LLM 심사보다 위치와 유형 판정을 크게 높였다</h2>
+<div class="tldr"><div class="h">한눈에 요약</div><p>AgentErrata에서 정답을 주지 않은 정확 단계 SLA는 GPT-4o 30.03%, GPT-5.1 31.35%, DeepSeek-V3.2 34.98%였다. GPT-4o·GPT-5.1 단일 LLM 심사는 같은 설정에서 2.80%, 3.63%였다.</p></div>
+<p class="lead">실패 유형 CA도 단일 심사의 18.15–20.63%에서 AgentScope의 41.58–45.87%로 올랐다.</p><p>Who&amp;When에서는 모든 조건에서 압도적이지 않았다. 특히 GPT-5.1의 정확 단계 점수는 강한 step-by-step 기준선과 비슷한 경우가 있다. 저자들은 기존 데이터가 최초 실수를 표시하는 반면 AgentScope는 결과를 결정한 뒤 단계에 무게를 두기 때문이라고 분석한다.</p><div class="tbl-wrap"><div class="tbl-cap"><span class="tn">TABLE 2</span>세 데이터셋의 단계 위치 정확도(SLAT, %)</div>
+<div class="tbl-scroll"><table><thead><tr><th>모델</th><th>방법</th><th>설정</th><th>AgentErrata T0/T1/T3</th><th>W&amp;W A-G T0/T1/T3</th><th>W&amp;W H-C T0/T1/T3</th></tr></thead><tbody><tr><td>GPT-4o</td><td>All-at-once</td><td>w/</td><td>2.14/6.05/21.00</td><td>14.29/43.65/69.05</td><td>5.26/8.77/29.82</td></tr><tr><td>GPT-4o</td><td>Step-by-step</td><td>w/</td><td>10.56/14.52/25.74</td><td>23.02/53.97/73.81</td><td>15.52/15.52/20.69</td></tr><tr><td>GPT-4o</td><td>AgentScope</td><td>w/</td><td>28.38/34.98/48.51</td><td>31.75/52.38/77.78</td><td>25.86/29.31/34.48</td></tr><tr><td>GPT-5.1</td><td>All-at-once</td><td>w/</td><td>2.64/5.61/18.81</td><td>23.81/48.41/79.37</td><td>3.45/13.79/25.86</td></tr><tr><td>GPT-5.1</td><td>Step-by-step</td><td>w/</td><td>1.65/4.62/12.21</td><td>26.19/50.79/69.84</td><td>20.69/31.03/41.38</td></tr><tr><td>GPT-5.1</td><td>AgentScope</td><td>w/</td><td>29.70/34.65/50.50</td><td>25.40/44.44/64.29</td><td>22.41/24.14/29.31</td></tr><tr><td>GPT-4o</td><td>All-at-once</td><td>w/o</td><td>2.09/4.18/23.69</td><td>16.67/38.89/69.84</td><td>5.17/10.34/36.20</td></tr><tr><td>GPT-4o</td><td>Step-by-step</td><td>w/o</td><td>8.91/13.20/25.74</td><td>15.08/42.06/61.11</td><td>17.24/17.24/24.14</td></tr><tr><td>GPT-4o</td><td>AgentScope</td><td>w/o</td><td>30.03/35.64/49.83</td><td>28.57/55.56/77.78</td><td>22.41/24.14/32.76</td></tr><tr><td>GPT-5.1</td><td>All-at-once</td><td>w/o</td><td>3.30/4.62/18.81</td><td>21.43/46.83/78.57</td><td>3.45/12.07/29.31</td></tr><tr><td>GPT-5.1</td><td>Step-by-step</td><td>w/o</td><td>1.32/4.29/13.20</td><td>25.40/48.41/69.05</td><td>24.14/32.76/44.83</td></tr><tr><td>GPT-5.1</td><td>AgentScope</td><td>w/o</td><td>31.35/36.63/54.13</td><td>25.40/45.24/65.87</td><td>22.41/24.14/29.31</td></tr></tbody></table></div><div class="tbl-foot">T0은 정확한 단계, T1·T3은 정답 단계에서 각각 ±1·±3을 허용한다. w/는 원 과제 정답 제공, w/o는 미제공이다.</div></div><div class="tbl-wrap"><div class="tbl-cap"><span class="tn">TABLE 3</span>AgentErrata 실패 위치·유형 판정(%)</div>
+<div class="tbl-scroll"><table><thead><tr><th>모델</th><th>방법</th><th>정답</th><th>SLA</th><th>CA</th></tr></thead><tbody><tr><td>GPT-4o</td><td>LLM-as-Judge</td><td>w/o</td><td>2.80</td><td>20.63</td></tr><tr><td>GPT-4o</td><td>LLM-as-Judge</td><td>w/</td><td>2.14</td><td>19.22</td></tr><tr><td>GPT-4o</td><td>AgentScope</td><td>w/o</td><td>30.03</td><td>43.56</td></tr><tr><td>GPT-4o</td><td>AgentScope</td><td>w/</td><td>28.38</td><td>41.58</td></tr><tr><td>GPT-5.1</td><td>LLM-as-Judge</td><td>w/o</td><td>3.63</td><td>18.15</td></tr><tr><td>GPT-5.1</td><td>LLM-as-Judge</td><td>w/</td><td>1.98</td><td>19.14</td></tr><tr><td>GPT-5.1</td><td>AgentScope</td><td>w/o</td><td>31.35</td><td>45.87</td></tr><tr><td>GPT-5.1</td><td>AgentScope</td><td>w/</td><td>29.70</td><td>44.88</td></tr></tbody></table></div></div><div class="tbl-wrap"><div class="tbl-cap"><span class="tn">TABLE 4</span>백본별 정확한 단계 위치(SLA)와 유형 분류(CA)</div>
+<div class="tbl-scroll"><table><thead><tr><th>모델</th><th>방법</th><th>W&amp;W A-G w/o/w</th><th>W&amp;W H-C w/o/w</th><th>AgentErrata w/o SLA/CA</th><th>AgentErrata w SLA/CA</th></tr></thead><tbody><tr><td>GPT-4o</td><td>All-at-once</td><td>16.67/14.29</td><td>5.17/5.26</td><td>2.09/–</td><td>2.14/–</td></tr><tr><td>GPT-4o</td><td>Step-by-step</td><td>15.08/23.02</td><td>17.24/15.52</td><td>8.91/–</td><td>10.56/–</td></tr><tr><td>GPT-4o</td><td>AgentScope</td><td>28.57/31.75</td><td>22.41/25.86</td><td>30.03/43.56</td><td>28.38/41.58</td></tr><tr><td>GPT-5.1</td><td>All-at-once</td><td>21.43/23.81</td><td>3.45/3.45</td><td>3.30/–</td><td>2.64/–</td></tr><tr><td>GPT-5.1</td><td>Step-by-step</td><td>25.40/26.19</td><td>24.14/20.69</td><td>1.32/–</td><td>1.65/–</td></tr><tr><td>GPT-5.1</td><td>AgentScope</td><td>25.40/25.40</td><td>22.41/22.41</td><td>31.35/45.87</td><td>29.70/44.88</td></tr><tr><td>DeepSeek-V3.2</td><td>All-at-once</td><td>26.98/25.40</td><td>3.57/3.51</td><td>0.66/–</td><td>0.99/–</td></tr><tr><td>DeepSeek-V3.2</td><td>Step-by-step</td><td>34.13/36.51</td><td>15.51/17.24</td><td>17.82/–</td><td>17.82/–</td></tr><tr><td>DeepSeek-V3.2</td><td>AgentScope</td><td>36.51/38.10</td><td>25.86/24.14</td><td>34.98/45.21</td><td>33.33/44.22</td></tr></tbody></table></div></div>
+</section>
+<section class="ch" id="c4">
+<div class="ch-eyebrow"><span class="cnum">04</span><span class="clabel">Runtime · 비용</span></div>
+<h2 class="ch-title">정확도 향상은 많은 LLM 호출과 긴 지연을 대가로 한다</h2>
+<div class="tldr"><div class="h">한눈에 요약</div><p>20개 궤적에서 전체 오버헤드는 약 25초에서 750초까지였다. 120단계 궤적은 242회 호출을 사용했고, 단계 반복 검사는 구간 쌍 비교 때문에 가장 비쌌다.</p></div>
+<p class="lead">Step Loop 검사의 평균 시간은 약 85초로 가장 컸다.</p><p>Invocation Issue와 Execution Failure는 궤적당 약 17회 호출하지만 호출당 약 2초였다. Wrong Context는 한 번의 문맥이 길어 호출당 비용은 크지만 평균 약 6회라 총시간은 약 30초였다. 저자들은 독립 검사 병렬화와 프롬프트 길이별 패킹을 제안한다.</p><figure>
+<div class="fig-top"><span class="fnum">FIG 3</span><span class="ftitle">단계 수에 따른 누적 진단 시간</span></div>
+<div class="imgbox"><img alt="단계 수에 따른 누적 진단 시간" decoding="async" loading="lazy" src="/paper-assets/c5f304dab4625189fb36357846457bfebb104d3dda2dd031b6b8584b0a84a650.png"/></div>
+<figcaption>궤적이 길어질수록 누적 실행 시간이 증가하며 가장 긴 사례는 약 750초에 이른다.</figcaption>
+</figure><figure>
+<div class="fig-top"><span class="fnum">FIG 4</span><span class="ftitle">프롬프트 토큰 구간별 호출 시간</span></div>
+<div class="imgbox"><img alt="프롬프트 토큰 구간별 호출 시간" decoding="async" loading="lazy" src="/paper-assets/a2bf61ec9b5efe14665f2341db719a3150a49b1374dc8855628cb34ea16dfc37.png"/></div>
+<figcaption>프롬프트가 길수록 중앙값이 대체로 증가하지만 분산도 크다.</figcaption>
+</figure><figure>
+<div class="fig-top"><span class="fnum">FIG 5</span><span class="ftitle">실패 유형별 시간·토큰·호출 수</span></div>
+<div class="imgbox"><img alt="실패 유형별 시간·토큰·호출 수" decoding="async" loading="lazy" src="/paper-assets/842a20077160e7a0bfd8a21d3588281687c0de756f86edc7ce9932da4a799d87.png"/></div>
+<figcaption>총 지연에는 평균 토큰 길이보다 반복 호출 횟수가 더 큰 영향을 주었다.</figcaption>
+</figure>
+</section>
+<section class="ch" id="c5">
+<div class="ch-eyebrow"><span class="cnum">05</span><span class="clabel">Dataset &amp; limits · 데이터와 한계</span></div>
+<h2 class="ch-title">303개 인위적 결정 오류는 균형적이지만 실제 실패 분포와 같지는 않다</h2>
+<div class="tldr"><div class="h">한눈에 요약</div><p>AgentErrata는 성공 궤적에 열 가지 오류를 주입하고 전체 과제 실패를 확인한 303개 사례다. 사람이 모든 주입 궤적을 검토했지만, 오류 적합성 판정과 주입 과정에 LLM이 들어간 합성 벤치마크다.</p></div>
+<p class="lead">상위 차원은 추론 36%, 행동 36%, 제어 흐름 31%로 대체로 균형적이다.</p><p>정확 단계 SLA가 최고도 34.98%에 머물고 런타임이 길다는 점은 아직 실시간 디버거라기보다 진단 연구 프로토타입에 가깝다는 뜻이다. 또한 neural invariant라는 이름과 달리 각 조건은 완전한 형식 검증이 아니라 일반 LLM 이진 판정에 의존한다.</p><figure>
+<div class="fig-top"><span class="fnum">FIG 6</span><span class="ftitle">AgentErrata 상위 실패 차원 분포</span></div>
+<div class="imgbox"><img alt="AgentErrata 상위 실패 차원 분포" decoding="async" loading="lazy" src="/paper-assets/d3c7d6eae551fd9c439431c6d4c0987e5e7c6265fd684506d8887263a7629e53.png"/></div>
+<figcaption>추론과 행동이 각각 36%, 제어 흐름이 31%로 구성됐다.</figcaption>
+</figure><figure>
+<div class="fig-top"><span class="fnum">FIG 7</span><span class="ftitle">열 가지 세부 실패 유형 분포</span></div>
+<div class="imgbox"><img alt="열 가지 세부 실패 유형 분포" decoding="async" loading="lazy" src="/paper-assets/e0da800d40b1a4f5d93f8e8e6741942bda9129c76e6fbd537e17d246233c7e25.png"/></div>
+<figcaption>실행 실패 14.9%, 행동 불일치 13.2%, 조기 종료 12.5% 등이 포함돼 한 유형이 지배하지 않는다.</figcaption>
+</figure><div class="call arb"><div class="ct">판독 주의</div><p>neural invariant는 수학적으로 보장되는 불변식이 아니라, 구조화된 문맥 위에서 LLM이 검사하는 명시적 실패 조건이다.</p></div>
+</section>
+<section class="ch" id="gloss">
+<div class="ch-eyebrow"><span class="cnum">＋</span><span class="clabel">Glossary · 핵심 용어</span></div>
+<h2 class="ch-title">핵심 용어 정리</h2>
+<div class="tldr"><div class="h">한눈에 요약</div><p>논문의 주장을 따라가는 데 필요한 용어만 간결하게 모았다.</p></div>
+<div class="gloss"><div class="gitem"><div class="term">행동 추상화<span class="en">Behavioral abstraction</span></div><p>원시 로그를 의도·행동·검증 같은 명시적 필드로 바꾸는 과정.</p></div><div class="gitem"><div class="term">ReAG<span class="en">Reasoning-Action Graph</span></div><p>에이전트 단계를 노드로, 제어·데이터 의존성을 간선으로 표현한 방향 비순환 그래프.</p></div><div class="gitem"><div class="term">중간 의미 표현<span class="en">Intermediate Semantic Representation</span></div><p>각 단계의 의도/문맥, 추론/행동, 신호/검증을 담는 구조.</p></div><div class="gitem"><div class="term">신경 불변식<span class="en">Neural invariant</span></div><p>실패 유형을 명시적 조건으로 적되 의미 판정은 LLM 함수로 수행하는 검사.</p></div><div class="gitem"><div class="term">결정적 오류<span class="en">Decisive error</span></div><p>연쇄된 이상 중 최종 결과 저하를 가장 강하게 설명하는 실패.</p></div><div class="gitem"><div class="term">SLAT<span class="en">Step-Level Accuracy with Tolerance</span></div><p>예측 단계가 정답에서 허용 범위 안에 있으면 맞다고 세는 지표.</p></div></div>
+</section>
+<section class="ch" id="take">
+<div class="ch-eyebrow"><span class="cnum">＋</span><span class="clabel">One-page Summary · 한 장 정리</span></div>
+<h2 class="ch-title">이 논문을 한 장으로</h2>
+<div class="tldr"><div class="h">한눈에 요약</div><p>문제, 방법, 증거, 한계를 한 번에 다시 정리한다.</p></div>
+<div class="takeaways"><div class="take"><div class="n">01</div><div class="body">원시 로그를 한 번에 심사하지 않고 <b>구조화·검사·최종 선택</b>으로 나눈다.</div></div><div class="take"><div class="n">02</div><div class="body">303개 AgentErrata 궤적은 위치와 열 가지 실패 유형을 함께 표시한다.</div></div><div class="take"><div class="n">03</div><div class="body">정확 단계 SLA는 단일 심사의 1.98–3.63%에서 28.38–31.35%로 높아졌다.</div></div><div class="take"><div class="n">04</div><div class="body">실패 유형 CA는 18.15–20.63%에서 41.58–45.87%로 상승했다.</div></div><div class="take"><div class="n">05</div><div class="body">20개 궤적의 진단 오버헤드는 약 25–750초였다.</div></div><div class="take"><div class="n">06</div><div class="body">LLM 판정·합성 오류·결정적 오류 정의 때문에 <b>형식적 보장이나 완전한 정답</b>으로 보면 안 된다.</div></div></div>
+</section>

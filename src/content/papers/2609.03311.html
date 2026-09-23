@@ -1,0 +1,1478 @@
+<section class="ch" id="c1">
+<div class="ch-eyebrow"><span class="cnum">01</span><span class="clabel">Background · 배경</span></div>
+<h2 class="ch-title">재랭커는 같은 문서를 질문이 바뀔 때마다 다시 읽는다</h2>
+<div class="tldr"><div class="h">한눈에 요약</div><p>검색기는 먼저 후보 문서를 넓게 찾고, LLM 재랭커는 질문과 각 문서를 함께 읽어 순서를 정교하게 고친다. 문제는 인기 문서가 여러 질문에 반복 등장해도 문서 토큰 계산을 매번 처음부터 한다는 점이다.</p></div>
+<p class="lead">DoPR의 출발점은 <strong>문서 쪽 계산은 오프라인에 한 번 해두고 재사용할 수 없을까</strong>라는 질문이다.</p><p>일반 pointwise 재랭커는 각 쌍에 대해 s(q,d)=f([q;d])를 계산한다. 문서 d가 길거나 한 문서가 여러 질의 후보에 반복되면 입력 메모리와 attention 계산이 계속 중복된다. 단순 문서 요약이나 토큰 가지치기는 한 번의 입력을 줄이지만, 질의마다 문서를 다시 인코딩하는 문제는 남는다.</p>
+</section>
+<section class="ch" id="c2">
+<div class="ch-eyebrow"><span class="cnum">02</span><span class="clabel">Method · 방법</span></div>
+<h2 class="ch-title">문서의 핵심 토큰을 여러 층의 KV prefix로 미리 저장한다</h2>
+<div class="tldr"><div class="h">한눈에 요약</div><p>DoPR은 학습 때 문서 자체의 attention 신호로 핵심 토큰 K개를 고른다. 구조적 attention mask는 질의가 원문 전체를 직접 보지 못하고 선택된 표현을 통해서만 문서 정보를 받게 한다.</p></div>
+<p class="lead">배포 시에는 선택된 표현을 모델 각 층의 key·value 상태로 변환해 문서별 prefix를 오프라인 저장한다.</p><p>온라인에서는 저장된 prefix와 새 질의·점수 토큰만 처리한다. prefix는 질의와 무관하므로 같은 문서가 다시 검색될 때 그대로 재사용된다. 학습 목표는 관련 문서가 비관련 문서보다 높은 점수를 갖게 하는 RankNet pairwise loss다.</p><figure>
+<div class="fig-top"><span class="fnum">FIG 1</span><span class="ftitle">학습–오프라인 압축–온라인 재랭킹</span></div>
+<div class="imgbox"><img alt="학습–오프라인 압축–온라인 재랭킹" decoding="async" loading="lazy" src="/paper-assets/257406012cb4a1ae2ceab71a1ca332ffd4dce6c80d75aecd775e147b16655c1b.png"/></div>
+<figcaption>문서 핵심 표현을 학습한 뒤 다층 KV prefix로 저장하고, 온라인에서는 질의와 점수 토큰만 새로 계산한다.</figcaption>
+</figure><figure>
+<div class="fig-top"><span class="fnum">FIG 2</span><span class="ftitle">구조적 attention mask</span></div>
+<div class="imgbox"><img alt="구조적 attention mask" decoding="async" loading="lazy" src="/paper-assets/6ef704e9f41c795bd08cbc4aaab066ff7fc8bd4f8287f9ee7a9587644854a9ac.png"/></div>
+<figcaption>질의 토큰이 문서 원문 전체 대신 선택된 문서 표현을 통해 정보에 접근하도록 제한한다.</figcaption>
+</figure>
+</section>
+<section class="ch" id="c3">
+<div class="ch-eyebrow"><span class="cnum">03</span><span class="clabel">Effectiveness · 정확도</span></div>
+<h2 class="ch-title">문서 토큰을 8분의 1로 줄여도 큰 모델에서는 순위 품질이 거의 유지됐다</h2>
+<div class="tldr"><div class="h">한눈에 요약</div><p>TREC DL·BEIR 평균 NDCG@10 보존율은 Qwen3 0.6B·4B·8B에서 각각 97.1%, 99.3%, 99.5%였다. 추론 중심 BRIGHT 평균도 98.6%, 99.1%, 98.8%를 보존했다.</p></div>
+<p class="lead">보존율은 DoPR 점수를 같은 크기의 full-document Qwen3 재랭커 점수로 나눈 값이다.</p><p>따라서 99.5%가 절대 NDCG 99.5라는 뜻은 아니다. 예를 들어 표 1의 8B 평균은 원본 55.36, DoPR 55.06이다. 작은 0.6B에서는 Touche·Robust 같은 데이터셋의 손실이 더 커 평균 보존율이 낮았다.</p><div class="stat-row"><div class="stat"><div class="v arb">97.1–99.5%</div><div class="l">표준 재랭킹 평균 보존율</div></div><div class="stat"><div class="v">98.6–99.1%</div><div class="l">BRIGHT 평균 보존율 범위</div></div><div class="stat"><div class="v">3개</div><div class="l">Qwen3 모델 크기</div></div></div><div class="tbl-wrap"><div class="tbl-cap"><span class="tn">TABLE 1</span>TREC DL·BEIR 성능</div><div class="tbl-scroll"><table>
+<tr>
+<td><span>Model</span></td>
+<td><span>DL19</span></td>
+<td><span>DL20</span></td>
+<td><span>Covid</span></td>
+<td><span>NFCorpus</span></td>
+<td><span>Touche</span></td>
+<td><span>DBPedia</span></td>
+<td><span>SciFact</span></td>
+<td><span>Signal</span></td>
+<td><span>News</span></td>
+<td><span>Robust</span></td>
+<td><span>Avg.</span></td></tr>
+<tr>
+<td>BM25</td>
+<td>50.58</td>
+<td>47.96</td>
+<td>59.47</td>
+<td>30.75</td>
+<td>44.22</td>
+<td>31.80</td>
+<td>67.89</td>
+<td>33.05</td>
+<td>39.52</td>
+<td>40.70</td>
+<td>43.43</td></tr>
+<tr>
+<td>MonoBERT-340M</td>
+<td>70.50</td>
+<td>67.28</td>
+<td>70.01</td>
+<td>36.88</td>
+<td>31.75</td>
+<td>41.87</td>
+<td>71.36</td>
+<td>31.44</td>
+<td>44.62</td>
+<td>49.35</td>
+<td>47.16</td></tr>
+<tr>
+<td>MonoT5-3B</td>
+<td>71.83</td>
+<td>68.89</td>
+<td>80.71</td>
+<td>37.30</td>
+<td>32.20</td>
+<td>48.30</td>
+<td>58.50</td>
+<td>76.30</td>
+<td>32.50</td>
+<td>44.80</td>
+<td>51.33</td></tr>
+<tr>
+<td>RankT5-3B</td>
+<td>72.95</td>
+<td>69.63</td>
+<td>82.00</td>
+<td>37.40</td>
+<td>31.90</td>
+<td>49.50</td>
+<td>58.30</td>
+<td>77.10</td>
+<td>38.08</td>
+<td>45.00</td>
+<td>52.50</td></tr>
+<tr>
+<td>RankLLaMA-7B</td>
+<td>73.28</td>
+<td>68.55</td>
+<td>80.15</td>
+<td>32.25</td>
+<td>35.79</td>
+<td>44.50</td>
+<td>70.87</td>
+<td>28.60</td>
+<td>42.01</td>
+<td>35.74</td>
+<td>46.23</td></tr>
+<tr>
+<td>RankZephyr</td>
+<td>73.39</td>
+<td>70.02</td>
+<td>83.20</td>
+<td>37.60</td>
+<td>32.40</td>
+<td>44.50</td>
+<td>74.90</td>
+<td>31.50</td>
+<td>52.50</td>
+<td>54.30</td>
+<td>51.36</td></tr>
+<tr>
+<td>RankGPT-4o</td>
+<td>74.78</td>
+<td>69.52</td>
+<td>83.41</td>
+<td>39.67</td>
+<td>32.26</td>
+<td>45.56</td>
+<td>77.41</td>
+<td>34.20</td>
+<td>51.92</td>
+<td>60.25</td>
+<td>53.09</td></tr>
+<tr>
+<td>E<sup>2</sup>Rank-8B</td>
+<td>72.95</td>
+<td>71.16</td>
+<td>84.09</td>
+<td>39.08</td>
+<td>42.06</td>
+<td>43.44</td>
+<td>77.49</td>
+<td>34.01</td>
+<td>54.25</td>
+<td>60.34</td>
+<td>54.35</td></tr>
+<tr>
+<td>Qwen3-Rerank-0.6B</td>
+<td>75.30</td>
+<td>69.94</td>
+<td>85.19</td>
+<td>39.13</td>
+<td>41.18</td>
+<td>45.14</td>
+<td>76.99</td>
+<td>33.73</td>
+<td>52.51</td>
+<td>63.50</td>
+<td>54.67</td></tr>
+<tr>
+<td><span>DoPR-0.6B</span></td>
+<td><span>74.30</span></td>
+<td><span>68.58</span></td>
+<td><span>84.78</span></td>
+<td><span>38.20</span></td>
+<td><span>37.86</span></td>
+<td><span>44.26</span></td>
+<td><span>76.31</span></td>
+<td><span>31.78</span></td>
+<td><span>51.96</span></td>
+<td><span>59.56</span></td>
+<td><span>53.09</span></td></tr>
+<tr>
+<td><span>Retention</span></td>
+<td><span>98.7%</span></td>
+<td><span>98.1%</span></td>
+<td><span>99.5%</span></td>
+<td><span>97.6%</span></td>
+<td><span>91.9%</span></td>
+<td><span>98.1%</span></td>
+<td><span>99.1%</span></td>
+<td><span>94.2%</span></td>
+<td><span>99.0%</span></td>
+<td><span>93.8%</span></td>
+<td><span>97.1%</span></td></tr>
+<tr>
+<td>Qwen3-Rerank-4B</td>
+<td>75.93</td>
+<td>70.95</td>
+<td>85.86</td>
+<td>39.76</td>
+<td>37.93</td>
+<td>45.99</td>
+<td>78.82</td>
+<td>32.89</td>
+<td>53.13</td>
+<td>66.62</td>
+<td>55.13</td></tr>
+<tr>
+<td><span>DoPR-4B</span></td>
+<td><span>75.35</span></td>
+<td><span>71.19</span></td>
+<td><span>85.25</span></td>
+<td><span>39.53</span></td>
+<td><span>37.06</span></td>
+<td><span>45.44</span></td>
+<td><span>78.62</span></td>
+<td><span>33.52</span></td>
+<td><span>52.67</span></td>
+<td><span>65.90</span></td>
+<td><span>54.75</span></td></tr>
+<tr>
+<td><span>Retention</span></td>
+<td><span>99.2%</span></td>
+<td><span>100.3%</span></td>
+<td><span>99.3%</span></td>
+<td><span>99.4%</span></td>
+<td><span>97.7%</span></td>
+<td><span>98.8%</span></td>
+<td><span>99.7%</span></td>
+<td><span>101.9%</span></td>
+<td><span>99.1%</span></td>
+<td><span>98.9%</span></td>
+<td><span>99.3%</span></td></tr>
+<tr>
+<td>Qwen3-Rerank-8B</td>
+<td>76.86</td>
+<td>71.57</td>
+<td>85.30</td>
+<td>40.38</td>
+<td>37.88</td>
+<td>46.74</td>
+<td>80.02</td>
+<td>32.57</td>
+<td>52.86</td>
+<td>67.09</td>
+<td>55.36</td></tr>
+<tr>
+<td><span>DoPR-8B</span></td>
+<td><span>76.17</span></td>
+<td><span>70.44</span></td>
+<td><span>85.42</span></td>
+<td><span>40.68</span></td>
+<td><span>37.14</span></td>
+<td><span>45.38</span></td>
+<td><span>80.27</span></td>
+<td><span>32.90</span></td>
+<td><span>52.64</span></td>
+<td><span>66.05</span></td>
+<td><span>55.06</span></td></tr>
+<tr>
+<td><span>Retention</span></td>
+<td><span>99.1%</span></td>
+<td><span>98.4%</span></td>
+<td><span>100.1%</span></td>
+<td><span>100.7%</span></td>
+<td><span>98.0%</span></td>
+<td><span>97.1%</span></td>
+<td><span>100.3%</span></td>
+<td><span>101.0%</span></td>
+<td><span>99.6%</span></td>
+<td><span>98.4%</span></td>
+<td><span>99.5%</span></td></tr>
+</table></div><div class="tbl-foot">원 논문의 표를 HTML로 재구성했다. 굵게 표시된 값과 통계 표기는 원문 기준이다.</div></div><div class="tbl-wrap"><div class="tbl-cap"><span class="tn">TABLE 2</span>BRIGHT 성능</div><div class="tbl-scroll"><table>
+<tr>
+<td rowspan="2"><span>Model</span></td>
+<td colspan="7"><span>StackExchange</span></td>
+<td colspan="2"><span>Coding</span></td>
+<td colspan="3"><span>Theorem-based</span></td>
+<td rowspan="2"><span>Avg.</span></td></tr>
+<tr>
+<td><span>Bio.</span></td>
+<td><span>Econ.</span></td>
+<td><span>Earth.</span></td>
+<td><span>Psy.</span></td>
+<td><span>Rob.</span></td>
+<td><span>Stack.</span></td>
+<td><span>Sus.</span></td>
+<td><span>Pony.</span></td>
+<td><span>LC.</span></td>
+<td><span>AoPS</span></td>
+<td><span>TheoQ.</span></td>
+<td><span>ThoT.</span></td></tr>
+<tr>
+<td>ReasonIR</td>
+<td>43.5</td>
+<td>32.8</td>
+<td>43.0</td>
+<td>38.9</td>
+<td>21.1</td>
+<td>30.6</td>
+<td>27.3</td>
+<td>31.6</td>
+<td>19.6</td>
+<td>7.3</td>
+<td>36.7</td>
+<td>34.1</td>
+<td>30.5</td></tr>
+<tr>
+<td>RankT5-3B</td>
+<td>11.4</td>
+<td>22.1</td>
+<td>10.9</td>
+<td>13.6</td>
+<td>11.4</td>
+<td>11.4</td>
+<td>16.0</td>
+<td>27.5</td>
+<td>38.1</td>
+<td>9.2</td>
+<td>18.3</td>
+<td>9.5</td>
+<td>16.6</td></tr>
+<tr>
+<td>RankZephyr</td>
+<td>19.9</td>
+<td>17.4</td>
+<td>12.4</td>
+<td>34.9</td>
+<td>24.7</td>
+<td>13.4</td>
+<td>22.3</td>
+<td>29.3</td>
+<td>32.4</td>
+<td>6.1</td>
+<td>29.0</td>
+<td>30.1</td>
+<td>22.6</td></tr>
+<tr>
+<td>ERank-4B</td>
+<td>42.1</td>
+<td>42.5</td>
+<td>26.3</td>
+<td>36.4</td>
+<td>20.8</td>
+<td>27.3</td>
+<td>33.2</td>
+<td>31.7</td>
+<td>21.8</td>
+<td>10.9</td>
+<td>32.8</td>
+<td>40.6</td>
+<td>30.5</td></tr>
+<tr>
+<td>E<sup>2</sup>Rank-8B</td>
+<td>49.2</td>
+<td>47.2</td>
+<td>32.3</td>
+<td>44.7</td>
+<td>28.2</td>
+<td>32.9</td>
+<td>38.4</td>
+<td>10.6</td>
+<td>36.2</td>
+<td>8.2</td>
+<td>38.2</td>
+<td>33.4</td>
+<td>33.4</td></tr>
+<tr>
+<td>Qwen3-Rerank-0.6B</td>
+<td>37.4</td>
+<td>24.0</td>
+<td>40.7</td>
+<td>40.7</td>
+<td>18.2</td>
+<td>22.5</td>
+<td>25.3</td>
+<td>25.6</td>
+<td>32.6</td>
+<td>6.3</td>
+<td>34.0</td>
+<td>35.1</td>
+<td>28.5</td></tr>
+<tr>
+<td><span>DoPR-0.6B</span></td>
+<td><span>34.1</span></td>
+<td><span>25.8</span></td>
+<td><span>38.1</span></td>
+<td><span>37.0</span></td>
+<td><span>18.2</span></td>
+<td><span>25.0</span></td>
+<td><span>26.4</span></td>
+<td><span>29.1</span></td>
+<td><span>31.5</span></td>
+<td><span>9.3</span></td>
+<td><span>32.1</span></td>
+<td><span>30.6</span></td>
+<td><span>28.1</span></td></tr>
+<tr>
+<td><span>Retention</span></td>
+<td><span>91.2%</span></td>
+<td><span>107.5%</span></td>
+<td><span>93.6%</span></td>
+<td><span>90.9%</span></td>
+<td><span>100.0%</span></td>
+<td><span>111.1%</span></td>
+<td><span>104.3%</span></td>
+<td><span>113.7%</span></td>
+<td><span>96.6%</span></td>
+<td><span>147.6%</span></td>
+<td><span>94.4%</span></td>
+<td><span>87.2%</span></td>
+<td><span>98.6%</span></td></tr>
+<tr>
+<td>Qwen3-Rerank-4B</td>
+<td>47.8</td>
+<td>30.3</td>
+<td>47.4</td>
+<td>48.3</td>
+<td>25.0</td>
+<td>26.0</td>
+<td>35.1</td>
+<td>31.4</td>
+<td>33.2</td>
+<td>6.8</td>
+<td>37.9</td>
+<td>38.9</td>
+<td>34.0</td></tr>
+<tr>
+<td><span>DoPR-4B</span></td>
+<td><span>45.1</span></td>
+<td><span>29.0</span></td>
+<td><span>47.0</span></td>
+<td><span>47.7</span></td>
+<td><span>25.0</span></td>
+<td><span>28.8</span></td>
+<td><span>34.8</span></td>
+<td><span>36.3</span></td>
+<td><span>26.5</span></td>
+<td><span>7.1</span></td>
+<td><span>37.8</span></td>
+<td><span>38.7</span></td>
+<td><span>33.7</span></td></tr>
+<tr>
+<td><span>Retention</span></td>
+<td><span>94.4%</span></td>
+<td><span>95.7%</span></td>
+<td><span>99.2%</span></td>
+<td><span>98.8%</span></td>
+<td><span>100.0%</span></td>
+<td><span>110.8%</span></td>
+<td><span>99.1%</span></td>
+<td><span>115.6%</span></td>
+<td><span>79.8%</span></td>
+<td><span>104.4%</span></td>
+<td><span>99.7%</span></td>
+<td><span>99.5%</span></td>
+<td><span>99.1%</span></td></tr>
+<tr>
+<td>Qwen3-Rerank-8B</td>
+<td>48.4</td>
+<td>30.7</td>
+<td>47.0</td>
+<td>49.5</td>
+<td>27.4</td>
+<td>27.3</td>
+<td>36.9</td>
+<td>30.2</td>
+<td>29.4</td>
+<td>8.7</td>
+<td>39.7</td>
+<td>40.5</td>
+<td>34.6</td></tr>
+<tr>
+<td><span>DoPR-8B</span></td>
+<td><span>46.9</span></td>
+<td><span>30.0</span></td>
+<td><span>44.7</span></td>
+<td><span>50.7</span></td>
+<td><span>27.9</span></td>
+<td><span>28.2</span></td>
+<td><span>36.1</span></td>
+<td><span>27.8</span></td>
+<td><span>30.6</span></td>
+<td><span>8.1</span></td>
+<td><span>38.7</span></td>
+<td><span>40.9</span></td>
+<td><span>34.2</span></td></tr>
+<tr>
+<td><span>Retention</span></td>
+<td><span>96.9%</span></td>
+<td><span>97.7%</span></td>
+<td><span>95.1%</span></td>
+<td><span>102.4%</span></td>
+<td><span>101.8%</span></td>
+<td><span>103.3%</span></td>
+<td><span>97.8%</span></td>
+<td><span>92.1%</span></td>
+<td><span>104.1%</span></td>
+<td><span>93.1%</span></td>
+<td><span>97.5%</span></td>
+<td><span>101.0%</span></td>
+<td><span>98.8%</span></td></tr>
+</table></div><div class="tbl-foot">원 논문의 표를 HTML로 재구성했다. 굵게 표시된 값과 통계 표기는 원문 기준이다.</div></div>
+</section>
+<section class="ch" id="c4">
+<div class="ch-eyebrow"><span class="cnum">04</span><span class="clabel">Efficiency · 효율</span></div>
+<h2 class="ch-title">긴 문서와 반복 조회에서 오프라인 비용을 빠르게 상각한다</h2>
+<div class="tldr"><div class="h">한눈에 요약</div><p>온라인 문서 표현 메모리는 고정 8배 줄었고, Covid에서 Qwen3-8B 지연시간은 150.708ms에서 18.743ms로 줄어 8.04배 빨라졌다. 짧은 DL19에서는 같은 모델의 속도 향상이 1.84배였다.</p></div>
+<p class="lead">속도 이득은 모델 크기만이 아니라 원문 길이에 크게 좌우된다.</p><p>더 넓은 표 9에서는 길이 2,048 토큰인 Touche·News·Robust에서 8B 속도 향상이 약 18–19배지만, 192토큰 DBPedia에서는 1.81배다. 오프라인 prefix 생성 비용까지 포함하면 문서가 여러 질의에서 재사용될수록 평균 비용이 내려간다. 안정적인 기업 문서·상품 목록·논문 컬렉션에 잘 맞는 이유다.</p><figure>
+<div class="fig-top"><span class="fnum">FIG 3</span><span class="ftitle">문서 재사용 횟수별 상각 속도 향상</span></div>
+<div class="imgbox"><img alt="문서 재사용 횟수별 상각 속도 향상" decoding="async" loading="lazy" src="/paper-assets/23f0204cc3c9c0bf2da3abca09dc9a0cc2db8c3c906b5ea9718fe1b30a7ded1b.png"/></div>
+<figcaption>같은 문서 prefix를 더 많이 재사용할수록 오프라인 압축 비용의 비중이 작아진다.</figcaption>
+</figure><figure>
+<div class="fig-top"><span class="fnum">FIG 4</span><span class="ftitle">prefix 예산별 정확도·메모리·지연</span></div>
+<div class="imgbox"><img alt="prefix 예산별 정확도·메모리·지연" decoding="async" loading="lazy" src="/paper-assets/e54c62d3c1a82a65079ffa62d59e3b566038f6de99f82da83a3d768ebf2099e4.png"/></div>
+<figcaption>저장할 prefix 수가 늘면 정보 보존은 좋아지지만 메모리와 지연 비용도 커진다.</figcaption>
+</figure><figure>
+<div class="fig-top"><span class="fnum">FIG 5</span><span class="ftitle">DL19 정확도–지연시간 절충</span></div>
+<div class="imgbox"><img alt="DL19 정확도–지연시간 절충" decoding="async" loading="lazy" src="/paper-assets/a48ae75cbd277f0b15ceeb1f1783ffb4efeec72e2aa1d9c29c8853dc08dea5cf.png"/></div>
+<figcaption>여러 모델 크기와 prefix 예산의 NDCG@10·지연시간 관계를 비교한다.</figcaption>
+</figure><div class="tbl-wrap"><div class="tbl-cap"><span class="tn">TABLE 3</span>DL19·Covid 온라인 효율</div><div class="tbl-scroll"><table>
+<tr>
+<td rowspan="2"><span>Model</span></td>
+<td colspan="4"><span>DL19</span></td>
+<td colspan="4"><span>Covid</span></td></tr>
+<tr>
+<td><span></span><span> <span>
+<span>
+<span>
+<span>Doc</span></span>
+<span>
+<span>Budget</span></span>
+</span></span><span></span></span></td>
+<td><span>NDCG@10<math><semantics><mo>↑</mo><annotation>\uparrow</annotation></semantics></math></span></td>
+<td><span>Memory <math><semantics><mo>↓</mo><annotation>\downarrow</annotation></semantics></math></span></td>
+<td><span>Latency <math><semantics><mo>↓</mo><annotation>\downarrow</annotation></semantics></math></span></td>
+<td><span></span><span> <span>
+<span>
+<span>
+<span>Doc</span></span>
+<span>
+<span>Budget</span></span>
+</span></span><span></span></span></td>
+<td><span>NDCG@10<math><semantics><mo>↑</mo><annotation>\uparrow</annotation></semantics></math></span></td>
+<td><span>Memory <math><semantics><mo>↓</mo><annotation>\downarrow</annotation></semantics></math></span></td>
+<td><span>Latency <math><semantics><mo>↓</mo><annotation>\downarrow</annotation></semantics></math></span></td></tr>
+<tr>
+<td>Qwen3-Rerank-0.6B</td>
+<td>256</td>
+<td>75.30</td>
+<td>28.00</td>
+<td>17.612</td>
+<td>1024</td>
+<td>85.19</td>
+<td>112.00</td>
+<td>41.007</td></tr>
+<tr>
+<td><span>DoPR-0.6B</span></td>
+<td><span>32</span></td>
+<td><span>74.30</span></td>
+<td><math><semantics><mrow><mn>3.50</mn><msub><mrow></mrow><mrow><mn> 8.0</mn><mo>×</mo></mrow></msub></mrow><annotation>3.50_{\scriptstyle\,{{\color[rgb]{0,0.6,0}\mathbf{8.0\times}}}}</annotation></semantics></math></td>
+<td><math><semantics><mrow><mn>14.600</mn><msub><mrow></mrow><mrow><mn> 1.21</mn><mo>×</mo></mrow></msub></mrow><annotation>14.600_{\scriptstyle\,{{\color[rgb]{0,0.6,0}\mathbf{1.21\times}}}}</annotation></semantics></math></td>
+<td><span>128</span></td>
+<td><span>84.78</span></td>
+<td><math><semantics><mrow><mn>14.00</mn><msub><mrow></mrow><mrow><mn> 8.0</mn><mo>×</mo></mrow></msub></mrow><annotation>14.00_{\scriptstyle\,{{\color[rgb]{0,0.6,0}\mathbf{8.0\times}}}}</annotation></semantics></math></td>
+<td><math><semantics><mrow><mn>14.372</mn><msub><mrow></mrow><mrow><mn> 2.85</mn><mo>×</mo></mrow></msub></mrow><annotation>14.372_{\scriptstyle\,{{\color[rgb]{0,0.6,0}\mathbf{2.85\times}}}}</annotation></semantics></math></td></tr>
+<tr>
+<td>Qwen3-Rerank-4B</td>
+<td>256</td>
+<td>75.93</td>
+<td>36.00</td>
+<td>29.386</td>
+<td>1024</td>
+<td>85.86</td>
+<td>144.00</td>
+<td>121.194</td></tr>
+<tr>
+<td><span>DoPR-4B</span></td>
+<td><span>32</span></td>
+<td><span>75.35</span></td>
+<td><math><semantics><mrow><mn>4.50</mn><msub><mrow></mrow><mrow><mn> 8.0</mn><mo>×</mo></mrow></msub></mrow><annotation>4.50_{\scriptstyle\,{{\color[rgb]{0,0.6,0}\mathbf{8.0\times}}}}</annotation></semantics></math></td>
+<td><math><semantics><mrow><mn>18.430</mn><msub><mrow></mrow><mrow><mn> 1.59</mn><mo>×</mo></mrow></msub></mrow><annotation>18.430_{\scriptstyle\,{{\color[rgb]{0,0.6,0}\mathbf{1.59\times}}}}</annotation></semantics></math></td>
+<td><span>128</span></td>
+<td><span>85.25</span></td>
+<td><math><semantics><mrow><mn>18.00</mn><msub><mrow></mrow><mrow><mn> 8.0</mn><mo>×</mo></mrow></msub></mrow><annotation>18.00_{\scriptstyle\,{{\color[rgb]{0,0.6,0}\mathbf{8.0\times}}}}</annotation></semantics></math></td>
+<td><math><semantics><mrow><mn>18.095</mn><msub><mrow></mrow><mrow><mn> 6.70</mn><mo>×</mo></mrow></msub></mrow><annotation>18.095_{\scriptstyle\,{{\color[rgb]{0,0.6,0}\mathbf{6.70\times}}}}</annotation></semantics></math></td></tr>
+<tr>
+<td>Qwen3-Rerank-8B</td>
+<td>256</td>
+<td>76.86</td>
+<td>36.00</td>
+<td>37.756</td>
+<td>1024</td>
+<td>85.30</td>
+<td>144.00</td>
+<td>150.708</td></tr>
+<tr>
+<td><span>DoPR-8B</span></td>
+<td><span>32</span></td>
+<td><span>76.17</span></td>
+<td><math><semantics><mrow><mn>4.50</mn><msub><mrow></mrow><mrow><mn> 8.0</mn><mo>×</mo></mrow></msub></mrow><annotation>4.50_{\scriptstyle\,{{\color[rgb]{0,0.6,0}\mathbf{8.0\times}}}}</annotation></semantics></math></td>
+<td><math><semantics><mrow><mn>20.547</mn><msub><mrow></mrow><mrow><mn> 1.84</mn><mo>×</mo></mrow></msub></mrow><annotation>20.547_{\scriptstyle\,{{\color[rgb]{0,0.6,0}\mathbf{1.84\times}}}}</annotation></semantics></math></td>
+<td><span>128</span></td>
+<td><span>85.42</span></td>
+<td><math><semantics><mrow><mn>18.00</mn><msub><mrow></mrow><mrow><mn> 8.0</mn><mo>×</mo></mrow></msub></mrow><annotation>18.00_{\scriptstyle\,{{\color[rgb]{0,0.6,0}\mathbf{8.0\times}}}}</annotation></semantics></math></td>
+<td><math><semantics><mrow><mn>18.743</mn><msub><mrow></mrow><mrow><mn> 8.04</mn><mo>×</mo></mrow></msub></mrow><annotation>18.743_{\scriptstyle\,{{\color[rgb]{0,0.6,0}\mathbf{8.04\times}}}}</annotation></semantics></math></td></tr>
+</table></div><div class="tbl-foot">원 논문의 표를 HTML로 재구성했다. 굵게 표시된 값과 통계 표기는 원문 기준이다.</div></div><div class="tbl-wrap"><div class="tbl-cap"><span class="tn">TABLE 9</span>Qwen3 규모별 전체 효율</div><div class="tbl-scroll"><table>
+<tr>
+<td></td>
+<td></td>
+<td colspan="3">Qwen3-Rerank</td>
+<td colspan="3">DoPR</td>
+<td></td></tr>
+<tr>
+<td>Model</td>
+<td>Dataset</td>
+<td><span></span> <span>
+<span>
+<span>
+<span>Doc</span></span>
+<span>
+<span>Budget</span></span>
+</span></span><span></span></td>
+<td>Memory (MiB)</td>
+<td>Latency (ms)</td>
+<td><span></span> <span>
+<span>
+<span>
+<span>Doc</span></span>
+<span>
+<span>Budget</span></span>
+</span></span><span></span></td>
+<td>Memory (MiB)</td>
+<td>Latency (ms)</td>
+<td>Speedup</td></tr>
+<tr>
+<td rowspan="10"><span>Qwen3-0.6B</span></td>
+<td>DL19</td>
+<td>256</td>
+<td>28.00</td>
+<td>17.612</td>
+<td>32</td>
+<td>3.50</td>
+<td>14.600</td>
+<td>1.21x</td></tr>
+<tr>
+<td>DL20</td>
+<td>256</td>
+<td>28.00</td>
+<td>16.055</td>
+<td>32</td>
+<td>3.50</td>
+<td>14.159</td>
+<td>1.13x</td></tr>
+<tr>
+<td>Covid</td>
+<td>1024</td>
+<td>112.00</td>
+<td>41.007</td>
+<td>128</td>
+<td>14.00</td>
+<td>14.372</td>
+<td>2.85x</td></tr>
+<tr>
+<td>NFCorpus</td>
+<td>1024</td>
+<td>112.00</td>
+<td>41.238</td>
+<td>128</td>
+<td>14.00</td>
+<td>14.746</td>
+<td>2.80x</td></tr>
+<tr>
+<td>Touche</td>
+<td>2048</td>
+<td>224.00</td>
+<td>101.248</td>
+<td>64</td>
+<td>7.00</td>
+<td>14.673</td>
+<td>6.90x</td></tr>
+<tr>
+<td>DBPedia</td>
+<td>192</td>
+<td>21.00</td>
+<td>15.790</td>
+<td>32</td>
+<td>3.50</td>
+<td>14.285</td>
+<td>1.11x</td></tr>
+<tr>
+<td>SciFact</td>
+<td>1024</td>
+<td>112.00</td>
+<td>40.882</td>
+<td>128</td>
+<td>14.00</td>
+<td>14.384</td>
+<td>2.84x</td></tr>
+<tr>
+<td>Signal</td>
+<td>256</td>
+<td>28.00</td>
+<td>16.165</td>
+<td>32</td>
+<td>3.50</td>
+<td>14.192</td>
+<td>1.14x</td></tr>
+<tr>
+<td>News</td>
+<td>2048</td>
+<td>224.00</td>
+<td>102.148</td>
+<td>256</td>
+<td>28.00</td>
+<td>15.141</td>
+<td>6.75x</td></tr>
+<tr>
+<td>Robust</td>
+<td>2048</td>
+<td>224.00</td>
+<td>101.960</td>
+<td>256</td>
+<td>28.00</td>
+<td>14.268</td>
+<td>7.15x</td></tr>
+<tr>
+<td rowspan="10"><span>Qwen3-4B</span></td>
+<td>DL19</td>
+<td>256</td>
+<td>36.00</td>
+<td>29.386</td>
+<td>32</td>
+<td>4.50</td>
+<td>18.430</td>
+<td>1.59x</td></tr>
+<tr>
+<td>DL20</td>
+<td>256</td>
+<td>36.00</td>
+<td>29.271</td>
+<td>32</td>
+<td>4.50</td>
+<td>18.682</td>
+<td>1.57x</td></tr>
+<tr>
+<td>Covid</td>
+<td>1024</td>
+<td>144.00</td>
+<td>121.194</td>
+<td>128</td>
+<td>18.00</td>
+<td>18.095</td>
+<td>6.70x</td></tr>
+<tr>
+<td>NFCorpus</td>
+<td>1024</td>
+<td>144.00</td>
+<td>121.204</td>
+<td>128</td>
+<td>18.00</td>
+<td>19.063</td>
+<td>6.36x</td></tr>
+<tr>
+<td>Touche</td>
+<td>2048</td>
+<td>288.00</td>
+<td>293.085</td>
+<td>64</td>
+<td>9.00</td>
+<td>18.330</td>
+<td>15.99x</td></tr>
+<tr>
+<td>DBPedia</td>
+<td>192</td>
+<td>27.00</td>
+<td>23.053</td>
+<td>32</td>
+<td>4.50</td>
+<td>18.040</td>
+<td>1.28x</td></tr>
+<tr>
+<td>SciFact</td>
+<td>1024</td>
+<td>144.00</td>
+<td>121.196</td>
+<td>128</td>
+<td>18.00</td>
+<td>18.406</td>
+<td>6.58x</td></tr>
+<tr>
+<td>Signal</td>
+<td>256</td>
+<td>36.00</td>
+<td>29.282</td>
+<td>32</td>
+<td>4.50</td>
+<td>18.182</td>
+<td>1.61x</td></tr>
+<tr>
+<td>News</td>
+<td>2048</td>
+<td>288.00</td>
+<td>295.088</td>
+<td>256</td>
+<td>36.00</td>
+<td>18.852</td>
+<td>15.65x</td></tr>
+<tr>
+<td>Robust</td>
+<td>2048</td>
+<td>288.00</td>
+<td>294.710</td>
+<td>256</td>
+<td>36.00</td>
+<td>18.299</td>
+<td>16.11x</td></tr>
+<tr>
+<td rowspan="10"><span>Qwen3-8B</span></td>
+<td>DL19</td>
+<td>256</td>
+<td>36.00</td>
+<td>37.756</td>
+<td>32</td>
+<td>4.50</td>
+<td>20.547</td>
+<td>1.84x</td></tr>
+<tr>
+<td>DL20</td>
+<td>256</td>
+<td>36.00</td>
+<td>37.599</td>
+<td>32</td>
+<td>4.50</td>
+<td>19.006</td>
+<td>1.98x</td></tr>
+<tr>
+<td>Covid</td>
+<td>1024</td>
+<td>144.00</td>
+<td>150.708</td>
+<td>128</td>
+<td>18.00</td>
+<td>18.743</td>
+<td>8.04x</td></tr>
+<tr>
+<td>NFCorpus</td>
+<td>1024</td>
+<td>144.00</td>
+<td>150.361</td>
+<td>128</td>
+<td>18.00</td>
+<td>18.117</td>
+<td>8.30x</td></tr>
+<tr>
+<td>Touche</td>
+<td>2048</td>
+<td>288.00</td>
+<td>355.031</td>
+<td>64</td>
+<td>9.00</td>
+<td>19.405</td>
+<td>18.30x</td></tr>
+<tr>
+<td>DBPedia</td>
+<td>192</td>
+<td>27.00</td>
+<td>34.159</td>
+<td>32</td>
+<td>4.50</td>
+<td>18.829</td>
+<td>1.81x</td></tr>
+<tr>
+<td>SciFact</td>
+<td>1024</td>
+<td>144.00</td>
+<td>150.442</td>
+<td>128</td>
+<td>18.00</td>
+<td>18.822</td>
+<td>7.99x</td></tr>
+<tr>
+<td>Signal</td>
+<td>256</td>
+<td>36.00</td>
+<td>37.582</td>
+<td>32</td>
+<td>4.50</td>
+<td>18.495</td>
+<td>2.03x</td></tr>
+<tr>
+<td>News</td>
+<td>2048</td>
+<td>288.00</td>
+<td>359.434</td>
+<td>256</td>
+<td>36.00</td>
+<td>18.961</td>
+<td>18.96x</td></tr>
+<tr>
+<td>Robust</td>
+<td>2048</td>
+<td>288.00</td>
+<td>358.241</td>
+<td>256</td>
+<td>36.00</td>
+<td>19.070</td>
+<td>18.79x</td></tr>
+</table></div><div class="tbl-foot">원 논문의 표를 HTML로 재구성했다. 굵게 표시된 값과 통계 표기는 원문 기준이다.</div></div><div class="tbl-wrap"><div class="tbl-cap"><span class="tn">TABLE 13</span>12개 BRIGHT 하위셋 효율</div><div class="tbl-scroll"><table>
+<tr>
+<td></td>
+<td colspan="3">Qwen3-Rerank-0.6B</td>
+<td colspan="3">DoPR-0.6B</td>
+<td></td></tr>
+<tr>
+<td>Dataset</td>
+<td><span></span> <span>
+<span>
+<span>
+<span>Doc</span></span>
+<span>
+<span>Budget</span></span>
+</span></span><span></span></td>
+<td>Memory (MiB)</td>
+<td>Latency (ms)</td>
+<td><span></span> <span>
+<span>
+<span>
+<span>Doc</span></span>
+<span>
+<span>Budget</span></span>
+</span></span><span></span></td>
+<td>Memory (MiB)</td>
+<td>Latency (ms)</td>
+<td>Speedup</td></tr>
+<tr>
+<td>Biology</td>
+<td>512</td>
+<td>56.00</td>
+<td>17.267</td>
+<td>64</td>
+<td>7.00</td>
+<td>9.414</td>
+<td>1.83<math><semantics><mo>×</mo><annotation>\times</annotation></semantics></math></td></tr>
+<tr>
+<td>Economics</td>
+<td>1024</td>
+<td>112.00</td>
+<td>56.886</td>
+<td>128</td>
+<td>14.00</td>
+<td>9.814</td>
+<td>5.80<math><semantics><mo>×</mo><annotation>\times</annotation></semantics></math></td></tr>
+<tr>
+<td>Earth Science</td>
+<td>1024</td>
+<td>112.00</td>
+<td>51.457</td>
+<td>128</td>
+<td>14.00</td>
+<td>9.408</td>
+<td>5.47<math><semantics><mo>×</mo><annotation>\times</annotation></semantics></math></td></tr>
+<tr>
+<td>Psychology</td>
+<td>1024</td>
+<td>112.00</td>
+<td>56.839</td>
+<td>128</td>
+<td>14.00</td>
+<td>9.495</td>
+<td>5.99<math><semantics><mo>×</mo><annotation>\times</annotation></semantics></math></td></tr>
+<tr>
+<td>Robotics</td>
+<td>1024</td>
+<td>112.00</td>
+<td>79.146</td>
+<td>128</td>
+<td>14.00</td>
+<td>15.772</td>
+<td>5.02<math><semantics><mo>×</mo><annotation>\times</annotation></semantics></math></td></tr>
+<tr>
+<td>Stack Overflow</td>
+<td>1024</td>
+<td>112.00</td>
+<td>79.522</td>
+<td>128</td>
+<td>14.00</td>
+<td>15.793</td>
+<td>5.04<math><semantics><mo>×</mo><annotation>\times</annotation></semantics></math></td></tr>
+<tr>
+<td>Sustainable Living</td>
+<td>1024</td>
+<td>112.00</td>
+<td>56.688</td>
+<td>128</td>
+<td>14.00</td>
+<td>9.688</td>
+<td>5.85<math><semantics><mo>×</mo><annotation>\times</annotation></semantics></math></td></tr>
+<tr>
+<td>Pony</td>
+<td>512</td>
+<td>56.00</td>
+<td>17.380</td>
+<td>64</td>
+<td>7.00</td>
+<td>9.514</td>
+<td>1.83<math><semantics><mo>×</mo><annotation>\times</annotation></semantics></math></td></tr>
+<tr>
+<td>LeetCode</td>
+<td>1024</td>
+<td>112.00</td>
+<td>79.714</td>
+<td>128</td>
+<td>14.00</td>
+<td>15.772</td>
+<td>5.05<math><semantics><mo>×</mo><annotation>\times</annotation></semantics></math></td></tr>
+<tr>
+<td>AoPS</td>
+<td>1024</td>
+<td>112.00</td>
+<td>51.762</td>
+<td>128</td>
+<td>14.00</td>
+<td>9.250</td>
+<td>5.60<math><semantics><mo>×</mo><annotation>\times</annotation></semantics></math></td></tr>
+<tr>
+<td>Theoremqa-questions</td>
+<td>1024</td>
+<td>112.00</td>
+<td>51.825</td>
+<td>128</td>
+<td>14.00</td>
+<td>9.673</td>
+<td>5.36<math><semantics><mo>×</mo><annotation>\times</annotation></semantics></math></td></tr>
+<tr>
+<td>Theoremqa-theorems</td>
+<td>1024</td>
+<td>112.00</td>
+<td>51.828</td>
+<td>128</td>
+<td>14.00</td>
+<td>9.530</td>
+<td>5.44<math><semantics><mo>×</mo><annotation>\times</annotation></semantics></math></td></tr>
+<tr>
+<td>Average</td>
+<td>–</td>
+<td>102.67</td>
+<td>54.19</td>
+<td>–</td>
+<td>12.83</td>
+<td>11.09</td>
+<td>4.89<math><semantics><mo>×</mo><annotation>\times</annotation></semantics></math></td></tr>
+</table></div><div class="tbl-foot">원 논문의 표를 HTML로 재구성했다. 굵게 표시된 값과 통계 표기는 원문 기준이다.</div></div><div class="tbl-wrap"><div class="tbl-cap"><span class="tn">TABLE 14</span>같은 온라인 예산의 DoPR-8B·Qwen3-0.6B 비교</div><div class="tbl-scroll"><table>
+<tr>
+<td>Dataset</td>
+<td>Method</td>
+<td>NDCG@10</td>
+<td>Memory (MiB)</td>
+<td>Latency (ms)</td></tr>
+<tr>
+<td>DL19</td>
+<td>Qwen3-Rerank-0.6B</td>
+<td>75.30</td>
+<td>28.0</td>
+<td><span>17.61</span></td></tr>
+<tr>
+<td>DL19</td>
+<td>DoPR-8B</td>
+<td><span>76.17</span></td>
+<td><span>4.5</span></td>
+<td>20.55</td></tr>
+<tr>
+<td>Covid</td>
+<td>Qwen3-Rerank-0.6B</td>
+<td>85.19</td>
+<td>112.0</td>
+<td>41.01</td></tr>
+<tr>
+<td>Covid</td>
+<td>DoPR-8B</td>
+<td><span>85.42</span></td>
+<td><span>18.0</span></td>
+<td><span>18.74</span></td></tr>
+</table></div><div class="tbl-foot">원 논문의 표를 HTML로 재구성했다. 굵게 표시된 값과 통계 표기는 원문 기준이다.</div></div>
+</section>
+<section class="ch" id="c5">
+<div class="ch-eyebrow"><span class="cnum">05</span><span class="clabel">Ablations &amp; Limits · 한계</span></div>
+<h2 class="ch-title">효율은 공짜가 아니라 저장공간과 문서 재사용을 전제로 한다</h2>
+<div class="tldr"><div class="h">한눈에 요약</div><p>attention 기반 Top-K 선택, 압축 없는 워밍업, 학습 prefix 수가 품질에 영향을 미쳤다. 고정 압축률은 주로 문서 토큰의 12.5%, 즉 8분의 1이다.</p></div>
+<p class="lead">Llama-3.2-1B과 추가 12개 BEIR 데이터셋에서도 작동해 한 모델·몇 개 데이터셋에만 맞춘 결과는 아니었다.</p><p>하지만 문서가 자주 바뀌거나 한 번만 검색되는 환경에서는 prefix 생성·저장 비용을 회수하기 어렵다. 모델 버전이 바뀌면 다층 KV 상태도 다시 계산해야 하며, 전체 문서 원문보다 작은 prefix라도 대규모 컬렉션에서는 상당한 저장공간이 필요하다. 압축이 어떤 문서 부분을 선택하는지에 따른 편향·민감정보 보존 문제도 남는다.</p><figure>
+<div class="fig-top"><span class="fnum">FIG 6</span><span class="ftitle">prefix 수별 학습 loss</span></div>
+<div class="imgbox"><img alt="prefix 수별 학습 loss" decoding="async" loading="lazy" src="/paper-assets/c70a9b505619337d377a43e4786a58a71f225ff4fadb22be1a85f4b2fe82e776.png"/></div>
+<figcaption>문서 표현 병목의 크기에 따라 학습 수렴 양상이 달라진다.</figcaption>
+</figure><div class="tbl-wrap"><div class="tbl-cap"><span class="tn">TABLE 4</span>학습 prefix 수 K_train 효과</div><div class="tbl-scroll"><table>
+<tr>
+<td><span>Model</span></td>
+<td><math><semantics><msub><mi>K</mi><mtext>train</mtext></msub><annotation>K_{\text{train}}</annotation></semantics></math></td>
+<td><span>DL19</span></td>
+<td><span>DL20</span></td>
+<td><span>Avg.</span></td></tr>
+<tr>
+<td>Qwen3-Rerank</td>
+<td>-</td>
+<td>75.30</td>
+<td><span>69.94</span></td>
+<td><span>72.62</span></td></tr>
+<tr>
+<td rowspan="5"><span>DoPR</span></td>
+<td>64</td>
+<td><span>75.48</span></td>
+<td>69.47</td>
+<td>72.48</td></tr>
+<tr>
+<td>32</td>
+<td>74.30</td>
+<td>68.58</td>
+<td>71.44</td></tr>
+<tr>
+<td>16</td>
+<td>74.13</td>
+<td>68.19</td>
+<td>71.16</td></tr>
+<tr>
+<td>8</td>
+<td>72.83</td>
+<td>66.45</td>
+<td>69.64</td></tr>
+<tr>
+<td>4</td>
+<td>68.39</td>
+<td>60.36</td>
+<td>64.38</td></tr>
+</table></div><div class="tbl-foot">원 논문의 표를 HTML로 재구성했다. 굵게 표시된 값과 통계 표기는 원문 기준이다.</div></div><div class="tbl-wrap"><div class="tbl-cap"><span class="tn">TABLE 5</span>압축 전 워밍업 단계 효과</div><div class="tbl-scroll"><table>
+<tr>
+<td><span>Warmup Steps</span></td>
+<td><span>DL19</span></td>
+<td><span>DL20</span></td>
+<td><span>Avg.</span></td></tr>
+<tr>
+<td>0</td>
+<td>73.76</td>
+<td>66.79</td>
+<td>70.28</td></tr>
+<tr>
+<td><span>200</span></td>
+<td><span>74.30</span></td>
+<td><span>68.58</span></td>
+<td><span>71.44</span></td></tr>
+<tr>
+<td>400</td>
+<td><span>74.49</span></td>
+<td>68.04</td>
+<td>71.27</td></tr>
+<tr>
+<td>800</td>
+<td>74.01</td>
+<td>68.47</td>
+<td>71.24</td></tr>
+<tr>
+<td>1600</td>
+<td>74.19</td>
+<td>68.50</td>
+<td>71.35</td></tr>
+</table></div><div class="tbl-foot">원 논문의 표를 HTML로 재구성했다. 굵게 표시된 값과 통계 표기는 원문 기준이다.</div></div><div class="tbl-wrap"><div class="tbl-cap"><span class="tn">TABLE 6</span>문서 표현 선택 전략 효과</div><div class="tbl-scroll"><table>
+<tr>
+<td><span>Prefix Construction Strategy</span></td>
+<td><span>DL19</span></td>
+<td><span>DL20</span></td>
+<td><span>Avg.</span></td></tr>
+<tr>
+<td>First-<math><semantics><mi>K</mi><annotation>K</annotation></semantics></math> tokens</td>
+<td>74.01</td>
+<td>66.85</td>
+<td>70.43</td></tr>
+<tr>
+<td>Uniform-<math><semantics><mi>K</mi><annotation>K</annotation></semantics></math> tokens</td>
+<td>74.25</td>
+<td>67.65</td>
+<td>70.95</td></tr>
+<tr>
+<td>Random-<math><semantics><mi>K</mi><annotation>K</annotation></semantics></math> tokens</td>
+<td>73.34</td>
+<td>67.75</td>
+<td>70.55</td></tr>
+<tr>
+<td><span>Attention-guided Top-<math><semantics><mi>K</mi><annotation>K</annotation></semantics></math></span></td>
+<td><span>74.30</span></td>
+<td><span>68.58</span></td>
+<td><span>71.44</span></td></tr>
+</table></div><div class="tbl-foot">원 논문의 표를 HTML로 재구성했다. 굵게 표시된 값과 통계 표기는 원문 기준이다.</div></div><div class="tbl-wrap"><div class="tbl-cap"><span class="tn">TABLE 7</span>구현·하이퍼파라미터</div><div class="tbl-scroll"><table>
+<tr>
+<td><span>Item</span></td>
+<td><span>Setting</span></td></tr>
+<tr>
+<td>Backbone models</td>
+<td>Qwen3-0.6B / Qwen3-4B / Qwen3-8B</td></tr>
+<tr>
+<td>Optimizer</td>
+<td>AdamW</td></tr>
+<tr>
+<td>Learning rate</td>
+<td><math><semantics><mrow><mn>5</mn><mo>×</mo><msup><mn>10</mn><mrow><mo>−</mo><mn>6</mn></mrow></msup></mrow><annotation>5\times 10^{-6}</annotation></semantics></math></td></tr>
+<tr>
+<td>Total batch size</td>
+<td>32</td></tr>
+<tr>
+<td>Training hardware</td>
+<td>8 NVIDIA A100 GPUs</td></tr>
+<tr>
+<td>Default training prefix budget</td>
+<td><math><semantics><mrow><msub><mi>K</mi><mtext>train</mtext></msub><mo>=</mo><mn>32</mn></mrow><annotation>K_{\text{train}}=32</annotation></semantics></math></td></tr>
+<tr>
+<td>Compression-free warmup</td>
+<td>200 steps</td></tr>
+<tr>
+<td>Inference prefix budget</td>
+<td>Dataset-specific <math><semantics><msub><mi>K</mi><mtext>infer</mtext></msub><annotation>K_{\text{infer}}</annotation></semantics></math></td></tr>
+<tr>
+<td>Compression ratio</td>
+<td>8.0<math><semantics><mo>×</mo><annotation>\times</annotation></semantics></math></td></tr>
+<tr>
+<td>Inference precision</td>
+<td>bf16</td></tr>
+</table></div><div class="tbl-foot">원 논문의 표를 HTML로 재구성했다. 굵게 표시된 값과 통계 표기는 원문 기준이다.</div></div><div class="tbl-wrap"><div class="tbl-cap"><span class="tn">TABLE 8</span>데이터셋별 문서·prefix 길이</div><div class="tbl-scroll"><table>
+<tr>
+<td colspan="2">Dataset</td>
+<td>Document Length</td>
+<td>Prefix Length</td>
+<td>Compress Ratio</td></tr>
+<tr>
+<td rowspan="2"><span>TREC DL</span></td>
+<td>DL 19</td>
+<td>256</td>
+<td>32</td>
+<td>8.0<math><semantics><mo>×</mo><annotation>\times</annotation></semantics></math></td></tr>
+<tr>
+<td>DL 20</td>
+<td>256</td>
+<td>32</td>
+<td>8.0<math><semantics><mo>×</mo><annotation>\times</annotation></semantics></math></td></tr>
+<tr>
+<td rowspan="8"><span>BEIR</span></td>
+<td>Covid</td>
+<td>1024</td>
+<td>128</td>
+<td>8.0<math><semantics><mo>×</mo><annotation>\times</annotation></semantics></math></td></tr>
+<tr>
+<td>NFCorpus</td>
+<td>1024</td>
+<td>128</td>
+<td>8.0<math><semantics><mo>×</mo><annotation>\times</annotation></semantics></math></td></tr>
+<tr>
+<td>Touche</td>
+<td>2048</td>
+<td>256</td>
+<td>8.0<math><semantics><mo>×</mo><annotation>\times</annotation></semantics></math></td></tr>
+<tr>
+<td>DBPedia</td>
+<td>256</td>
+<td>32</td>
+<td>8.0<math><semantics><mo>×</mo><annotation>\times</annotation></semantics></math></td></tr>
+<tr>
+<td>SciFact</td>
+<td>1024</td>
+<td>128</td>
+<td>8.0<math><semantics><mo>×</mo><annotation>\times</annotation></semantics></math></td></tr>
+<tr>
+<td>Signal</td>
+<td>256</td>
+<td>32</td>
+<td>8.0<math><semantics><mo>×</mo><annotation>\times</annotation></semantics></math></td></tr>
+<tr>
+<td>News</td>
+<td>2048</td>
+<td>256</td>
+<td>8.0<math><semantics><mo>×</mo><annotation>\times</annotation></semantics></math></td></tr>
+<tr>
+<td>Robust</td>
+<td>2048</td>
+<td>256</td>
+<td>8.0<math><semantics><mo>×</mo><annotation>\times</annotation></semantics></math></td></tr>
+<tr>
+<td rowspan="12"><span>BRIGHT</span></td>
+<td>Biology</td>
+<td>512</td>
+<td>64</td>
+<td>8.0<math><semantics><mo>×</mo><annotation>\times</annotation></semantics></math></td></tr>
+<tr>
+<td>Economics</td>
+<td>1024</td>
+<td>128</td>
+<td>8.0<math><semantics><mo>×</mo><annotation>\times</annotation></semantics></math></td></tr>
+<tr>
+<td>Earth-Science</td>
+<td>1024</td>
+<td>128</td>
+<td>8.0<math><semantics><mo>×</mo><annotation>\times</annotation></semantics></math></td></tr>
+<tr>
+<td>Psychology</td>
+<td>1024</td>
+<td>128</td>
+<td>8.0<math><semantics><mo>×</mo><annotation>\times</annotation></semantics></math></td></tr>
+<tr>
+<td>Robotics</td>
+<td>1024</td>
+<td>128</td>
+<td>8.0<math><semantics><mo>×</mo><annotation>\times</annotation></semantics></math></td></tr>
+<tr>
+<td>Stackoverflow</td>
+<td>1024</td>
+<td>128</td>
+<td>8.0<math><semantics><mo>×</mo><annotation>\times</annotation></semantics></math></td></tr>
+<tr>
+<td>Sustainable-living</td>
+<td>1024</td>
+<td>128</td>
+<td>8.0<math><semantics><mo>×</mo><annotation>\times</annotation></semantics></math></td></tr>
+<tr>
+<td>Pony</td>
+<td>512</td>
+<td>64</td>
+<td>8.0<math><semantics><mo>×</mo><annotation>\times</annotation></semantics></math></td></tr>
+<tr>
+<td>Leetcode</td>
+<td>1024</td>
+<td>128</td>
+<td>8.0<math><semantics><mo>×</mo><annotation>\times</annotation></semantics></math></td></tr>
+<tr>
+<td>Aops</td>
+<td>1024</td>
+<td>128</td>
+<td>8.0<math><semantics><mo>×</mo><annotation>\times</annotation></semantics></math></td></tr>
+<tr>
+<td>Theoremqa-questions</td>
+<td>1024</td>
+<td>128</td>
+<td>8.0<math><semantics><mo>×</mo><annotation>\times</annotation></semantics></math></td></tr>
+<tr>
+<td>Theoremqa-theorems</td>
+<td>1024</td>
+<td>128</td>
+<td>8.0<math><semantics><mo>×</mo><annotation>\times</annotation></semantics></math></td></tr>
+</table></div><div class="tbl-foot">원 논문의 표를 HTML로 재구성했다. 굵게 표시된 값과 통계 표기는 원문 기준이다.</div></div><div class="tbl-wrap"><div class="tbl-cap"><span class="tn">TABLE 10</span>Llama-3.2-1B 일반화</div><div class="tbl-scroll"><table>
+<tr>
+<td>Method</td>
+<td>DL19</td>
+<td>DL20</td>
+<td>Covid</td>
+<td>NFCorpus</td>
+<td>Touche</td>
+<td>DBPedia</td>
+<td>SciFact</td>
+<td>Signal</td>
+<td>News</td>
+<td>Robust</td>
+<td>Avg.</td></tr>
+<tr>
+<td>Llama-3.2-Rerank-1B</td>
+<td>75.76</td>
+<td>70.78</td>
+<td>86.05</td>
+<td>38.77</td>
+<td>39.76</td>
+<td>45.61</td>
+<td>78.98</td>
+<td>33.63</td>
+<td>52.08</td>
+<td>64.37</td>
+<td>58.58</td></tr>
+<tr>
+<td>DoPR-Llama-3.2-1B</td>
+<td>74.71</td>
+<td>70.43</td>
+<td>83.46</td>
+<td>38.52</td>
+<td>35.45</td>
+<td>46.60</td>
+<td>77.16</td>
+<td>32.88</td>
+<td>52.11</td>
+<td>59.70</td>
+<td>57.10</td></tr>
+<tr>
+<td><span>Retention</span></td>
+<td>98.61</td>
+<td>99.51</td>
+<td>96.99</td>
+<td>99.36</td>
+<td>89.16</td>
+<td><span>102.17</span></td>
+<td>97.70</td>
+<td>97.77</td>
+<td><span>100.06</span></td>
+<td>92.75</td>
+<td>97.48</td></tr>
+</table></div><div class="tbl-foot">원 논문의 표를 HTML로 재구성했다. 굵게 표시된 값과 통계 표기는 원문 기준이다.</div></div><div class="tbl-wrap"><div class="tbl-cap"><span class="tn">TABLE 11</span>12개 BEIR 확장 평가</div><div class="tbl-scroll"><table>
+<tr>
+<td>Method</td>
+<td>Covid</td>
+<td>NFCorpus</td>
+<td>Touche</td>
+<td>DBPedia</td>
+<td>SciFact</td>
+<td>Signal</td>
+<td>News</td>
+<td>Robust</td>
+<td>ArguAna</td>
+<td>FiQA</td>
+<td>SciDocs</td>
+<td>C-Fever</td>
+<td>Avg.</td></tr>
+<tr>
+<td>Qwen3-Rerank-0.6B</td>
+<td>85.19</td>
+<td>39.13</td>
+<td>41.18</td>
+<td>45.14</td>
+<td>76.99</td>
+<td>33.73</td>
+<td>52.51</td>
+<td>63.50</td>
+<td>33.41</td>
+<td>40.40</td>
+<td>19.75</td>
+<td>27.54</td>
+<td>46.54</td></tr>
+<tr>
+<td>DoPR-0.6B</td>
+<td>84.78</td>
+<td>38.20</td>
+<td>37.86</td>
+<td>44.26</td>
+<td>76.31</td>
+<td>31.78</td>
+<td>51.96</td>
+<td>59.56</td>
+<td>33.49</td>
+<td>35.06</td>
+<td>19.10</td>
+<td>26.33</td>
+<td>44.89</td></tr>
+<tr>
+<td><span>Retention</span></td>
+<td>99.52</td>
+<td>97.62</td>
+<td>91.94</td>
+<td>98.05</td>
+<td>99.12</td>
+<td>94.22</td>
+<td>98.95</td>
+<td>93.80</td>
+<td><span>100.24</span></td>
+<td>86.78</td>
+<td>96.71</td>
+<td>95.61</td>
+<td>96.46</td></tr>
+</table></div><div class="tbl-foot">원 논문의 표를 HTML로 재구성했다. 굵게 표시된 값과 통계 표기는 원문 기준이다.</div></div><div class="tbl-wrap"><div class="tbl-cap"><span class="tn">TABLE 12</span>Raw Last-K·Last-K·Top-K 비교</div><div class="tbl-scroll"><table>
+<tr>
+<td>Method</td>
+<td>DL19</td>
+<td>DL20</td>
+<td>Avg.</td></tr>
+<tr>
+<td>Raw Last-K KV reuse</td>
+<td>72.64</td>
+<td>65.68</td>
+<td>69.16</td></tr>
+<tr>
+<td>Last-K selection</td>
+<td>73.56</td>
+<td>67.98</td>
+<td>70.77</td></tr>
+<tr>
+<td>Attention-guided Top-K</td>
+<td><span>74.30</span></td>
+<td><span>68.58</span></td>
+<td><span>71.44</span></td></tr>
+</table></div><div class="tbl-foot">원 논문의 표를 HTML로 재구성했다. 굵게 표시된 값과 통계 표기는 원문 기준이다.</div></div><div class="call arb"><div class="ct">적용 판단</div><p>문서 집합이 안정적이고 같은 문서가 여러 질의에 반복 등장할수록 유리하다. 실시간으로 문서가 계속 바뀌거나 재사용률이 낮다면 오프라인 압축·저장 비용을 먼저 계산해야 한다.</p></div>
+</section>
+<section class="ch" id="gloss">
+<div class="ch-eyebrow"><span class="cnum">＋</span><span class="clabel">Glossary · 핵심 용어</span></div>
+<h2 class="ch-title">핵심 용어 정리</h2>
+<div class="tldr"><div class="h">한눈에 요약</div><p>논문의 주장을 따라가는 데 필요한 용어만 간결하게 모았다.</p></div>
+<div class="gloss"><div class="gitem"><div class="term">재랭킹<span class="en">Reranking</span></div><p>1차 검색 후보를 더 강한 모델로 다시 점수화해 순서를 고치는 단계.</p></div><div class="gitem"><div class="term">Pointwise<span class="en">Pointwise reranking</span></div><p>각 질문–문서 쌍을 독립적으로 입력해 관련성 점수를 내는 방식.</p></div><div class="gitem"><div class="term">KV cache<span class="en">Key-value cache</span></div><p>Transformer 각 층에서 이미 계산한 attention key와 value를 저장해 다시 쓰는 상태.</p></div><div class="gitem"><div class="term">문서 prefix<span class="en">Document prefix</span></div><p>문서 핵심 표현에서 미리 만든 다층 KV 상태로, 질의 앞에 계산된 컨텍스트처럼 주입된다.</p></div><div class="gitem"><div class="term">Top-K 선택<span class="en">Top-K selection</span></div><p>attention 점수가 큰 문서 토큰 K개만 골라 압축 표현으로 쓰는 방법.</p></div><div class="gitem"><div class="term">NDCG@10<span class="en">Normalized Discounted Cumulative Gain</span></div><p>관련 문서가 상위 10개 안에서 얼마나 좋은 순서로 배치됐는지 평가하는 검색 지표.</p></div><div class="gitem"><div class="term">상각<span class="en">Amortization</span></div><p>한 번 든 오프라인 비용을 여러 온라인 요청에 나눠 요청당 부담을 낮추는 것.</p></div></div>
+</section>
+<section class="ch" id="take">
+<div class="ch-eyebrow"><span class="cnum">＋</span><span class="clabel">One-page Summary · 한 장 정리</span></div>
+<h2 class="ch-title">이 논문을 한 장으로</h2>
+<div class="tldr"><div class="h">한눈에 요약</div><p>문제, 방법, 증거, 한계를 한 번에 다시 정리한다.</p></div>
+<div class="takeaways"><div class="take"><div class="n">01</div><div class="body">기존 pointwise LLM 재랭커는 같은 문서를 질의마다 반복 인코딩한다.</div></div><div class="take"><div class="n">02</div><div class="body">DoPR은 문서 핵심 토큰을 다층 KV prefix로 오프라인 저장해 재사용한다.</div></div><div class="take"><div class="n">03</div><div class="body">표준 데이터셋 평균 NDCG@10 보존율은 모델 크기에 따라 97.1–99.5%였다.</div></div><div class="take"><div class="n">04</div><div class="body">온라인 문서 메모리는 8배 줄었고 Covid의 Qwen3-8B 지연은 최대 8.04배 단축됐다.</div></div><div class="take"><div class="n">05</div><div class="body">긴 문서와 반복 조회일수록 오프라인 비용 상각 효과가 크다.</div></div><div class="take"><div class="n">06</div><div class="body">Llama-3.2와 추가 BEIR에서도 평가해 백본·데이터셋 일반화를 보였다.</div></div><div class="take"><div class="n">07</div><div class="body">동적 문서나 낮은 재사용률에서는 prefix 생성·저장 비용이 이득을 상쇄할 수 있다.</div></div></div>
+</section>

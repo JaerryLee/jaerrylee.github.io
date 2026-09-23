@@ -1,0 +1,81 @@
+<section class="ch" id="c1">
+<div class="ch-eyebrow"><span class="cnum">01</span><span class="clabel">Problem · 문제</span></div>
+<h2 class="ch-title">과학 질문은 정답 근거가 여러 논문에 흩어져 있을 수 있다</h2>
+<div class="tldr"><div class="h">한눈에 요약</div><p>LitTraceQA는 질문에 답하는 논문을 찾고, 논문 안의 근거를 짚고, 여러 논문의 사실을 합쳐야 한다. 질문에 직접 비슷한 논문만 찾으면 연결은 약하지만 중요한 논문을 놓칠 수 있다.</p></div>
+<p class="lead">Lit3R은 검색(Retrieve), 논문 관계 확장(Rel​​ate), 근거 읽기(Read)를 차례로 묶은 훈련 없는 시스템이다.</p><p>팀은 55개 검증 질문만 있는 제한된 환경에서 공개 검색·재순위화·LLM 부품을 조합했고, 공식 테스트 순위 4위를 기록했다.</p><div class="call ar"><div class="ct">초등학생도 이해하는 설명</div><p>처음 질문으로 책을 찾고, 그 책이 가리키는 다른 책도 찾아본 다음, 실제 답이 적힌 문장을 확인한다.</p></div><figure>
+<div class="fig-top"><span class="fnum">FIG 1</span><span class="ftitle">질문 검색과 논문 간 확장을 결합한 전체 흐름</span></div>
+<div class="imgbox"><img alt="질문 검색과 논문 간 확장을 결합한 전체 흐름" decoding="async" loading="lazy" src="/paper-assets/02f0d6a9f75e53cd59598326fc321360973304383bff9c31d5318c689c40efdb.png"/></div>
+<figcaption>BM25+dense 검색, 논문 순위 합치기, 청크 재순위화, 근거 검증, 논문 간 확장, 답 생성 단계를 보여준다.</figcaption>
+</figure><div class="call arb"><div class="ct">그래프 계열 판독</div><p>이 논문은 Microsoft GraphRAG처럼 문서 청크에서 엔티티·관계 그래프와 커뮤니티 보고서를 만드는 방식이 아니다. 논문 간 관계를 이용해 후보 순위를 확장하는 “paper-to-paper retrieval”이다.</p></div>
+</section>
+<section class="ch" id="c2">
+<div class="ch-eyebrow"><span class="cnum">02</span><span class="clabel">Retrieve · 질문으로 찾기</span></div>
+<h2 class="ch-title">질문을 여러 하위 질문으로 쪼개 sparse와 dense 검색을 함께 쓴다</h2>
+<div class="tldr"><div class="h">한눈에 요약</div><p>첫 단계에서 LLM이 질문을 검색 가능한 하위 질문으로 나눈다. 각 하위 질의마다 BM25 어휘 검색과 임베딩 기반 dense 검색을 합치고, 재랭커가 청크 순서를 다시 정한다. 검증기가 근거가 부족하다고 하면 필요한 내용 중심의 하위 질의를 더 만든다.</p></div>
+<p class="lead">검색 목록은 Reciprocal Rank Fusion으로 합치고, 총 50개 논문 후보를 다음 단계에 넘긴다.</p><p>BM25는 같은 단어를 포함한 문서를 잘 찾고 dense 검색은 뜻이 비슷한 표현을 찾는다. 둘을 합치면 어휘가 다르지만 의미가 맞는 논문과 이름이 직접 맞는 논문을 함께 건질 가능성이 있다.</p><div class="call ar"><div class="ct">초등학생도 이해하는 설명</div><p>단어가 똑같은 책 찾기와 뜻이 비슷한 책 찾기를 같이 해서 후보를 넓힌다.</p></div><figure>
+<div class="fig-top"><span class="fnum">FIG 2</span><span class="ftitle">검색기가 매 호출마다 받는 안내문</span></div>
+<div class="imgbox"><img alt="검색기가 매 호출마다 받는 안내문" decoding="async" loading="lazy" src="/paper-assets/4b886cfe5a5f258c37bdbd9f5bc88ef5cec9f18ea90c1cfd3d17e57215389a6d.png"/></div>
+<figcaption>전체 시스템 규칙을 보여주는 프롬프트 이미지로, 출력 형식을 고정하고 검색 역할을 제한한다.</figcaption>
+</figure><figure>
+<div class="fig-top"><span class="fnum">FIG 3</span><span class="ftitle">첫 라운드에서 질문을 하위 질문으로 쪼개기</span></div>
+<div class="imgbox"><img alt="첫 라운드에서 질문을 하위 질문으로 쪼개기" decoding="async" loading="lazy" src="/paper-assets/5149a05dc73972cfea650d1ae6bf7112b4606fceb80764eee049e520e2eedd9e.png"/></div>
+<figcaption>복합 질문의 어떤 정보 조각을 찾아야 하는지 나누고 검색 질의를 만든다.</figcaption>
+</figure><figure>
+<div class="fig-top"><span class="fnum">FIG 4</span><span class="ftitle">근거가 부족할 때 다음 검색 질의 제안</span></div>
+<div class="imgbox"><img alt="근거가 부족할 때 다음 검색 질의 제안" decoding="async" loading="lazy" src="/paper-assets/0a166f60ff8f4dc570eb3e0915f13fb4217a22938d5fef466dad19e30cf67a5c.png"/></div>
+<figcaption>검증기가 빠졌다고 보고한 정보만 겨냥해 새 질의를 만들고 중복 검색을 피한다.</figcaption>
+</figure><div class="tbl-wrap"><div class="tbl-cap"><span class="tn">TABLE 1</span>검증 질문에서 후보 논문 회수율</div>
+<div class="tbl-scroll"><table><thead><tr><th>상위 k</th><th>단일 논문 26문항</th><th>다중 논문 29문항</th><th>전체 55문항</th></tr></thead><tbody><tr><td>1</td><td>.846</td><td>.222</td><td>.517</td></tr><tr><td>5</td><td>1.000</td><td>.585</td><td>.781</td></tr><tr><td>10</td><td>1.000</td><td>.746</td><td>.866</td></tr><tr><td>20</td><td>1.000</td><td>.836</td><td>.914</td></tr><tr><td>50</td><td>1.000</td><td>.940</td><td>.968</td></tr></tbody></table></div><div class="tbl-foot">값은 정답 근거 논문 중 후보 목록에 포함된 비율이다.</div></div>
+</section>
+<section class="ch" id="c3">
+<div class="ch-eyebrow"><span class="cnum">03</span><span class="clabel">Relate · 논문 간 확장</span></div>
+<h2 class="ch-title">처음 찾은 논문과 연결된 논문을 한 번 더 따라간다</h2>
+<div class="tldr"><div class="h">한눈에 요약</div><p>검색 1위 논문에서 의미·서지정보·어휘가 연결된 다른 논문을 찾아 별도의 Ranking B를 만든다. 질문과 직접 비슷하지 않은 논문이더라도 논문 간 연결을 통해 후보로 회수될 수 있다.</p></div>
+<p class="lead">다중 논문 질문에서 Ranking A만 쓴 경우 recall@50은 .647, 관계 확장을 더하면 .940으로 올랐다.</p><p>이것은 “그래프 추론이 답을 풀었다”는 실험이 아니라, 논문 간 관계 확장이 관련 후보를 더 많이 회수했다는 실험이다. 최종 목록은 A와 B 순위를 합쳐 정한다.</p><div class="call ar"><div class="ct">초등학생도 이해하는 설명</div><p>처음 찾은 책의 참고 문헌이나 비슷한 책을 따라가면, 질문에 필요한 두 번째 책도 찾을 수 있다.</p></div><figure>
+<div class="fig-top"><span class="fnum">FIG 5</span><span class="ftitle">어떤 논문이 답에 필요한 근거를 담았는지 선택</span></div>
+<div class="imgbox"><img alt="어떤 논문이 답에 필요한 근거를 담았는지 선택" decoding="async" loading="lazy" src="/paper-assets/c04dcf633566cd83fc211f92184b3daaa95d6672b97a8b072a8443de78a77548.png"/></div>
+<figcaption>논문 단위 근거 선택과 다음 검색 여부를 정하는 검증 프롬프트다.</figcaption>
+</figure><figure>
+<div class="fig-top"><span class="fnum">FIG 6</span><span class="ftitle">학회 이름과 연도가 질문에 있을 때 검색 보정</span></div>
+<div class="imgbox"><img alt="학회 이름과 연도가 질문에 있을 때 검색 보정" decoding="async" loading="lazy" src="/paper-assets/a6544208212ee140fc5c680629048139e6a9c6d63b504c7a03709517cf8d08d7.png"/></div>
+<figcaption>학회·연도 조건이 있는 질문은 검색 질의에 해당 표식을 유지한다.</figcaption>
+</figure><div class="tbl-wrap"><div class="tbl-cap"><span class="tn">TABLE 2</span>논문 관계 확장의 기여</div>
+<div class="tbl-scroll"><table><thead><tr><th>검색 순위 구성</th><th>다중 논문 recall@50</th><th>전체 recall@50</th></tr></thead><tbody><tr><td>질문 중심 Ranking A만</td><td>.647</td><td>.814</td></tr><tr><td>질문 중심 A + 논문 관계 B</td><td>.940</td><td>.968</td></tr></tbody></table></div><div class="tbl-foot">관계 확장 B는 의미·서지·어휘 연결로 찾은 논문을 추가한다.</div></div>
+</section>
+<section class="ch" id="c4">
+<div class="ch-eyebrow"><span class="cnum">04</span><span class="clabel">Read · 근거 읽기와 답 생성</span></div>
+<h2 class="ch-title">논문을 찾는 점수와 근거를 제대로 짚는 점수는 다르다</h2>
+<div class="tldr"><div class="h">한눈에 요약</div><p>상위 후보를 논문별로 읽어 실제 답 근거가 있는 논문만 남기고, 그 뒤 여러 논문에서 사실·단위·출처를 모아 답을 합성한다. 답에는 논문 ID와 근거 위치를 붙인다.</p></div>
+<p class="lead">공식 테스트에서 논문 검색 F1은 .992였지만, 근거 연결 F1은 .737, 표 셀 정확도는 .309였다.</p><p>즉 논문을 놓치지 않는 것과 그 논문 안의 정확한 문장을 골라 수치나 표로 답을 만드는 것은 다른 어려움이다. 이 차이는 검색 시스템 평가에서 recall@k만 보지 말고 근거 추출과 답 형식도 따로 측정해야 함을 보여준다.</p><div class="call ar"><div class="ct">초등학생도 이해하는 설명</div><p>책을 잘 찾았다고 해서 그 안의 정답 문장을 잘 찾았다는 뜻은 아니다. 찾기와 읽기를 따로 점검해야 한다.</p></div><figure>
+<div class="fig-top"><span class="fnum">FIG 7</span><span class="ftitle">읽기 단계의 시스템 지침</span></div>
+<div class="imgbox"><img alt="읽기 단계의 시스템 지침" decoding="async" loading="lazy" src="/paper-assets/e7ff7aaba27669ecdbcf8d4b6f7356fb7677c99acd68ac43ac5e5d566f233a7c.png"/></div>
+<figcaption>독자 모델이 논문 텍스트와 근거를 어떻게 다룰지 제한하는 프롬프트다.</figcaption>
+</figure><figure>
+<div class="fig-top"><span class="fnum">FIG 8</span><span class="ftitle">논문 한 편씩 관련성과 근거를 판정</span></div>
+<div class="imgbox"><img alt="논문 한 편씩 관련성과 근거를 판정" decoding="async" loading="lazy" src="/paper-assets/60ed8675a8410c9d0d6171fd7bfaa27506536a3619dca1d2f16375b601536f8d.png"/></div>
+<figcaption>논문별 읽기는 답 근거가 있는지를 먼저 판정하고, 이후 여러 논문의 종합으로 넘긴다.</figcaption>
+</figure><div class="tbl-wrap"><div class="tbl-cap"><span class="tn">TABLE 3</span>공식 테스트셋 결과</div>
+<div class="tbl-scroll"><table><thead><tr><th>단계·지표</th><th>점수</th></tr></thead><tbody><tr><td>논문 검색 · macro precision</td><td>1.000</td></tr><tr><td>논문 검색 · macro recall</td><td>.989</td></tr><tr><td>논문 검색 · macro F1</td><td>.992</td></tr><tr><td>근거 연결 · macro precision</td><td>.739</td></tr><tr><td>근거 연결 · macro recall</td><td>.761</td></tr><tr><td>근거 연결 · macro F1</td><td>.737</td></tr><tr><td>객관식 정확도</td><td>1.000</td></tr><tr><td>표 행 F1</td><td>.529</td></tr><tr><td>표 셀 정확도 · macro</td><td>.309</td></tr><tr><td>표 셀 정확도 · micro</td><td>.332</td></tr></tbody></table></div><div class="tbl-foot">리더보드 4위. 논문을 찾는 것과 그 안의 정확한 근거를 짚는 것은 별도 단계다.</div></div>
+</section>
+<section class="ch" id="c5">
+<div class="ch-eyebrow"><span class="cnum">05</span><span class="clabel">Limits · 해석 경계</span></div>
+<h2 class="ch-title">높은 논문 recall이 완성된 연구 조수의 성능을 뜻하진 않는다</h2>
+<div class="tldr"><div class="h">한눈에 요약</div><p>검증 질문이 55개뿐이고, 이 같은 검증 데이터로 구성·하이퍼파라미터를 선택했다. 공개 테스트에서 4위였지만, 다른 분야·질문 유형의 일반화와 독자 단계별 기여는 분리해 시험하지 않았다.</p></div>
+<p class="lead">또한 “관계 확장”은 지식 그래프 데이터베이스나 Microsoft GraphRAG와 동의어가 아니다.</p><p>이 시스템의 점수 상승은 paper-to-paper 후보 순위 확장의 이득이다. 본문 안의 엔티티·사실 지식 그래프를 만들거나 그래프 커뮤니티 요약으로 답을 생성한다는 주장은 아니다. 구현 재현에는 Azure GPT-5.4와 MinerU 3.4.3 계열 설정도 영향을 준다.</p><div class="call ar"><div class="ct">초등학생도 이해하는 설명</div><p>도서관에서 관련 책을 더 잘 찾았다는 성과는, 책 내용을 모두 틀림없이 요약했다는 뜻은 아니다.</p></div><div class="tbl-wrap"><div class="tbl-cap"><span class="tn">TABLE 4</span>Lit3R의 모델 구성</div>
+<div class="tbl-scroll"><table><thead><tr><th>단계</th><th>모델·설정</th></tr></thead><tbody><tr><td>임베딩</td><td>Qwen3-Embedding-8B (fp16)</td></tr><tr><td>재랭커</td><td>Qwen3-Reranker-8B (fp16)</td></tr><tr><td>LLM</td><td>Azure OpenAI GPT-5.4 · JSON 출력</td></tr></tbody></table></div></div><div class="tbl-wrap"><div class="tbl-cap"><span class="tn">TABLE 5</span>PDF에서 그림·표·문장을 추출할 때 쓴 MinerU 구성</div>
+<div class="tbl-scroll"><table><thead><tr><th>단계</th><th>모델</th></tr></thead><tbody><tr><td>레이아웃 분석</td><td>Layout/PP-DocLayoutV2</td></tr><tr><td>OCR</td><td>PP-OCRv5/v6 multilingual detection/recognition</td></tr><tr><td>수식 인식</td><td>UniMERNet HF small 2503; PP-FormulaNet Plus M</td></tr><tr><td>표 분류</td><td>PP-LCNet x1.0</td></tr><tr><td>표 구조 인식</td><td>SLANetPlus; UnetStructure</td></tr></tbody></table></div></div><div class="call ar"><div class="ct">LLM-Wiki에 가져올 아이디어</div><p>위키 페이지 링크·인용·비슷한 개념 페이지를 2차 확장 경로로 쓸 수는 있다. 다만 이를 GraphRAG라 부르기보다 “문서 간 관계 기반 후보 확장”으로 분류하고, 새 페이지 회수율과 근거 정확도를 별도로 재야 한다.</p></div>
+</section>
+<section class="ch" id="gloss">
+<div class="ch-eyebrow"><span class="cnum">＋</span><span class="clabel">Glossary · 핵심 용어</span></div>
+<h2 class="ch-title">핵심 용어 정리</h2>
+<div class="tldr"><div class="h">한눈에 요약</div><p>논문의 주장을 따라가는 데 필요한 용어만 간결하게 모았다.</p></div>
+<div class="gloss"><div class="gitem"><div class="term">희소 검색<span class="en">Sparse retrieval</span></div><p>BM25처럼 질문에 나온 단어가 문서에 얼마나 잘 나타나는지로 찾는 방식.</p></div><div class="gitem"><div class="term">Dense 검색<span class="en">Dense retrieval</span></div><p>질문과 문서를 임베딩 벡터로 바꾸고 의미가 가까운 것을 찾는 방식.</p></div><div class="gitem"><div class="term">RRF<span class="en">Reciprocal Rank Fusion</span></div><p>여러 순위 목록에서 각 문서의 순위를 합쳐 하나의 후보 순위를 만드는 방식.</p></div><div class="gitem"><div class="term">재랭커<span class="en">Reranker</span></div><p>검색된 후보들을 더 강한 모델로 다시 점수화해 순서를 조정하는 단계.</p></div><div class="gitem"><div class="term">후보 회수율<span class="en">Candidate recall</span></div><p>정답 근거 문서 가운데 검색 후보 목록에 들어온 비율.</p></div><div class="gitem"><div class="term">근거 정렬<span class="en">Evidence grounding</span></div><p>답의 주장을 실제 원문 문장·표·위치와 연결하는 것.</p></div></div>
+</section>
+<div class="call ar"><div class="ct">초등학생도 이해하는 설명</div><p>이 용어들을 알면 논문의 핵심 주장과 실험 결과를 더 쉽게 따라갈 수 있다.</p></div>
+<section class="ch" id="take">
+<div class="ch-eyebrow"><span class="cnum">＋</span><span class="clabel">One-page Summary · 한 장 정리</span></div>
+<h2 class="ch-title">이 논문을 한 장으로</h2>
+<div class="tldr"><div class="h">한눈에 요약</div><p>문제, 방법, 증거, 한계를 한 번에 다시 정리한다.</p></div>
+<div class="takeaways"><div class="take"><div class="n">01</div><div class="body"><b>Retrieve–Relate–Read: 질문으로 논문을 찾고, 관계로 넓히고, 근거를 읽는다.</b></div></div><div class="take"><div class="n">02</div><div class="body">BM25+sparse와 dense 검색, cross-encoder 재순위화, LLM 검증을 결합했다.</div></div><div class="take"><div class="n">03</div><div class="body">논문 관계 확장으로 다중 논문 질문의 recall@50이 .647에서 .940으로 증가했다.</div></div><div class="take"><div class="n">04</div><div class="body">공식 테스트에서 논문 검색 F1 .992, 근거 연결 F1 .737, 표 셀 정확도 .309였다.</div></div><div class="take"><div class="n">05</div><div class="body">이 논문은 Microsoft GraphRAG가 아니라 paper-to-paper ranking expansion을 쓴다.</div></div><div class="take"><div class="n">06</div><div class="body">55개 검증 질문에 의존한 단일 공유 과제 결과라 도메인 일반화는 미확인이다.</div></div></div>
+</section>
+<div class="call ar"><div class="ct">초등학생도 이해하는 설명</div><p>이 요점만 기억해도 논문이 무엇을 했고 무엇까지 증명했는지 다시 설명할 수 있다.</p></div>

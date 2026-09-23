@@ -1,0 +1,126 @@
+<section class="ch" id="c1">
+<div class="ch-eyebrow"><span class="cnum">01</span><span class="clabel">Problem · 문제 설정</span></div>
+<h2 class="ch-title">복잡성은 지식 부족보다 조합 실패를 만든다</h2>
+<div class="tldr"><div class="h">한눈에 요약</div><p>웹 에이전트는 개별 검색창이나 폼을 다룰 수 있어도, 여러 위젯과 무관한 정보가 한 화면에 함께 나오면 성공률이 급락한다.</p></div>
+<p class="lead">논문은 이 실패를 모델이 기능을 몰라서가 아니라, 이미 아는 기능을 한꺼번에 조합하지 못하는 <strong>조합적 일반화 격차</strong>로 본다.</p><p>CompWoB+에서 구성요소 수를 3개에서 8개로 늘리자 Qwen3-8B 성공률은 85%에서 19%로, GPT-4o-mini는 97%에서 46%로 내려갔다. 하위 환경을 도입하면 8개 구성요소에서 각각 61%, 88%까지 회복한다.</p><figure>
+<div class="fig-top"><span class="fnum">FIG 1</span><span class="ftitle">복잡한 웹 환경을 작은 환경으로 나누는 발상</span></div>
+<div class="imgbox"><img alt="복잡한 웹 환경을 작은 환경으로 나누는 발상" decoding="async" loading="lazy" src="/paper-assets/c7746d8151aab8420e3255ab49229a81f83db0ee07c9cb36322e4ccfa100904b.png"/></div>
+<figcaption>복잡한 전체 화면에서는 탐색과 자기평가가 모두 흔들리지만, 관련 부분만 남긴 하위 환경에서는 둘 다 개선된다는 직관과 WebArena 성능 차이를 함께 보여준다.</figcaption>
+</figure><figure>
+<div class="fig-top"><span class="fnum">FIG 2</span><span class="ftitle">CompWoB+의 조합 복잡도와 성공률</span></div>
+<div class="imgbox"><img alt="CompWoB+의 조합 복잡도와 성공률" decoding="async" loading="lazy" src="/paper-assets/a506544612c1011c0586f3eee9d59f8a625b4ed22814e75171d4f2d70fa659b2.png"/></div>
+<figcaption>동시에 등장하는 웹 구성요소가 늘수록 기본 모델의 성공률은 급락한다. TTED는 Qwen3-8B와 GPT-4o-mini 모두에서 이 하락을 크게 완화한다.</figcaption>
+</figure>
+</section>
+<section class="ch" id="c2">
+<div class="ch-eyebrow"><span class="cnum">02</span><span class="clabel">Method · 방법</span></div>
+<h2 class="ch-title">TTED는 시험 행동 중 목표와 관찰을 함께 분해하고, 행동·분해 품질을 자기평가한 뒤 통과 경험만 학습한다.</h2>
+<div class="tldr"><div class="h">한눈에 요약</div><p>TTED는 시험 행동 중 목표와 관찰을 함께 분해하고, 행동·분해 품질을 자기평가한 뒤 통과 경험만 학습한다.</p></div>
+<p class="lead">한 스텝은 네 동작으로 구성된다: 하위 목표 생성, 관련 관찰 추출, 행동 생성, 자기평가와 요약이다.</p><p>정적 단일 화면인 CompWoB+에서는 격리된 시뮬레이터로 행동을 검증해 같은 쿼리 안의 ICL 데모를 만든다. 다중 스텝 WebArena에서는 여러 하위 환경의 궤적을 모아 테스트 시점 RL로 목표 분해·관찰 분해·행동 정책을 함께 갱신한다.</p><div class="call ar"><div class="ct">핵심 설계</div><p>보상은 최종 과제의 정답 라벨이 아니라 하위 목표 정합성, 관찰 관련성, 행동 타당성의 자기평가에서 온다. 배치 전체의 advantage 정규화가 noisy off-policy 학습을 안정화한다.</p></div><figure>
+<div class="fig-top"><span class="fnum">FIG 3</span><span class="ftitle">TTED의 2단계 전체 흐름</span></div>
+<div class="imgbox"><img alt="TTED의 2단계 전체 흐름" decoding="async" loading="lazy" src="/paper-assets/a1db34a392e2c910c679ed77bd5e7ad14802ac88c34c0c5fd22999630d5adc33.png"/></div>
+<figcaption>시험 단계에서 목표와 관찰을 분해하고 행동을 자기평가한 뒤, 통과한 경험을 ICL 또는 RL로 학습해 원래 환경을 수행한다.</figcaption>
+</figure>
+</section>
+<section class="ch" id="c3">
+<div class="ch-eyebrow"><span class="cnum">03</span><span class="clabel">Results · 실험</span></div>
+<h2 class="ch-title">WebArena에서 TTED-RL은 Qwen3-8B를 12.1%에서 21.0%로 높이고, 추가 학습 없이 WorkArena에서도 22.7%를 기록했다.</h2>
+<div class="tldr"><div class="h">한눈에 요약</div><p>WebArena에서 TTED-RL은 Qwen3-8B를 12.1%에서 21.0%로 높이고, 추가 학습 없이 WorkArena에서도 22.7%를 기록했다.</p></div>
+<p class="lead">정답 보상 RL 14.8%, 전체 환경 TTT 12.5%보다 높으며 800개 하위 환경만 사용해도 19.4%에 도달했다.</p><div class="stat-row"><div class="stat"><div class="v">21.0%</div><div class="l">WebArena TTED-RL</div></div><div class="stat"><div class="v arb">12.1%</div><div class="l">기본 Qwen3-8B</div></div><div class="stat"><div class="v">22.7%</div><div class="l">WorkArena OOD</div></div></div><p>561개 WebArena 과제의 반복 실험에서 TTED 95% Wilson 구간은 [17.9, 24.6]이었고 기본 모델·정답 보상 RL·TTT보다 유의하게 높았다. Qwen3-14B에서도 19.3%에서 22.5%로 올랐지만 통계적 근거는 8B보다 약하다.</p><figure>
+<div class="fig-top"><span class="fnum">TABLE 1</span><span class="ftitle">원문 표 1</span></div>
+<div class="imgbox"><img alt="원문 표 1" decoding="async" loading="lazy" src="/paper-assets/a871e6346e7eaf1c3704354c21248ed1968ce45c8cbf77e72f51ee92694470d1.png"/></div>
+<figcaption>원문의 세부 실험 수치와 설정을 원문 표 형태 그대로 포함했다. 강조값과 비교 기준은 본문 해설과 함께 읽어야 한다.</figcaption>
+</figure><figure>
+<div class="fig-top"><span class="fnum">TABLE 2</span><span class="ftitle">원문 표 2</span></div>
+<div class="imgbox"><img alt="원문 표 2" decoding="async" loading="lazy" src="/paper-assets/999cfea32e5600ac021af452ccc15f478ec8ffce1d506083c2b51962f15d03f2.png"/></div>
+<figcaption>원문의 세부 실험 수치와 설정을 원문 표 형태 그대로 포함했다. 강조값과 비교 기준은 본문 해설과 함께 읽어야 한다.</figcaption>
+</figure><figure>
+<div class="fig-top"><span class="fnum">TABLE 3</span><span class="ftitle">원문 표 3</span></div>
+<div class="imgbox"><img alt="원문 표 3" decoding="async" loading="lazy" src="/paper-assets/a5ae01bc69caeb1bb3de748a5817752b16425d44a28db20023012487fa520496.png"/></div>
+<figcaption>원문의 세부 실험 수치와 설정을 원문 표 형태 그대로 포함했다. 강조값과 비교 기준은 본문 해설과 함께 읽어야 한다.</figcaption>
+</figure><figure>
+<div class="fig-top"><span class="fnum">TABLE 4</span><span class="ftitle">원문 표 4</span></div>
+<div class="imgbox"><img alt="원문 표 4" decoding="async" loading="lazy" src="/paper-assets/4dc8fdeca509e5c45f05bf78dbc38cc30836e6bdf6dad07ac7c89b8dc4043a71.png"/></div>
+<figcaption>원문의 세부 실험 수치와 설정을 원문 표 형태 그대로 포함했다. 강조값과 비교 기준은 본문 해설과 함께 읽어야 한다.</figcaption>
+</figure><figure>
+<div class="fig-top"><span class="fnum">FIG 4</span><span class="ftitle">WebArena에서의 테스트 시점 학습 비교</span></div>
+<div class="imgbox"><img alt="WebArena에서의 테스트 시점 학습 비교" decoding="async" loading="lazy" src="/paper-assets/0be121135ea47e568ea83ab1389bc317af78bb177046e8d9ac4533a6c0c2478e.png"/></div>
+<figcaption>동일한 Qwen3-8B에서 TTED가 전체 환경의 TTT와 정답 보상 RL보다 높은 성공률을 기록한다.</figcaption>
+</figure>
+</section>
+<section class="ch" id="c4">
+<div class="ch-eyebrow"><span class="cnum">04</span><span class="clabel">Analysis · 해석과 한계</span></div>
+<h2 class="ch-title">효과의 대부분은 목표와 관찰을 동시에 분해하는 데서 나오며, 분해가 맞아도 행동 공간 오해와 과도한 추론은 남는다.</h2>
+<div class="tldr"><div class="h">한눈에 요약</div><p>효과의 대부분은 목표와 관찰을 동시에 분해하는 데서 나오며, 분해가 맞아도 행동 공간 오해와 과도한 추론은 남는다.</p></div>
+<p class="lead">하위 목표 분해를 제거하면 21.0%에서 12.4%, 관찰 분해를 제거하면 15.0%, 둘 다 제거하면 12.5%로 떨어진다.</p><p>사례 분석에서는 TTED가 불필요한 화면 텍스트를 줄이고 검색·필터 같은 적절한 도구를 선택하게 했다. 반면 이미 정답을 읽은 뒤에도 존재하지 않는 “extract” 행동을 찾거나, 문자 그대로의 목표 해석 때문에 실패하는 경우가 있었다. 저자들은 생산 준비 시스템이 아니라 기반 프로토타입임을 명시한다.</p><figure>
+<div class="fig-top"><span class="fnum">FIG 6</span><span class="ftitle">사례 1: GitLab 관찰 화면</span></div>
+<div class="imgbox"><img alt="사례 1: GitLab 관찰 화면" decoding="async" loading="lazy" src="/paper-assets/6f425bc12a3cc7ae36056d6626d11dc8e09f7bc407038004d3a7d6f26b7a882f.png"/></div>
+<figcaption>전체 관찰에서 놓치기 쉬운 커밋 링크를 하위 목표와 관련 관찰로 고립했을 때 올바른 클릭이 가능해진 사례다.</figcaption>
+</figure><figure>
+<div class="fig-top"><span class="fnum">FIG 7</span><span class="ftitle">사례 2: 검색 기능을 활용한 고객 찾기</span></div>
+<div class="imgbox"><img alt="사례 2: 검색 기능을 활용한 고객 찾기" decoding="async" loading="lazy" src="/paper-assets/299a013444a9463cacfe3fa91b63f9d3cef394bc7991bdd0423cd8f2d08e4295.png"/></div>
+<figcaption>학습 전의 전수 훑기·환각 대신 검색 상자를 사용하는 전략을 배운 사례의 관찰 화면이다.</figcaption>
+</figure><figure>
+<div class="fig-top"><span class="fnum">FIG 8</span><span class="ftitle">사례 3: 분해가 맞아도 행동이 틀릴 수 있음</span></div>
+<div class="imgbox"><img alt="사례 3: 분해가 맞아도 행동이 틀릴 수 있음" decoding="async" loading="lazy" src="/paper-assets/6860a517d56451bbc44782d71e8364d46edde1c66d3e4dca3c50cd1192b72399.png"/></div>
+<figcaption>정답이 화면에 있어도 사용 가능한 행동 공간과 목표 해석이 맞지 않으면 과도한 추론으로 실패할 수 있음을 보여준다.</figcaption>
+</figure>
+</section>
+<section class="ch" id="c5">
+<div class="ch-eyebrow"><span class="cnum">05</span><span class="clabel">Appendix · 재현과 추가 증거</span></div>
+<h2 class="ch-title">부록은 더 큰 모델, 과제 구성, 계산비용, ICL 시뮬레이션 절차를 공개해 주장의 경계를 확인하게 한다.</h2>
+<div class="tldr"><div class="h">한눈에 요약</div><p>부록은 더 큰 모델, 과제 구성, 계산비용, ICL 시뮬레이션 절차를 공개해 주장의 경계를 확인하게 한다.</p></div>
+<p class="lead">WebArena 적응은 Qwen3-8B, 8×A100 기준이며 3,200개 하위 환경 예산을 사용한다. TTED는 평균 행동 스텝을 4.72에서 8.29로 늘리는 대신 행동 생성 입력 토큰은 6,338.9에서 3,948.2로 줄였다.</p><p>즉 성공률 향상은 공짜가 아니다. 더 많은 상호작용과 학습 시간이 들며, 선택한 WebArena 부분집합과 텍스트 접근성 트리 관찰에 기반한다.</p><figure>
+<div class="fig-top"><span class="fnum">FIG 5</span><span class="ftitle">더 큰 Qwen3-14B의 CompWoB+ 결과</span></div>
+<div class="imgbox"><img alt="더 큰 Qwen3-14B의 CompWoB+ 결과" decoding="async" loading="lazy" src="/paper-assets/e2d6ebd0644838d362fd99dc7f9c3f55db72590ac83bbd6150a382a378e48e40.png"/></div>
+<figcaption>모델 크기를 키운 보충 실험에서도 환경 분해가 조합 복잡도 증가에 따른 성능 저하를 완화한다.</figcaption>
+</figure><figure>
+<div class="fig-top"><span class="fnum">FIG 9</span><span class="ftitle">CompWoB+ 단일 화면 사례</span></div>
+<div class="imgbox"><img alt="CompWoB+ 단일 화면 사례" decoding="async" loading="lazy" src="/paper-assets/03570fcaea9b93a430d0b0ed0bfa71fb0b3af2358d5f48aafac7b5c13b4184f5.png"/></div>
+<figcaption>여러 조작을 포함한 정적 웹 과제를 하위 목표와 하위 관찰로 분리하는 예시다.</figcaption>
+</figure><figure>
+<div class="fig-top"><span class="fnum">FIG 10</span><span class="ftitle">TTED-ICL의 전체 실행 절차</span></div>
+<div class="imgbox"><img alt="TTED-ICL의 전체 실행 절차" decoding="async" loading="lazy" src="/paper-assets/37ece5d7f8cee69d28f6a13fedc7d48db093ac253c5945ff3944831c2bc372ac.png"/></div>
+<figcaption>정적 웹에서 시험 행동을 시뮬레이션하고 통과한 행동만 데모로 모아 최종 행동을 생성하는 보충 절차다.</figcaption>
+</figure><figure>
+<div class="fig-top"><span class="fnum">FIG 11</span><span class="ftitle">시뮬레이션 기반 자기평가</span></div>
+<div class="imgbox"><img alt="시뮬레이션 기반 자기평가" decoding="async" loading="lazy" src="/paper-assets/922ea84b2539d9c81fe33fe0dc3fb59afa778f2e6ddfb39d1b413c49a537a380.png"/></div>
+<figcaption>HTML 조각으로 격리된 실행 환경을 만들고 Selenium으로 행동을 검증해 부작용 없이 결정적 보상을 얻는다.</figcaption>
+</figure><figure>
+<div class="fig-top"><span class="fnum">TABLE 5</span><span class="ftitle">원문 표 5</span></div>
+<div class="imgbox"><img alt="원문 표 5" decoding="async" loading="lazy" src="/paper-assets/6863d35e8a366a38f454813c4504bc06ee1055e7137961b9620bc2b7d6d6941d.png"/></div>
+<figcaption>부록의 모델 규모·효율·과제 구성·훈련 비용을 원문 표로 보존했다.</figcaption>
+</figure><figure>
+<div class="fig-top"><span class="fnum">TABLE 6</span><span class="ftitle">원문 표 6</span></div>
+<div class="imgbox"><img alt="원문 표 6" decoding="async" loading="lazy" src="/paper-assets/81c71b3a816390954111a9ae5a9895c74fac00c715ab4861a38f95f8d53c22d5.png"/></div>
+<figcaption>부록의 모델 규모·효율·과제 구성·훈련 비용을 원문 표로 보존했다.</figcaption>
+</figure><figure>
+<div class="fig-top"><span class="fnum">TABLE 7</span><span class="ftitle">원문 표 7</span></div>
+<div class="imgbox"><img alt="원문 표 7" decoding="async" loading="lazy" src="/paper-assets/24ad7045021d6f7c46615845004b2dfaf8ff4cc9dc40ff290fde9791dc1dcf09.png"/></div>
+<figcaption>부록의 모델 규모·효율·과제 구성·훈련 비용을 원문 표로 보존했다.</figcaption>
+</figure><figure>
+<div class="fig-top"><span class="fnum">TABLE 8</span><span class="ftitle">원문 표 8</span></div>
+<div class="imgbox"><img alt="원문 표 8" decoding="async" loading="lazy" src="/paper-assets/3c7f418b43112e69b9cb9ce468b201e49a2e0b9def6786dbe3622d7e759f75f5.png"/></div>
+<figcaption>부록의 모델 규모·효율·과제 구성·훈련 비용을 원문 표로 보존했다.</figcaption>
+</figure><figure>
+<div class="fig-top"><span class="fnum">TABLE 9</span><span class="ftitle">원문 표 9</span></div>
+<div class="imgbox"><img alt="원문 표 9" decoding="async" loading="lazy" src="/paper-assets/0758aec764b97169c7a9451196106a2d57a114cdc6357112044cae2f1d8cf13e.png"/></div>
+<figcaption>부록의 모델 규모·효율·과제 구성·훈련 비용을 원문 표로 보존했다.</figcaption>
+</figure><figure>
+<div class="fig-top"><span class="fnum">TABLE 10</span><span class="ftitle">원문 표 10</span></div>
+<div class="imgbox"><img alt="원문 표 10" decoding="async" loading="lazy" src="/paper-assets/f53205e986fcb12b97a84f80e6429576fb56b15cea8832beba7a43c2f62d699d.png"/></div>
+<figcaption>부록의 모델 규모·효율·과제 구성·훈련 비용을 원문 표로 보존했다.</figcaption>
+</figure>
+</section>
+<section class="ch" id="gloss">
+<div class="ch-eyebrow"><span class="cnum">＋</span><span class="clabel">Glossary · 핵심 용어</span></div>
+<h2 class="ch-title">핵심 용어 정리</h2>
+<div class="tldr"><div class="h">한눈에 요약</div><p>논문의 주장을 따라가는 데 필요한 용어만 간결하게 모았다.</p></div>
+<div class="gloss"><div class="gitem"><div class="term">테스트 시점 환경 분해<span class="en">TTED</span></div><p>복잡한 현재 상태를 하위 목표와 관련 관찰로 좁힌 뒤 그 안에서 경험을 모으는 방법.</p></div><div class="gitem"><div class="term">조합적 일반화<span class="en">Compositional generalization</span></div><p>익숙한 부품을 처음 보는 조합으로 만났을 때도 올바르게 수행하는 능력.</p></div><div class="gitem"><div class="term">시험 행동<span class="en">Trial step</span></div><p>최종 제출 전에 하위 환경에서 탐색·검증해 학습 신호를 얻는 행동.</p></div><div class="gitem"><div class="term">생성 보상 모델<span class="en">GRM</span></div><p>LLM이 목표·관찰·행동 품질을 점수화해 보상 신호를 만드는 방식.</p></div><div class="gitem"><div class="term">분포 밖 일반화<span class="en">OOD</span></div><p>WebArena에서 적응한 정책을 별도 학습 없이 WorkArena에서 평가하는 설정.</p></div></div>
+</section>
+<section class="ch" id="take">
+<div class="ch-eyebrow"><span class="cnum">＋</span><span class="clabel">One-page Summary · 한 장 정리</span></div>
+<h2 class="ch-title">이 논문을 한 장으로</h2>
+<div class="tldr"><div class="h">한눈에 요약</div><p>문제, 방법, 증거, 한계를 한 번에 다시 정리한다.</p></div>
+<div class="takeaways"><div class="take"><div class="n">01</div><div class="body">복잡한 웹 에이전트 실패의 일부는 <b>화면 구성요소를 함께 처리하는 능력</b>의 부족이다.</div></div><div class="take"><div class="n">02</div><div class="body">TTED는 정답 라벨 없이도 하위 환경의 자기평가 경험을 ICL/RL로 학습한다.</div></div><div class="take"><div class="n">03</div><div class="body">Qwen3-8B WebArena 성공률은 <b>12.1% → 21.0%</b>, WorkArena는 22.7%였다.</div></div><div class="take"><div class="n">04</div><div class="body">목표·관찰 분해를 모두 유지해야 하며 배치 advantage 정규화가 스케일링에 중요하다.</div></div><div class="take"><div class="n">05</div><div class="body">상호작용·훈련 비용과 행동 공간 오류가 남아 있어 생산 배치 결론으로 과대해석하면 안 된다.</div></div></div>
+</section>

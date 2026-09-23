@@ -1,0 +1,61 @@
+<section class="ch" id="c1">
+<div class="ch-eyebrow"><span class="cnum">01</span><span class="clabel">Background · 배경</span></div>
+<h2 class="ch-title">높은 유사도 점수가 항상 자신감은 아니다</h2>
+<div class="tldr"><div class="h">한눈에 요약</div><p>RAG는 검색 점수가 높으면 좋은 문서라고 생각해 임계값 아래 결과를 버리곤 한다. 하지만 논리·시간 조건이 있는 질문에서는 의미가 비슷해도 정답 조건을 어기는 문서가 높은 점수를 받을 수 있다.</p></div>
+<p class="lead">저자들은 이를 <strong>Magnitude Mirage</strong>, 즉 숫자가 주는 가짜 자신감이라고 부른다.</p><p>두 질문의 최고 점수 s1이 똑같아도, 한쪽은 1등 문서가 나머지와 크게 벌어지고 다른 쪽은 모두 비슷할 수 있다.</p><div class="call ar"><div class="ct">초등학생도 이해하는 설명</div><p>시험에서 첫 문제 점수가 90점이라는 사실만 보고 전체 시험을 잘 봤다고 할 수 없다. 다른 문제 점수가 89,88인지 40,30인지도 봐야 한다.</p></div><figure>
+<div class="fig-top"><span class="fnum">FIG 1</span><span class="ftitle">같은 최고 점수, 다른 점수 모양</span></div>
+<div class="imgbox"><img alt="같은 최고 점수, 다른 점수 모양" decoding="async" loading="lazy" src="/paper-assets/103e0e67f7f14e1c82896d9d6f61a10f182b586251d1d3f4e02493ee2c77b90e.png"/></div>
+<figcaption>실패한 검색은 여러 문서 점수가 평평하고, 성공한 검색은 정답 문서가 큰 간격으로 앞선다. MaxScore AUROC .583 대비 Score Gap .724 예시다.</figcaption>
+</figure>
+</section>
+<section class="ch" id="c2">
+<div class="ch-eyebrow"><span class="cnum">02</span><span class="clabel">Method · 방법</span></div>
+<h2 class="ch-title">점수 하나 대신 상위 k개 점수의 모양을 본다</h2>
+<div class="tldr"><div class="h">한눈에 요약</div><p>Score Gap은 s1−sk, Top-k 표준편차·NQC·LSMV 등은 상위 점수들의 흩어짐을 측정한다. 모두 추가 모델 호출이나 재학습 없이 검색 결과에 이미 있는 숫자만 사용한다.</p></div>
+<p class="lead">실험은 11개 검색 아키텍처와 28개 데이터셋, 의미(BEIR)·논리(BRIGHT)·시간(TEMPO) 세 층을 포함한다.</p><p>AUROC는 “성공한 검색과 실패한 검색을 얼마나 잘 가르는가”다. 0.5는 동전 던지기와 같고 1에 가까울수록 잘 구분한다.</p><div class="call ar"><div class="ct">초등학생도 이해하는 설명</div><p>첫 번째 책의 점수만 보지 말고, 첫 책과 뒤 책들 사이에 큰 틈이 있는지도 보는 것이다.</p></div><figure>
+<div class="fig-top"><span class="fnum">FIG 2</span><span class="ftitle">LSMV가 MaxScore보다 실패를 더 잘 가르는 모습</span></div>
+<div class="imgbox"><img alt="LSMV가 MaxScore보다 실패를 더 잘 가르는 모습" decoding="async" loading="lazy" src="/paper-assets/98bb303e36ee7225ae0ec5516eaf0579636d9c30a5ea0cb6b766533fc0b41ad5.png"/></div>
+<figcaption>추론형 질의에서 MaxScore의 판별력이 무너지고 분포 기반 신호가 더 안정적이다.</figcaption>
+</figure><div class="tbl-wrap"><div class="tbl-cap"><span class="tn">TABLE 1</span>세 인지 난이도에서 zero-cost QPP 비교(AUROC@25)</div>
+<div class="tbl-scroll"><table><thead><tr><th>검색기</th><th>BEIR Max/Gap/LSMV</th><th>TEMPO Max/Gap/LSMV</th><th>BRIGHT Max/Gap/LSMV</th></tr></thead><tbody><tr><td>BM25</td><td>.701/.695/.700</td><td>.472/.526/.510</td><td>.611/.622/.624</td></tr><tr><td>BGE</td><td>.749/.805/.810</td><td>.626/.701/.705</td><td>.538/.608/.608</td></tr><tr><td>Qwen</td><td>.698/.787/.788</td><td>.536/.661/.654</td><td>.571/.653/.650</td></tr><tr><td>Instructor-Large</td><td>.583/.724/.741</td><td>.563/.664/.669</td><td>.534/.619/.608</td></tr><tr><td>Diver-Retriever</td><td>.665/.788/.789</td><td>.582/.666/.684</td><td>.543/.605/.606</td></tr></tbody></table></div></div>
+</section>
+<section class="ch" id="c3">
+<div class="ch-eyebrow"><span class="cnum">03</span><span class="clabel">Results · 결과</span></div>
+<h2 class="ch-title">분포 기반 신호로 바꾸는 효과가 지표 선택보다 5–10배 크다</h2>
+<div class="tldr"><div class="h">한눈에 요약</div><p>모든 검색기에서 variance 계열이 MaxScore보다 일관되게 높았다. 개선 폭은 같은 계열 지표끼리의 차이보다 약 5–10배 컸고, 최대 AUROC 개선은 0.16이었다.</p></div>
+<p class="lead">BRIGHT에서 MaxScore만으로는 63.5% baseline과 큰 차이가 없지만, Gap@25는 10% 선택 답변에서 74.1%를 냈다.</p><p>Score Gap과 LSMV가 전반적으로 좋은 기본값이지만, BM25·TEMPO에서는 NQC 같은 지표가 더 나은 경우도 있다.</p><div class="call ar"><div class="ct">초등학생도 이해하는 설명</div><p>점수 크기 하나를 믿는 대신, 점수들이 줄을 서며 뚝 떨어지는지 확인하면 “이 검색은 믿을 만해”를 더 잘 판단할 수 있다.</p></div><div class="tbl-wrap"><div class="tbl-cap"><span class="tn">TABLE 2</span>BRIGHT에서 선택적 답변 정확도(%)</div>
+<div class="tbl-scroll"><table><thead><tr><th>신호</th><th>10%만 답변</th><th>25%</th><th>50%</th></tr></thead><tbody><tr><td>MaxScore s1</td><td>65.8</td><td>65.6</td><td>64.5</td></tr><tr><td>Gap@25 s1−s25</td><td>74.1</td><td>71.0</td><td>68.8</td></tr><tr><td>아무 필터도 없음</td><td>63.5</td><td>63.5</td><td>63.5</td></tr></tbody></table></div></div><figure>
+<div class="fig-top"><span class="fnum">FIG 3</span><span class="ftitle">얼마나 자신 있을 때만 답할지의 곡선</span></div>
+<div class="imgbox"><img alt="얼마나 자신 있을 때만 답할지의 곡선" decoding="async" loading="lazy" src="/paper-assets/4db40ebae1632a7910942842fed7ad2dddbff70111d1dd4fbaefbd346699dcec.png"/></div>
+<figcaption>Gap@25는 답변 수를 줄여도 정확도를 더 오래 유지하고 MaxScore는 빠르게 baseline으로 내려간다.</figcaption>
+</figure><figure>
+<div class="fig-top"><span class="fnum">FIG 4</span><span class="ftitle">BRIGHT에서 표준편차와 MaxScore의 대비</span></div>
+<div class="imgbox"><img alt="BRIGHT에서 표준편차와 MaxScore의 대비" decoding="async" loading="lazy" src="/paper-assets/2a39362ef737408fb2ead5549e0e7fe0b80750e1e9abd41437b3171386854295.png"/></div>
+<figcaption>같은 MaxScore라도 실패·성공 분포가 갈리며, 분산 임계값이 더 분명한 경계를 만든다.</figcaption>
+</figure>
+</section>
+<section class="ch" id="c4">
+<div class="ch-eyebrow"><span class="cnum">04</span><span class="clabel">Interpretation · 해석</span></div>
+<h2 class="ch-title">유사도는 “닮음”, 분포는 “한 문서가 튀는가”를 말한다</h2>
+<div class="tldr"><div class="h">한눈에 요약</div><p>dense retriever는 의미가 비슷한 문서를 높게 올리도록 학습된다. 그러나 논리·시간 제약은 별도 점수로 보장하지 않으므로, 정답 문서가 배경 문서에서 분리되는 정도를 보는 편이 낫다.</p></div>
+<p class="lead">운영에서는 검증 세트로 Gap/LSMV 임계값을 정해 목표 precision이나 abstention 비율을 맞출 수 있다.</p><p>이 교체는 검색기·생성기 구조를 바꾸지 않고 기존 top-k 점수 배열에서 계산된다.</p><div class="call ar"><div class="ct">초등학생도 이해하는 설명</div><p>“이 책이 질문과 비슷해 보인다”와 “이 책만 유난히 앞서 있다”는 서로 다른 단서다. 두 번째 단서가 정답일 때 더 강할 수 있다.</p></div><div class="call ar"><div class="ct">RAG 설계 포인트</div><p>검색 점수 임계값으로 답변을 거부하는 파이프라인이라면 MaxScore만 쓰지 말고 score gap이나 LSMV를 검증해 보라. 단, 도메인별 재보정은 필요하다.</p></div>
+</section>
+<section class="ch" id="c5">
+<div class="ch-eyebrow"><span class="cnum">05</span><span class="clabel">Limits · 해석 경계</span></div>
+<h2 class="ch-title">좋은 신호지만 자동 정답 판정기는 아니다</h2>
+<div class="tldr"><div class="h">한눈에 요약</div><p>end-to-end 검증은 Qwen3.6-27B 생성기와 GPT-4o judge, 공개 BEIR·BRIGHT·TEMPO에 한정됐다. 실제 사내 코퍼스와 다른 생성기에서 같은 곡선이 나오는지는 열려 있다.</p></div>
+<p class="lead">이 논문이 고치는 것은 검색 실패를 <strong>예측하는 신호</strong>이지, 틀린 답을 완전히 제거하는 장치가 아니다.</p><p>이진 성공 정의(NDCG@k&gt;0), 단일 gold 문서가 많은 벤치마크, calibration transfer 문제도 함께 기억해야 한다.</p><div class="call ar"><div class="ct">초등학생도 이해하는 설명</div><p>신호등이 노란불이라고 꼭 사고가 나는 것은 아니지만, 속도를 줄일 좋은 경고가 된다.</p></div><div class="tbl-wrap"><div class="tbl-cap"><span class="tn">APPENDIX TABLES D.1–D.8</span>부록 표의 역할과 범위</div>
+<div class="tbl-scroll"><table><thead><tr><th>표</th><th>포함 내용</th></tr></thead><tbody><tr><td>D.1</td><td>6개 QPP 지표의 전체 AUROC@25</td></tr><tr><td>D.2</td><td>MaxScore·Gap의 Pearson 상관</td></tr><tr><td>D.3–D.5</td><td>BEIR·BRIGHT·TEMPO의 k별 AUROC/r/ρ</td></tr><tr><td>D.6–D.8</td><td>벤치마크 하위집합별 MaxScore·Gap AUROC</td></tr></tbody></table></div></div><div class="call arb"><div class="ct">실전 판독법</div><p>MaxScore·similarity threshold만 나오면 점수 크기 기반 abstention이다. Score Gap·Top-k std·NQC·LSMV가 나오면 분포 기반 QPP다.</p></div>
+</section>
+<section class="ch" id="gloss">
+<div class="ch-eyebrow"><span class="cnum">＋</span><span class="clabel">Glossary · 핵심 용어</span></div>
+<h2 class="ch-title">핵심 용어 정리</h2>
+<div class="tldr"><div class="h">한눈에 요약</div><p>논문의 주장을 따라가는 데 필요한 용어만 간결하게 모았다.</p></div>
+<div class="gloss"><div class="gitem"><div class="term">MaxScore<span class="en">s1</span></div><p>상위 1개 문서의 절대 검색 점수.</p></div><div class="gitem"><div class="term">Score Gap<span class="en">s1−sk</span></div><p>1등 점수와 k등 점수의 차이.</p></div><div class="gitem"><div class="term">LSMV<span class="en">Linearized Score Magnitude and Variance</span></div><p>점수 크기와 분산을 결합한 실용적 분포 신호.</p></div><div class="gitem"><div class="term">QPP<span class="en">Query Performance Prediction</span></div><p>검색 결과를 본 뒤 성공 가능성을 예측하는 값.</p></div><div class="gitem"><div class="term">AUROC<span class="en">Area Under ROC Curve</span></div><p>성공·실패를 얼마나 잘 구분하는지 나타내는 지표. 0.5는 무작위, 1은 완벽.</p></div></div>
+</section>
+<section class="ch" id="take">
+<div class="ch-eyebrow"><span class="cnum">＋</span><span class="clabel">One-page Summary · 한 장 정리</span></div>
+<h2 class="ch-title">이 논문을 한 장으로</h2>
+<div class="tldr"><div class="h">한눈에 요약</div><p>문제, 방법, 증거, 한계를 한 번에 다시 정리한다.</p></div>
+<div class="takeaways"><div class="take"><div class="n">01</div><div class="body"><b>높은 최고 점수만으로 검색 성공을 판단하면 안 된다.</b></div></div><div class="take"><div class="n">02</div><div class="body">논리·시간 제약에서는 의미 유사도와 조건 만족이 어긋날 수 있다.</div></div><div class="take"><div class="n">03</div><div class="body">Score Gap·LSMV는 추가 모델 호출·재학습·지연 없이 계산된다.</div></div><div class="take"><div class="n">04</div><div class="body">11개 검색기·28개 데이터셋에서 분포 기반 신호가 MaxScore보다 일관되게 좋았다.</div></div><div class="take"><div class="n">05</div><div class="body">BRIGHT 선택 답변에서 MaxScore 65.8% 대 Gap@25 74.1%(10% coverage)였다.</div></div><div class="take"><div class="n">06</div><div class="body">공개 벤치마크·단일 생성기 중심 결과이므로 운영 임계값은 자체 검증 세트로 보정해야 한다.</div></div></div>
+</section>

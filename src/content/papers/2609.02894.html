@@ -1,0 +1,921 @@
+<section class="ch" id="c1">
+<div class="ch-eyebrow"><span class="cnum">01</span><span class="clabel">Background · 배경</span></div>
+<h2 class="ch-title">왜 RAG를 두 종류로 나누는가</h2>
+<div class="tldr"><div class="h">한눈에 요약</div><p>바닐라 RAG는 문서 조각을 빠르게 찾지만 여러 사실을 이어야 하는 질문에 약할 수 있다. 그래프 RAG는 개체와 관계를 따라가며 다단계 질문을 풀기 좋지만, 모든 질문에 쓰기에는 구축·검색 비용이 크다.</p></div>
+<p class="lead">핵심 문제는 “어느 쪽이 항상 더 좋은가”가 아니라 <strong>질문마다 어느 쪽이 더 알맞은가</strong>다.</p><p>예를 들어 한 영화의 개봉연도처럼 직접 찾을 수 있는 사실은 밀집 벡터 검색으로 충분하다. 반면 “어떤 선수의 현재 팀이 자리한 도시는 어디인가”처럼 선수→팀→도시를 이어야 하면 그래프의 관계 경로가 유용하다. 기존 혼합 시스템은 개체 수 규칙이나 대형 LLM에게 이 결정을 맡겨, 라우팅 자체가 비싸거나 불안정했다.</p><figure>
+<div class="fig-top"><span class="fnum">FIG 1</span><span class="ftitle">바닐라 RAG와 그래프 RAG의 장단점</span></div>
+<div class="imgbox"><img alt="바닐라 RAG와 그래프 RAG의 장단점" decoding="async" loading="lazy" src="/paper-assets/9ce41fc95f249fe6d4480aad2c193a8373883d32c6ceb7d1c5f4a81a8edb9fbb.png"/></div>
+<figcaption>바닐라 RAG는 단순 사실 검색과 효율에서, 그래프 RAG는 다단계 관계 추론에서 상대적 이점이 있다.</figcaption>
+</figure>
+</section>
+<section class="ch" id="c2">
+<div class="ch-eyebrow"><span class="cnum">02</span><span class="clabel">Method · 방법</span></div>
+<h2 class="ch-title">작은 라우터로 먼저 고르고, 애매할 때만 질문을 다시 쓴다</h2>
+<div class="tldr"><div class="h">한눈에 요약</div><p>R²Adapter는 DeBERTa-v3-base 분류기가 질문을 바닐라 또는 그래프 RAG로 보낸다. 그래프 쪽 확률이 애매한 경우에만 LLM이 질문을 관계 삼중항의 연쇄로 풀어 쓴다.</p></div>
+<p class="lead">학습 정답은 사람이 붙인 ‘질문 난이도’가 아니다. 같은 질문을 NV-Embed-v2 기반 바닐라 RAG와 HippoRAG 2에 모두 넣고, 관련 문서의 평균 순위가 더 좋은 쪽을 선호 경로로 삼는다.</p><p>14,969개 학습 질문 중 바닐라만 정답 문서를 top-5 안에 모두 찾은 것은 33개, 그래프만 찾은 것은 662개, 둘 다 찾은 것은 14,274개였다. 둘 다 가능한 경우가 81.9%라서 단순히 ‘다단계 질문은 그래프’라고 분류하는 것보다 실제 검색 결과에 기반한 라우팅이 중요하다.</p><figure>
+<div class="fig-top"><span class="fnum">FIG 2</span><span class="ftitle">R²Adapter 전체 구조</span></div>
+<div class="imgbox"><img alt="R²Adapter 전체 구조" decoding="async" loading="lazy" src="/paper-assets/8b8ecb432d41c72b1b679be17d4f733b4cf03278767f21b008bfdbce85b12a21.png"/></div>
+<figcaption>질문은 먼저 두 RAG 경로 중 하나로 라우팅되고, 그래프 경로이면서 신뢰도가 낮을 때에만 관계 연쇄로 재작성된다.</figcaption>
+</figure><figure>
+<div class="fig-top"><span class="fnum">FIG 3</span><span class="ftitle">라우터 학습 데이터 자동 주석</span></div>
+<div class="imgbox"><img alt="라우터 학습 데이터 자동 주석" decoding="async" loading="lazy" src="/paper-assets/a89d743cfc8d563cf08e029846acbd1f8b82cc07d2e967c414b845470226e64a.png"/></div>
+<figcaption>두 검색기의 관련 문서 순위를 비교해 질문별 선호 경로와 적합성 라벨을 만든다.</figcaption>
+</figure><div class="tbl-wrap"><div class="tbl-cap"><span class="tn">TABLE 1</span>라우터 학습 코퍼스 통계</div><div class="tbl-scroll"><table>
+<thead>
+<tr>
+<th colspan="2"><span>Retrieval Coverage</span></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<th>Total queries</th>
+<td>14,969</td>
+</tr>
+<tr>
+<th>Only passage-based recalled</th>
+<td>33</td>
+</tr>
+<tr>
+<th>Only graph-based recalled</th>
+<td>662</td>
+</tr>
+<tr>
+<th>Both paradigms recalled</th>
+<td>14,274</td>
+</tr>
+<tr>
+<th colspan="2"><span>Routing Preference</span></th>
+</tr>
+<tr>
+<th>Preference for vanilla RAG</th>
+<td>87.8%</td>
+</tr>
+<tr>
+<th>Preference for graph-based RAG</th>
+<td>12.2%</td>
+</tr>
+<tr>
+<th>Both paradigms suitable</th>
+<td>81.9%</td>
+</tr>
+</tbody>
+</table></div><div class="tbl-foot">원 논문의 표를 HTML로 재구성했다. 굵게 표시된 값과 통계 표기는 원문 기준이다.</div></div>
+</section>
+<section class="ch" id="c3">
+<div class="ch-eyebrow"><span class="cnum">03</span><span class="clabel">Results · 결과</span></div>
+<h2 class="ch-title">그래프 호출을 줄이면서 평균 답변 점수는 지켰다</h2>
+<div class="tldr"><div class="h">한눈에 요약</div><p>R²Adapter를 HippoRAG 2에 붙인 조합은 세 데이터셋 평균 F1 66.9로 HippoRAG 2 단독의 65.8을 넘었다. GraphRAG 조합도 GraphRAG 단독보다 평균 EM·F1이 높았다.</p></div>
+<p class="lead">HotpotQA·2WikiMultihopQA·MuSiQue와 Llama-3.3-70B-Instruct를 사용했다.</p><p>GraphRAG 조합은 질문의 약 41%만 그래프 경로로 보내, 모든 질문에 GraphRAG를 쓰는 기준선보다 그래프 사용을 최대 59% 줄였다. HippoRAG 2 조합에서도 질문의 약 45%만 그래프 경로로 보냈다. 이는 ‘그래프가 더 정확하니 늘 쓰자’가 아니라 필요한 질문에만 계산을 쓰는 결과다.</p><div class="stat-row"><div class="stat"><div class="v">66.9</div><div class="l">HippoRAG 2 조합 평균 F1</div></div><div class="stat"><div class="v arb">최대 59%</div><div class="l">그래프 RAG 호출 감소</div></div><div class="stat"><div class="v">3개</div><div class="l">다단계 QA 벤치마크</div></div></div><div class="tbl-wrap"><div class="tbl-cap"><span class="tn">TABLE 2</span>세 QA 벤치마크의 답변 성능</div><div class="tbl-scroll"><table>
+<tbody>
+<tr>
+<th rowspan="2"><span>Method</span></th>
+<td colspan="2"><span>HotpotQA</span></td>
+<td colspan="2"><span>2Wiki</span></td>
+<td colspan="2"><span>MuSiQue</span></td>
+<td colspan="2"><span>Average</span></td>
+</tr>
+<tr>
+<td><span>EM</span></td>
+<td><span>F1</span></td>
+<td><span>EM</span></td>
+<td><span>F1</span></td>
+<td><span>EM</span></td>
+<td><span>F1</span></td>
+<td><span>EM</span></td>
+<td><span>F1</span></td>
+</tr>
+<tr>
+<th colspan="9"><span>Vanilla RAG</span></th>
+</tr>
+<tr>
+<th>BM25 <cite>(Robertson and Walker, 1994)</cite>
+</th>
+<td>52.0</td>
+<td>63.4</td>
+<td>47.9</td>
+<td>51.2</td>
+<td>20.3</td>
+<td>28.8</td>
+<td>40.1</td>
+<td>47.8</td>
+</tr>
+<tr>
+<th>Contriever <cite>(Izacard<span> et al.</span>, 2022)</cite>
+</th>
+<td>51.3</td>
+<td>62.3</td>
+<td>38.1</td>
+<td>41.9</td>
+<td>24.0</td>
+<td>31.3</td>
+<td>37.8</td>
+<td>45.2</td>
+</tr>
+<tr>
+<th>NV-Embed-v2 <cite>(Lee<span> et al.</span>, 2025a)</cite>
+</th>
+<td>61.6</td>
+<td>74.7</td>
+<td>57.8</td>
+<td>62.5</td>
+<td>34.4</td>
+<td>45.0</td>
+<td>51.3</td>
+<td>60.7</td>
+</tr>
+<tr>
+<th colspan="9"><span>Graph-based RAG</span></th>
+</tr>
+<tr>
+<th>LightRAG <cite>(Guo<span> et al.</span>, 2025)</cite>
+</th>
+<td>2.0</td>
+<td>2.4</td>
+<td>9.4</td>
+<td>11.6</td>
+<td>0.5</td>
+<td>1.6</td>
+<td>4.0</td>
+<td>5.2</td>
+</tr>
+<tr>
+<th>RAPTOR <cite>(Sarthi<span> et al.</span>, 2024)</cite>
+</th>
+<td>56.8</td>
+<td>69.5</td>
+<td>47.3</td>
+<td>52.1</td>
+<td>20.7</td>
+<td>28.9</td>
+<td>41.6</td>
+<td>50.2</td>
+</tr>
+<tr>
+<th>HippoRAG <cite>(Gutiérrez<span> et al.</span>, 2024)</cite>
+</th>
+<td>52.6</td>
+<td>63.5</td>
+<td>65.0</td>
+<td>71.8</td>
+<td>26.2</td>
+<td>35.1</td>
+<td>47.9</td>
+<td>56.8</td>
+</tr>
+<tr>
+<th>GraphRAG <cite>(Edge<span> et al.</span>, 2024)</cite>
+</th>
+<td>56.6</td>
+<td>70.5</td>
+<td>47.1</td>
+<td>53.5</td>
+<td>26.3</td>
+<td>37.9</td>
+<td>43.3</td>
+<td>54.0</td>
+</tr>
+<tr>
+<th>HippoRAG 2 <cite>(Gutiérrez<span> et al.</span>, 2025)</cite>
+</th>
+<td><span>62.5</span></td>
+<td><span>75.6</span></td>
+<td><span>66.0</span></td>
+<td><span>72.9</span></td>
+<td><span>37.6</span></td>
+<td><span>48.9</span></td>
+<td><span>55.4</span></td>
+<td><span>65.8</span></td>
+</tr>
+<tr>
+<th><span>R<sup><span>2</span></sup>Adapter<span> (GraphRAG)</span></span></th>
+<td><span>60.2</span></td>
+<td><span>74.2</span></td>
+<td><span>56.8</span></td>
+<td><span>62.8</span></td>
+<td><span>32.1</span></td>
+<td><span>43.1</span></td>
+<td><span>49.7</span></td>
+<td><span>60.0</span></td>
+</tr>
+<tr>
+<th><span>R<sup><span>2</span></sup>Adapter<span> (HippoRAG 2)</span></span></th>
+<td><span>63.1</span></td>
+<td><span>76.1</span></td>
+<td><span>65.7</span></td>
+<td><span>72.7</span></td>
+<td><span>40.0</span></td>
+<td><span>52.0</span></td>
+<td><span>56.3</span></td>
+<td><span>66.9</span></td>
+</tr>
+</tbody>
+</table></div><div class="tbl-foot">원 논문의 표를 HTML로 재구성했다. 굵게 표시된 값과 통계 표기는 원문 기준이다.</div></div><div class="tbl-wrap"><div class="tbl-cap"><span class="tn">TABLE 3</span>Recall@2·Recall@5 검색 성능</div><div class="tbl-scroll"><table>
+<tbody>
+<tr>
+<th rowspan="2"><span>Method</span></th>
+<td colspan="2"><span>HotpotQA</span></td>
+<td colspan="2"><span>2Wiki</span></td>
+<td colspan="2"><span>MuSiQue</span></td>
+<td colspan="2"><span>Average</span></td>
+</tr>
+<tr>
+<td><span>R@2</span></td>
+<td><span>R@5</span></td>
+<td><span>R@2</span></td>
+<td><span>R@5</span></td>
+<td><span>R@2</span></td>
+<td><span>R@5</span></td>
+<td><span>R@2</span></td>
+<td><span>R@5</span></td>
+</tr>
+<tr>
+<th colspan="9"><span>Vanilla RAG</span></th>
+</tr>
+<tr>
+<th>BM25 <cite>(Robertson and Walker, 1994)</cite>
+</th>
+<td>57.3</td>
+<td>74.8</td>
+<td>55.3</td>
+<td>65.3</td>
+<td>32.4</td>
+<td>43.5</td>
+<td>48.3</td>
+<td>61.2</td>
+</tr>
+<tr>
+<th>Contriever <cite>(Izacard<span> et al.</span>, 2022)</cite>
+</th>
+<td>58.4</td>
+<td>75.3</td>
+<td>46.6</td>
+<td>57.5</td>
+<td>34.8</td>
+<td>46.6</td>
+<td>46.6</td>
+<td>59.8</td>
+</tr>
+<tr>
+<th>NV-Embed-v2 <cite>(Lee<span> et al.</span>, 2025a)</cite>
+</th>
+<td><span>84.1</span></td>
+<td><span>94.4</span></td>
+<td>69.1</td>
+<td>76.6</td>
+<td>52.7</td>
+<td>69.4</td>
+<td>68.6</td>
+<td>80.1</td>
+</tr>
+<tr>
+<th colspan="9"><span>Graph-based RAG</span></th>
+</tr>
+<tr>
+<th>RAPTOR <cite>(Sarthi<span> et al.</span>, 2024)</cite>
+</th>
+<td>76.8</td>
+<td>86.9</td>
+<td>58.3</td>
+<td>66.2</td>
+<td>47.0</td>
+<td>57.8</td>
+<td>60.7</td>
+<td>70.3</td>
+</tr>
+<tr>
+<th>HippoRAG <cite>(Gutiérrez<span> et al.</span>, 2024)</cite>
+</th>
+<td>60.4</td>
+<td>77.3</td>
+<td>71.9</td>
+<td><span>90.4</span></td>
+<td>41.2</td>
+<td>53.2</td>
+<td>57.8</td>
+<td>73.6</td>
+</tr>
+<tr>
+<th>HippoRAG 2 <cite>(Gutiérrez<span> et al.</span>, 2025)</cite>
+</th>
+<td>83.3</td>
+<td><span>96.1</span></td>
+<td><span>76.5</span></td>
+<td><span>91.2</span></td>
+<td><span>54.5</span></td>
+<td><span>73.3</span></td>
+<td><span>71.4</span></td>
+<td><span>86.9</span></td>
+</tr>
+<tr>
+<th><span>R<sup><span>2</span></sup>Adapter<span> (HippoRAG 2)</span></span></th>
+<td><span>85.9</span></td>
+<td><span>96.1</span></td>
+<td><span>77.0</span></td>
+<td><span>85.1</span></td>
+<td><span>54.2</span></td>
+<td><span>72.8</span></td>
+<td><span>72.4</span></td>
+<td><span>84.7</span></td>
+</tr>
+</tbody>
+</table></div><div class="tbl-foot">원 논문의 표를 HTML로 재구성했다. 굵게 표시된 값과 통계 표기는 원문 기준이다.</div></div><div class="tbl-wrap"><div class="tbl-cap"><span class="tn">TABLE 4</span>라우터별 QA 성능</div><div class="tbl-scroll"><table>
+<thead>
+<tr>
+<th rowspan="2"><span>Method</span></th>
+<th colspan="2"><span>HotpotQA</span></th>
+<th colspan="2"><span>2Wiki</span></th>
+<th colspan="2"><span>MuSiQue</span></th>
+<th colspan="2"><span>Average</span></th>
+</tr>
+<tr>
+<th><span>EM</span></th>
+<th><span>F1</span></th>
+<th><span>EM</span></th>
+<th><span>F1</span></th>
+<th><span>EM</span></th>
+<th><span>F1</span></th>
+<th><span>EM</span></th>
+<th><span>F1</span></th>
+</tr>
+<tr>
+<th colspan="9"><span>GraphRAG</span></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<th>
+<span>w/</span> NER-Router</th>
+<td>57.5</td>
+<td>71.5</td>
+<td><span>49.7</span></td>
+<td><span>54.7</span></td>
+<td><span>29.0</span></td>
+<td><span>39.3</span></td>
+<td>45.4</td>
+<td><span>55.2</span></td>
+</tr>
+<tr>
+<th>
+<span>w/</span> LLM-Router</th>
+<td><span>59.7</span></td>
+<td><span>72.6</span></td>
+<td>49.3</td>
+<td>54.1</td>
+<td>27.7</td>
+<td>38.2</td>
+<td><span>45.6</span></td>
+<td>55.0</td>
+</tr>
+<tr>
+<th><span>w/<span> <span>R<sup><span>2</span></sup>Adapter</span>-Router</span></span></th>
+<td><span>58.8</span></td>
+<td><span>73.0</span></td>
+<td><span>55.5</span></td>
+<td><span>62.4</span></td>
+<td><span>28.5</span></td>
+<td><span>40.8</span></td>
+<td><span>47.6</span></td>
+<td><span>58.7</span></td>
+</tr>
+<tr>
+<th colspan="9"><span>HippoRAG 2</span></th>
+</tr>
+<tr>
+<th>
+<span>w/</span> NER-Router</th>
+<td><span>62.0</span></td>
+<td><span>74.7</span></td>
+<td><span>59.6</span></td>
+<td><span>64.6</span></td>
+<td><span>35.4</span></td>
+<td><span>46.2</span></td>
+<td><span>52.3</span></td>
+<td><span>61.8</span></td>
+</tr>
+<tr>
+<th>
+<span>w/</span> LLM-Router</th>
+<td>61.4</td>
+<td>74.6</td>
+<td>59.4</td>
+<td>64.2</td>
+<td>35.1</td>
+<td><span>46.2</span></td>
+<td>52.0</td>
+<td>61.7</td>
+</tr>
+<tr>
+<th><span>w/<span> <span>R<sup><span>2</span></sup>Adapter</span>-Router</span></span></th>
+<td><span>62.5</span></td>
+<td><span>75.8</span></td>
+<td><span>64.8</span></td>
+<td><span>71.7</span></td>
+<td><span>38.1</span></td>
+<td><span>49.6</span></td>
+<td><span>55.1</span></td>
+<td><span>65.7</span></td>
+</tr>
+</tbody>
+</table></div><div class="tbl-foot">원 논문의 표를 HTML로 재구성했다. 굵게 표시된 값과 통계 표기는 원문 기준이다.</div></div><figure>
+<div class="fig-top"><span class="fnum">FIG 4</span><span class="ftitle">라우터별 그래프 RAG 사용률</span></div>
+<div class="imgbox"><img alt="라우터별 그래프 RAG 사용률" decoding="async" loading="lazy" src="/paper-assets/0954c55f5334eef0a8ebbeccc123bc051294be7656c418b87652a64ce2a731dc.png"/></div>
+<figcaption>R²Adapter 라우터는 답변 품질을 유지하면서 그래프 경로 사용을 제한한다.</figcaption>
+</figure>
+</section>
+<section class="ch" id="c4">
+<div class="ch-eyebrow"><span class="cnum">04</span><span class="clabel">Rewriting &amp; Cost · 재작성과 비용</span></div>
+<h2 class="ch-title">재작성의 이득은 ‘더 많이 찾기’보다 ‘관계를 더 잘 보여주기’에 가깝다</h2>
+<div class="tldr"><div class="h">한눈에 요약</div><p>저신뢰 그래프 질문을 삼중항 연쇄로 바꾸면 답변 정확도는 개선됐지만 retrieval recall 증가는 1.5%p 미만이었다. 저자들은 재작성이 근거 수를 늘리기보다 그래프 구조와 질문을 더 잘 맞춘다고 해석한다.</p></div>
+<p class="lead">라우터만 놓고 보면 평균 16ms로 NER 규칙의 7ms보다 느리지만, LLM 라우터의 74ms보다 약 4.6배 빠르다.</p><p>재작성 임계값을 낮추면 더 많은 질문에 LLM 호출이 들어가고, 높이면 비용은 줄지만 구조가 숨은 질문을 놓칠 수 있다. 따라서 그림 5와 8의 곡선은 하나의 보편적 최적값이 아니라 품질–비용 조절 손잡이다.</p><figure>
+<div class="fig-top"><span class="fnum">FIG 5</span><span class="ftitle">재작성 임계값과 답변 정확도</span></div>
+<div class="imgbox"><img alt="재작성 임계값과 답변 정확도" decoding="async" loading="lazy" src="/paper-assets/bb7d5fe21060675c70c7cefc718a27729a18dffac0a4d46c3c932d099d2c8f4e.png"/></div>
+<figcaption>라우터 신뢰도 임계값을 바꾸며 선택적 재작성의 답변 성능을 비교한다.</figcaption>
+</figure><figure>
+<div class="fig-top"><span class="fnum">FIG 6</span><span class="ftitle">시스템별 종단 지연시간</span></div>
+<div class="imgbox"><img alt="시스템별 종단 지연시간" decoding="async" loading="lazy" src="/paper-assets/9ad78f15f64d5792b03f54c47550457cc0f0c767124941157b8b3cf298b3d454.png"/></div>
+<figcaption>라우팅 오버헤드를 포함한 전체 질의 처리 시간을 비교한다.</figcaption>
+</figure><figure>
+<div class="fig-top"><span class="fnum">FIG 7</span><span class="ftitle">라우팅 성능·그래프 사용량·시간</span></div>
+<div class="imgbox"><img alt="라우팅 성능·그래프 사용량·시간" decoding="async" loading="lazy" src="/paper-assets/54774035680928745284941fc2adb5eec8c920bef2b0fa97be998158c31dbe85.png"/></div>
+<figcaption>라우터별 정확도, 그래프 경로 비율, 라우팅 시간을 함께 보아야 한다.</figcaption>
+</figure><figure>
+<div class="fig-top"><span class="fnum">FIG 8</span><span class="ftitle">재작성 임계값과 검색 recall</span></div>
+<div class="imgbox"><img alt="재작성 임계값과 검색 recall" decoding="async" loading="lazy" src="/paper-assets/e348e57b5457f422dded23b96142dac627e4e17c37a6ac3c910840b8f8eb4dba.png"/></div>
+<figcaption>재작성으로 답변 점수는 오르지만 관련 문서 recall 변화는 작다.</figcaption>
+</figure><div class="tbl-wrap"><div class="tbl-cap"><span class="tn">TABLE 5</span>HippoRAG 2 질의 재작성 사례</div><div class="tbl-scroll"><table>
+<thead>
+<tr>
+<th>
+<span>
+<span><span>Method</span></span>
+</span>
+</th>
+<th>
+<span>
+<span><span>Answer</span></span>
+</span>
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<span>
+<span>HippoRAG 2</span>
+</span>
+</td>
+<td>
+<span>
+<span>Maryland <span>(<span>incorrect</span>)</span></span>
+</span>
+</td>
+</tr>
+<tr>
+<td rowspan="2">
+<span>
+<span><span><span>w/</span> <span>R<sup><span>2</span></sup>Adapter</span></span></span>
+</span>
+</td>
+<td>
+<span>
+<span>from the port of Baltimore west to Sandy Hook <span>(<span>correct</span>)</span></span>
+</span>
+</td>
+</tr>
+</tbody>
+</table></div><div class="tbl-foot">원 논문의 표를 HTML로 재구성했다. 굵게 표시된 값과 통계 표기는 원문 기준이다.</div></div><div class="tbl-wrap"><div class="tbl-cap"><span class="tn">TABLE 14</span>라우팅 시간과 그래프 RAG 사용 비율</div><div class="tbl-scroll"><table>
+<thead>
+<tr>
+<th><span>Method</span></th>
+<th><span>R. T. (ms)</span></th>
+<th><span>G. Usage (%)</span></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<th>NER-Router</th>
+<td>7</td>
+<td>54.27</td>
+</tr>
+<tr>
+<th>LLM-Router</th>
+<td>74</td>
+<td>49.40</td>
+</tr>
+<tr>
+<th><span>R<sup><span>2</span></sup>Adapter<span>-Router</span></span></th>
+<td><span>16</span></td>
+<td><span>54.97</span></td>
+</tr>
+</tbody>
+</table></div><div class="tbl-foot">원 논문의 표를 HTML로 재구성했다. 굵게 표시된 값과 통계 표기는 원문 기준이다.</div></div>
+</section>
+<section class="ch" id="c5">
+<div class="ch-eyebrow"><span class="cnum">05</span><span class="clabel">Validity · 재현성과 한계</span></div>
+<h2 class="ch-title">플러그인이지만 학습 환경과 완전히 독립적인 것은 아니다</h2>
+<div class="tldr"><div class="h">한눈에 요약</div><p>라우터는 특정 검색기와 데이터에서 만든 선호 라벨을 배웠다. 검색기·문서 모음·생성 LLM이 크게 바뀌면 라벨을 다시 만들고 재학습해야 할 수 있다.</p></div>
+<p class="lead">코드는 공개됐고, 학습 데이터 구성·프롬프트·하이퍼파라미터와 세 데이터셋 통계가 부록에 제시된다.</p><p>다만 학습은 HotpotQA Hard와 NV-Embed-v2·HippoRAG 2 조합에 묶여 있다. 보지 못한 2Wiki·MuSiQue와 GraphRAG에 전이된 것은 좋은 신호지만, 실제 서비스의 짧은 질문·도메인 문서·동적 지식 그래프에서 같은 절감률을 보장하지는 않는다. 재작성 임계값도 정적으로 설정된다.</p><div class="tbl-wrap"><div class="tbl-cap"><span class="tn">TABLE 6</span>평가 데이터셋 통계</div><div class="tbl-scroll"><table>
+<thead>
+<tr>
+<th></th>
+<th><span>HotpotQA</span></th>
+<th><span>2Wiki</span></th>
+<th><span>MuSiQue</span></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<th># of queries</th>
+<td>1,000</td>
+<td>1,000</td>
+<td>1,000</td>
+</tr>
+<tr>
+<th># of passages</th>
+<td>9,811</td>
+<td>6,119</td>
+<td>11,656</td>
+</tr>
+<tr>
+<th># of nodes (HippoRAG 2)</th>
+<td>72,587</td>
+<td>40,805</td>
+<td>76,719</td>
+</tr>
+<tr>
+<th># of edges (HippoRAG 2)</th>
+<td>115,778</td>
+<td>62,806</td>
+<td>125,769</td>
+</tr>
+<tr>
+<th># of entities (GraphRAG)</th>
+<td>59,564</td>
+<td>33,874</td>
+<td>62,385</td>
+</tr>
+<tr>
+<th># of communities (GraphRAG)</th>
+<td>13,306</td>
+<td>7,590</td>
+<td>14,370</td>
+</tr>
+<tr>
+<th># of relationships (GraphRAG)</th>
+<td>109,947</td>
+<td>57,786</td>
+<td>122,395</td>
+</tr>
+</tbody>
+</table></div><div class="tbl-foot">원 논문의 표를 HTML로 재구성했다. 굵게 표시된 값과 통계 표기는 원문 기준이다.</div></div><div class="tbl-wrap"><div class="tbl-cap"><span class="tn">TABLE 7</span>LLM 라우터 프롬프트</div><div class="tbl-scroll"><table>
+<tbody>
+<tr>
+<td>
+<span>
+<span>You are an AI model tasked with classifying queries into one of two categories based on their complexity and reasoning requirements.</span>
+</span>
+</td>
+</tr>
+<tr>
+<td>
+<span>
+<span>Category Definitions</span>
+<span>1. Fact-Based Queries</span>
+</span>
+</td>
+</tr>
+<tr>
+<td>
+<span>
+<span>- The answer can be directly retrieved from a knowledge source or requires details.</span>
+</span>
+</td>
+</tr>
+<tr>
+<td>
+<span>
+<span>- The query does not require multi-step reasoning, inference, or cross-referencing multiple sources.</span>
+</span>
+</td>
+</tr>
+<tr>
+<td>
+<span>
+<span>2. Reasoning-Based Queries</span>
+</span>
+</td>
+</tr>
+<tr>
+<td>
+<span>
+<span>- The answer cannot be found in a single lookup and requires cross-referencing multiple sources, logical inference, or multistep reasoning.</span>
+</span>
+</td>
+</tr>
+<tr>
+<td>
+<span>
+<span>Output Rules:</span>
+</span>
+</td>
+</tr>
+<tr>
+<td>
+<span>
+<span>- Output ONLY a single number.</span>
+</span>
+</td>
+</tr>
+<tr>
+<td>
+<span>
+<span>- Output 0 if the query is Fact-Based.</span>
+</span>
+</td>
+</tr>
+<tr>
+<td>
+<span>
+<span>- Output 1 if the query is Reasoning-Based.</span>
+</span>
+</td>
+</tr>
+<tr>
+<td>
+<span>
+<span>- Do NOT include any explanation or extra text.</span>
+</span>
+</td>
+</tr>
+<tr>
+<td>
+<span>
+<span>Query: {<span>user query</span>}</span>
+</span>
+</td>
+</tr>
+</tbody>
+</table></div><div class="tbl-foot">원 논문의 표를 HTML로 재구성했다. 굵게 표시된 값과 통계 표기는 원문 기준이다.</div></div><div class="tbl-wrap"><div class="tbl-cap"><span class="tn">TABLE 8</span>라우터 학습 코퍼스 상세 분포</div><div class="tbl-scroll"><table>
+<thead>
+<tr>
+<th><span>Split</span></th>
+<th><span># Samples</span></th>
+<th><span>V. RAG Pref.</span></th>
+<th><span>G. RAG Pref.</span></th>
+<th><span>G. RAG Suit.</span></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Training</td>
+<td>11,975</td>
+<td>10,508</td>
+<td>1,467</td>
+<td>9,804</td>
+</tr>
+<tr>
+<td>Validation</td>
+<td>1,496</td>
+<td>1,332</td>
+<td>164</td>
+<td>1,236</td>
+</tr>
+<tr>
+<td>Testing</td>
+<td>1,498</td>
+<td>1,305</td>
+<td>193</td>
+<td>1,221</td>
+</tr>
+<tr>
+<td><span>Total</span></td>
+<td>14,969</td>
+<td>13,145</td>
+<td>1,824</td>
+<td>12,261</td>
+</tr>
+</tbody>
+</table></div><div class="tbl-foot">원 논문의 표를 HTML로 재구성했다. 굵게 표시된 값과 통계 표기는 원문 기준이다.</div></div><div class="tbl-wrap"><div class="tbl-cap"><span class="tn">TABLE 9</span>질문 유형별 학습 코퍼스</div><div class="tbl-scroll"><table>
+<thead>
+<tr>
+<th><span>Type</span></th>
+<th><span># Samples</span></th>
+<th><span>G. RAG Pref.</span></th>
+<th><span>G. RAG Suit.</span></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<th><span>BRIDGE</span></th>
+<td>11,761</td>
+<td>15.4%</td>
+<td>93.9%</td>
+</tr>
+<tr>
+<th><span>COMPARISON</span></th>
+<td>3,208</td>
+<td>0.2%</td>
+<td>94.6%</td>
+</tr>
+</tbody>
+</table></div><div class="tbl-foot">원 논문의 표를 HTML로 재구성했다. 굵게 표시된 값과 통계 표기는 원문 기준이다.</div></div><div class="tbl-wrap"><div class="tbl-cap"><span class="tn">TABLE 10</span>라우팅 선호별 개체명 통계</div><div class="tbl-scroll"><table>
+<thead>
+<tr>
+<th><span>Metric</span></th>
+<th><span>Overall</span></th>
+<th><span>V. RAG Pref.</span></th>
+<th><span>G. RAG Pref.</span></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<th>Avg. Entities / Sample</th>
+<td>2.26</td>
+<td><span>2.30</span></td>
+<td>1.97</td>
+</tr>
+<tr>
+<th>Samples w/ Entities</th>
+<td>96.5%</td>
+<td><span>96.8%</span></td>
+<td>94.2%</td>
+</tr>
+</tbody>
+</table></div><div class="tbl-foot">원 논문의 표를 HTML로 재구성했다. 굵게 표시된 값과 통계 표기는 원문 기준이다.</div></div><div class="tbl-wrap"><div class="tbl-cap"><span class="tn">TABLE 11</span>라우팅 선호별 개체 유형</div><div class="tbl-scroll"><table>
+<thead>
+<tr>
+<th><span>Entity Type</span></th>
+<th><span>V. RAG Pref.</span></th>
+<th><span>G. RAG Pref.</span></th>
+<th><math><semantics><mi>Δ</mi><annotation>\Delta</annotation></semantics></math></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<th><span>PERSON</span></th>
+<td>30.8%</td>
+<td>23.9%</td>
+<td><span>-6.9%</span></td>
+</tr>
+<tr>
+<th><span>ORG</span></th>
+<td>18.4%</td>
+<td>18.7%</td>
+<td><span>+0.3%</span></td>
+</tr>
+<tr>
+<th><span>DATE</span></th>
+<td>11.2%</td>
+<td>16.0%</td>
+<td><span>+4.8%</span></td>
+</tr>
+<tr>
+<th><span>GPE</span></th>
+<td>12.1%</td>
+<td>10.4%</td>
+<td><span>-1.7%</span></td>
+</tr>
+<tr>
+<th><span>NORP</span></th>
+<td>9.2%</td>
+<td>10.1%</td>
+<td><span>+0.9%</span></td>
+</tr>
+</tbody>
+</table></div><div class="tbl-foot">원 논문의 표를 HTML로 재구성했다. 굵게 표시된 값과 통계 표기는 원문 기준이다.</div></div><div class="tbl-wrap"><div class="tbl-cap"><span class="tn">TABLE 12</span>라우터 학습 하이퍼파라미터</div><div class="tbl-scroll"><table>
+<tbody>
+<tr>
+<th><span>Hyperparameter</span></th>
+<td><span>Value</span></td>
+</tr>
+<tr>
+<th>Learning Rate</th>
+<td><math><semantics><mrow><mn>1</mn><mo>×</mo><msup><mn>10</mn><mrow><mo>−</mo><mn>5</mn></mrow></msup></mrow><annotation>1\times 10^{-5}</annotation></semantics></math></td>
+</tr>
+<tr>
+<th>Batch Size</th>
+<td>64</td>
+</tr>
+<tr>
+<th>Training Epochs</th>
+<td>1</td>
+</tr>
+<tr>
+<th>Warmup Ratio</th>
+<td>0.1</td>
+</tr>
+<tr>
+<th>Evaluation Steps</th>
+<td>50</td>
+</tr>
+<tr>
+<th><math><semantics><mi>α</mi><annotation>\alpha</annotation></semantics></math></th>
+<td>0.25</td>
+</tr>
+<tr>
+<th><math><semantics><mi>γ</mi><annotation>\gamma</annotation></semantics></math></th>
+<td>2.0</td>
+</tr>
+<tr>
+<th><math><semantics><mrow><mi>Δ</mi><mo>​</mo><mi>τ</mi></mrow><annotation>\Delta\tau</annotation></semantics></math></th>
+<td>0.02</td>
+</tr>
+</tbody>
+</table></div><div class="tbl-foot">원 논문의 표를 HTML로 재구성했다. 굵게 표시된 값과 통계 표기는 원문 기준이다.</div></div><div class="tbl-wrap"><div class="tbl-cap"><span class="tn">TABLE 13</span>저신뢰 그래프 질의 재작성 프롬프트</div><div class="tbl-scroll"><table>
+<tbody>
+<tr>
+<td>
+<span>
+<span>You are an expert in query rewriting for **knowledge graph-based retrieval systems**.</span>
+</span>
+</td>
+</tr>
+<tr>
+<td>
+<span>
+<span>Your task is to convert the given natural language question into one or more **structured triplets** of the form:</span>
+<span>
+<span><span>
+<span></span>
+<span><span>[head_entity, relation, tail_entity]</span></span>
+<span></span></span></span>
+</span>
+<span>Each triplet represents a relational fact or reasoning step used to answer the question.</span>
+<span>### Rules</span>
+<span>
+<span><span><span>1.</span></span>
+<span>
+<span>The final answer should be represented by **a triplet containing a question mark (?)** in place of the unknown target entity.</span>
+<span>
+<span><span><span>-</span></span>
+<span>
+<span>Example: “Who founded Tesla?” → <span>[?, founded, Tesla_Inc.]</span></span>
+</span></span>
+</span>
+</span></span>
+<span><span><span>2.</span></span>
+<span>
+<span>Not every triplet must contain a question mark.</span>
+<span>
+<span><span><span>-</span></span>
+<span>
+<span>Intermediate steps may include unknown or inferred entities.</span>
+</span></span>
+</span>
+</span></span>
+<span><span><span>3.</span></span>
+<span>
+<span>For **unknown intermediate entities**, use **angle brackets ‘&lt;…&gt;’** with a short descriptive phrase.</span>
+<span>
+<span><span><span>-</span></span>
+<span>
+<span>Example: “Who taught the author of ’The Republic’?” →</span>
+</span></span>
+<span><span></span>
+<span>
+<span><span>[&lt;the author of ‘The Republic’&gt;, wrote, ‘The Republic’]</span></span>
+</span></span>
+<span><span></span>
+<span>
+<span><span>[?, taught, &lt;the author of ‘The Republic’&gt;]</span></span>
+</span></span>
+</span>
+</span></span>
+<span><span><span>4.</span></span>
+<span>
+<span>The **order of triplets should follow the reasoning flow** required to answer the question (from known → inferred → target).</span>
+</span></span>
+<span><span><span>5.</span></span>
+<span>
+<span>Avoid natural language explanations or commentary, only output the final structured reasoning chain.</span>
+</span></span>
+</span>
+<span>### Output Format</span>
+<span>Output as a **list of reasoning steps**, each in the following format:</span>
+<span>
+<span><span>
+<span></span>
+<span><span>[head_entity, relation, tail_entity]</span></span>
+<span></span></span></span>
+</span>
+<span>If multiple steps exist, write them in logical order.</span>
+<span>Original Question: {<span>user query</span>}</span>
+<span>Triplet Reasoning Chain:</span>
+</span>
+</td>
+</tr>
+</tbody>
+</table></div><div class="tbl-foot">원 논문의 표를 HTML로 재구성했다. 굵게 표시된 값과 통계 표기는 원문 기준이다.</div></div><div class="call arb"><div class="ct">읽을 때 주의할 점</div><p>그래프 호출 59% 감소는 GraphRAG 조합에서의 최대치다. 모든 그래프 RAG와 모든 트래픽에서 고정적으로 59% 절감된다는 뜻은 아니다.</p></div>
+</section>
+<section class="ch" id="gloss">
+<div class="ch-eyebrow"><span class="cnum">＋</span><span class="clabel">Glossary · 핵심 용어</span></div>
+<h2 class="ch-title">핵심 용어 정리</h2>
+<div class="tldr"><div class="h">한눈에 요약</div><p>논문의 주장을 따라가는 데 필요한 용어만 간결하게 모았다.</p></div>
+<div class="gloss"><div class="gitem"><div class="term">바닐라 RAG<span class="en">Vanilla RAG</span></div><p>질문과 가까운 비정형 문서 조각을 검색해 LLM에 제공하는 기본 검색 증강 생성.</p></div><div class="gitem"><div class="term">그래프 RAG<span class="en">Graph-based RAG</span></div><p>개체와 관계를 그래프로 만들고 경로·이웃·커뮤니티를 이용해 근거를 찾는 RAG.</p></div><div class="gitem"><div class="term">라우터<span class="en">Router</span></div><p>질문마다 어느 검색 경로를 사용할지 고르는 경량 분류기.</p></div><div class="gitem"><div class="term">질의 재작성<span class="en">Query rewriting</span></div><p>숨은 다단계 관계를 주어–관계–목적어 형태로 드러내도록 질문을 바꾸는 과정.</p></div><div class="gitem"><div class="term">Recall@k<span class="en">Recall at k</span></div><p>상위 k개 검색 결과가 필요한 관련 문서를 얼마나 포함하는지 나타내는 비율.</p></div><div class="gitem"><div class="term">EM / F1<span class="en">Exact Match / F1</span></div><p>정답 문자열 완전 일치율과 토큰 단위 겹침 정도를 재는 QA 지표.</p></div></div>
+</section>
+<section class="ch" id="take">
+<div class="ch-eyebrow"><span class="cnum">＋</span><span class="clabel">One-page Summary · 한 장 정리</span></div>
+<h2 class="ch-title">이 논문을 한 장으로</h2>
+<div class="tldr"><div class="h">한눈에 요약</div><p>문제, 방법, 증거, 한계를 한 번에 다시 정리한다.</p></div>
+<div class="takeaways"><div class="take"><div class="n">01</div><div class="body">간단한 질문은 빠른 바닐라 RAG, 관계 추론이 필요한 질문은 그래프 RAG로 보낸다.</div></div><div class="take"><div class="n">02</div><div class="body">라우터는 LLM 호출 대신 DeBERTa-v3-base로 구현해 평균 16ms가 걸렸다.</div></div><div class="take"><div class="n">03</div><div class="body">14,969개 질문을 두 검색기에 실제로 넣은 결과로 라우팅 라벨을 만들었다.</div></div><div class="take"><div class="n">04</div><div class="body">HippoRAG 2 조합은 세 데이터셋 평균 F1 66.9로 단독 65.8보다 높았다.</div></div><div class="take"><div class="n">05</div><div class="body">GraphRAG 조합에서는 그래프 경로 사용을 최대 59% 줄였다.</div></div><div class="take"><div class="n">06</div><div class="body">재작성은 recall보다 답변 정확도에 더 크게 기여해 <b>구조 정렬 효과</b>를 시사한다.</div></div><div class="take"><div class="n">07</div><div class="body">다른 검색기·도메인에서는 라우터 재학습이 필요할 수 있다.</div></div></div>
+</section>

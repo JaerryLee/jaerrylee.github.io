@@ -1,0 +1,138 @@
+<section class="ch" id="c1">
+<div class="ch-eyebrow"><span class="cnum">01</span><span class="clabel">Problem · 문제</span></div>
+<h2 class="ch-title">문자열은 실체가 아니다</h2>
+<div class="tldr"><div class="h">한눈에 요약</div><p>LLM이 내놓은 이름을 그대로 ID로 쓰면 같은 이름의 다른 대상은 합쳐지고, 같은 대상의 다른 이름은 중복된다. GPTKB 2.0은 외부 위키 ID 없이 생성 과정에서 이 두 문제를 함께 처리한다.</p></div>
+<p class="lead">Munich라는 도시는 Munich라는 영화와 분리하고, Île-de-France와 Île-de-France region은 같은 ID로 합쳐야 한다.</p><p>각 엔티티는 고유 ID, 대표 라벨, 한 문장 설명, 별칭 집합을 가진다. 트리플도 표면 문자열이 아니라 엔티티·관계·클래스 ID로 연결된다.</p><figure>
+<div class="fig-top"><span class="fnum">FIG 1</span><span class="ftitle">문자열 ID의 두 실패와 GPTKB 2.0</span></div>
+<div class="imgbox"><img alt="문자열 ID의 두 실패와 GPTKB 2.0" decoding="async" loading="lazy" src="/paper-assets/a905fb82ee2b67b73d31565cddbb242ea14b6161b78925ebb5b9e6c2001cf8cc.png"/></div>
+<figcaption>기준선은 동음이의 대상을 합치고 동의어를 분리하지만 GPTKB 2.0은 고유 ID와 설명으로 두 경우를 처리한다.</figcaption>
+</figure><figure>
+<div class="fig-top"><span class="fnum">TABLE 1</span><span class="ftitle">엔티티 데이터 모델 예시</span></div>
+<div class="imgbox"><img alt="엔티티 데이터 모델 예시" decoding="async" loading="lazy" src="/paper-assets/b4dd3e79890aea5b68b9082241c2eacf32ba176596862fb832353cc0dc83c217.png"/></div>
+<figcaption>ID·대표 라벨·설명·별칭을 분리해 동음이의어와 동의어를 함께 표현한다.</figcaption>
+</figure>
+</section>
+<section class="ch" id="c2">
+<div class="ch-eyebrow"><span class="cnum">02</span><span class="clabel">Pipeline · 구축 방법</span></div>
+<h2 class="ch-title">출처 트리플과 설명을 두 차례 써서 엔티티를 비중복화한다</h2>
+<div class="tldr"><div class="h">한눈에 요약</div><p>시드 엔티티에서 사실을 추출하고, 객체가 명명된 개체인지 판정한 뒤 기존 후보와 병합하거나 새 ID를 만든다. 첫 NED는 출처 트리플, 두 번째 NED는 생성된 설명을 문맥으로 사용한다.</p></div>
+<p class="lead">두 번째 단계는 Faculty of Law처럼 같은 라벨을 수백 실체가 공유하는 고밀도 동음이의어를 겨냥한다.</p><p>완전 병렬 NED는 동시에 등장한 동의어가 서로를 후보로 보지 못해 중복을 만든다. 그래서 객체 라벨을 군집화하고 먼저 등장한 대표를 우선 처리하는 guarded parallelization을 쓴다. 같은 관계-객체 라벨이 50회 이상 같은 ID로 연결되면 캐시한다.</p><figure>
+<div class="fig-top"><span class="fnum">FIG 2</span><span class="ftitle">지식 추출·NER·두 단계 NED 파이프라인</span></div>
+<div class="imgbox"><img alt="지식 추출·NER·두 단계 NED 파이프라인" decoding="async" loading="lazy" src="/paper-assets/6583c2fee725b27f86de2c2223a2c9c9f8ee604f7451e35a3d5f45bb4a6763a6.png"/></div>
+<figcaption>지식 추출과 NER는 병렬화하고, 중복 위험이 있는 NED만 라벨 군집과 빈도 규칙으로 순서를 제한한다.</figcaption>
+</figure>
+</section>
+<section class="ch" id="c3">
+<div class="ch-eyebrow"><span class="cnum">03</span><span class="clabel">Scale &amp; cost · 규모</span></div>
+<h2 class="ch-title">70일 동안 4,770만 API 호출로 3,845만 트리플을 만들었다</h2>
+<div class="tldr"><div class="h">한눈에 요약</div><p>최종 KB에는 159만 엔티티, 20.8만 관계, 6.65만 클래스가 있다. 활성 구축 시간은 70일, 총 API 비용은 6,992달러였다.</p></div>
+<p class="lead">표본 1,000개 기준으로 엔티티의 36.8%가 Wikidata에 없었다.</p><p>엔티티 객체는 기존 ID로 580만 번 병합되고 140만 개가 새로 생성됐다. 캐시는 120만 객체의 API 호출을 피했다. 50만 엔티티까지 평균 비용은 엔티티당 약 0.015달러에서 0.008달러 근처로 내려갔다.</p><figure>
+<div class="fig-top"><span class="fnum">TABLE 2</span><span class="ftitle">GPTKB 2.0 전체 규모</span></div>
+<div class="imgbox"><img alt="GPTKB 2.0 전체 규모" decoding="async" loading="lazy" src="/paper-assets/2f62c48ad8682f438f9a5fc8a69f5ac6a2e2a1666a4fe56ff9da05df9fdf7f02.png"/></div>
+<figcaption>1,592,185개 엔티티와 38,450,135개 트리플을 포함한다.</figcaption>
+</figure><figure>
+<div class="fig-top"><span class="fnum">FIG 3</span><span class="ftitle">구축 규모에 따른 객체 처리 누적량</span></div>
+<div class="imgbox"><img alt="구축 규모에 따른 객체 처리 누적량" decoding="async" loading="lazy" src="/paper-assets/c0e51f8d7a6ca8e8976386a2a2117c952981cb27840daae433729629b13434bc.png"/></div>
+<figcaption>리터럴·캐시·기존 엔티티 병합·신규 엔티티 생성의 누적 변화를 보여준다.</figcaption>
+</figure><figure>
+<div class="fig-top"><span class="fnum">FIG 4</span><span class="ftitle">50만 탐색 엔티티까지의 비용 변화</span></div>
+<div class="imgbox"><img alt="50만 탐색 엔티티까지의 비용 변화" decoding="async" loading="lazy" src="/paper-assets/e3fcee1800f88d76fef0420982599f3aa2b6dfe387601581cf5fe3a3a5262f3a.png"/></div>
+<figcaption>누적 비용은 거의 선형으로 늘지만 캐시와 병합이 증가해 엔티티당 평균 비용은 감소한다.</figcaption>
+</figure><figure>
+<div class="fig-top"><span class="fnum">TABLE 5</span><span class="ftitle">단계별 API 비용·호출·토큰</span></div>
+<div class="imgbox"><img alt="단계별 API 비용·호출·토큰" decoding="async" loading="lazy" src="/paper-assets/aa7a20ed0289f5287d1b145b91e3df6f71d00a890126036d9f2d2acfd8064fcf.png"/></div>
+<figcaption>지식 추출이 비용의 59.5%, 엔티티 처리 단계가 38.8%를 차지한다.</figcaption>
+</figure>
+</section>
+<section class="ch" id="c4">
+<div class="ch-eyebrow"><span class="cnum">04</span><span class="clabel">Evaluation · 품질</span></div>
+<h2 class="ch-title">표본 평가에서 90%대 정확도를 보였지만 표본과 평가자 한계가 있다</h2>
+<div class="tldr"><div class="h">한눈에 요약</div><p>동음이의 병합은 98%, 분할은 100%, 동의어 병합은 91%, 근접 후보 내 동의어 분할은 95%였다. 사람 평가에서 트리플 94.5%가 참, 엔티티 96%가 검증 가능으로 분류됐다.</p></div>
+<p class="lead">가장 큰 비중복화 오류는 동의어를 잘못 병합한 9%였다.</p><p>동의어 분할은 각 엔티티의 라벨 임베딩 상위 20개만 검사했으므로 아주 다른 표면형 중복은 놓칠 수 있다. 사람 트리플 평가는 저자 한 명이 200개를, 다른 저자가 그중 100개를 재평가해 90% 일치했다. 자동 평가는 웹 검색 에이전트와 생성된 설명에 의존한다.</p><figure>
+<div class="fig-top"><span class="fnum">TABLE 3</span><span class="ftitle">사람·LLM 평가 결과</span></div>
+<div class="imgbox"><img alt="사람·LLM 평가 결과" decoding="async" loading="lazy" src="/paper-assets/c119fafe75aa91121fafed43d655f21f7ea21208500dddd0bff3342c24ad814f.png"/></div>
+<figcaption>엔티티 병합·분할과 트리플·엔티티 사실성의 표본 평가다.</figcaption>
+</figure><figure>
+<div class="fig-top"><span class="fnum">TABLE 4</span><span class="ftitle">파이프라인 단계별 모델 비교</span></div>
+<div class="imgbox"><img alt="파이프라인 단계별 모델 비교" decoding="async" loading="lazy" src="/paper-assets/b9f9b869ccd5021878e0652a598d98da87bcd3eed403d74236c04614e78ceb37.png"/></div>
+<figcaption>지식 추출에는 GPT-5.1, NER·NED에는 비용 대비 정확도가 높은 GPT-5-mini를 선택했다.</figcaption>
+</figure><figure>
+<div class="fig-top"><span class="fnum">TABLE 6</span><span class="ftitle">동음이의 병합 판정 사례</span></div>
+<div class="imgbox"><img alt="동음이의 병합 판정 사례" decoding="async" loading="lazy" src="/paper-assets/6bd4ff7479f072e2de7ee3adb27bd505571eee18e81b503dcf0c337e3bcad9c4.png"/></div>
+<figcaption>같은 표면 이름을 가진 대상을 올바르게 합친 경우와 잘못 합친 경우를 보여준다.</figcaption>
+</figure><figure>
+<div class="fig-top"><span class="fnum">TABLE 7</span><span class="ftitle">동의어 병합 판정 사례</span></div>
+<div class="imgbox"><img alt="동의어 병합 판정 사례" decoding="async" loading="lazy" src="/paper-assets/e2ad5dbda8300c5dc230bb16a314ab9be92431dea91de4a9d92578a15ae520ed.png"/></div>
+<figcaption>서로 다른 라벨을 같은 실체로 합치는 과정의 성공·실패 사례다.</figcaption>
+</figure><figure>
+<div class="fig-top"><span class="fnum">TABLE 8</span><span class="ftitle">동음이의 분할 판정 사례</span></div>
+<div class="imgbox"><img alt="동음이의 분할 판정 사례" decoding="async" loading="lazy" src="/paper-assets/7a80719e232cf02a83c19ac3ab6fd8bb6d51e14ac8d4133711800134589d3a7a.png"/></div>
+<figcaption>같은 이름이지만 서로 다른 실체를 별도 ID로 유지한 사례다.</figcaption>
+</figure><figure>
+<div class="fig-top"><span class="fnum">TABLE 9</span><span class="ftitle">동의어 분할 판정 사례</span></div>
+<div class="imgbox"><img alt="동의어 분할 판정 사례" decoding="async" loading="lazy" src="/paper-assets/a07b5128fe6c8937152a6e3ba7abf3aa6a83e0e4905c9074170d6499a0ef149d.png"/></div>
+<figcaption>후보 검색 범위에서 놓쳐 중복 ID로 남은 경우를 포함한다.</figcaption>
+</figure><figure>
+<div class="fig-top"><span class="fnum">TABLE 10</span><span class="ftitle">트리플 사실성 판정 사례</span></div>
+<div class="imgbox"><img alt="트리플 사실성 판정 사례" decoding="async" loading="lazy" src="/paper-assets/20f0bc3b8f07adf19d3a32d9b651dd74bf014641fe2be26d20e3f8589ad25da2.png"/></div>
+<figcaption>참·거짓·그럴듯하지만 직접 확인되지 않은 트리플 예시다.</figcaption>
+</figure><figure>
+<div class="fig-top"><span class="fnum">TABLE 11</span><span class="ftitle">엔티티 실재성 판정 사례</span></div>
+<div class="imgbox"><img alt="엔티티 실재성 판정 사례" decoding="async" loading="lazy" src="/paper-assets/78ed9ca660650a1672e0f64bcd5fb26cb4c37473190f7498e5940176276c9305.png"/></div>
+<figcaption>검증 가능·그럴듯함·검증 불가 엔티티의 예시다.</figcaption>
+</figure>
+</section>
+<section class="ch" id="c5">
+<div class="ch-eyebrow"><span class="cnum">05</span><span class="clabel">Prompts &amp; limits · 재현성과 한계</span></div>
+<h2 class="ch-title">이 KB는 근거가 붙은 사실집이 아니라 모델 믿음의 물질화다</h2>
+<div class="tldr"><div class="h">한눈에 요약</div><p>개별 트리플에는 출처나 프로비넌스가 없고, 모델 학습 시점의 오류·편향·낡은 지식을 그대로 물려받는다. 저자들도 GPTKB 2.0을 금본위 KB가 아니라 LLM의 사실적 믿음에 대한 근사치라고 규정한다.</p></div>
+<p class="lead">규모가 커도 신뢰 근거와 최신성은 별개의 문제다.</p><p>36.8% Wikidata 신규 비율은 1,000개 표본 추정치이며, 그 신규 부분의 검증 가능 비율은 90.5%로 전체보다 낮다. 성별·지역 편향도 나타난다. 아래 프롬프트들은 구축 절차를 공개하지만 API 모델 스냅샷과 검색·평가 환경 변화까지 고정하지는 못한다.</p><figure>
+<div class="fig-top"><span class="fnum">FIG 5</span><span class="ftitle">지식 추출 프롬프트</span></div>
+<div class="imgbox"><img alt="지식 추출 프롬프트" decoding="async" loading="lazy" src="/paper-assets/bed1e7e5b5565ab274e845dee830a2ca221b2bb2497a3bbe4416123d860fd63d.png"/></div>
+<figcaption>주체와 설명에서 25–50개 이상의 사실을 트리플 JSON으로 생성하도록 한다.</figcaption>
+</figure><figure>
+<div class="fig-top"><span class="fnum">FIG 6</span><span class="ftitle">문맥 기반 개체명 판정 프롬프트</span></div>
+<div class="imgbox"><img alt="문맥 기반 개체명 판정 프롬프트" decoding="async" loading="lazy" src="/paper-assets/17642d0220c1456d52f1fb0ba9c96b5595cf167cb6cb5b2ab17e8d6261e99c27.png"/></div>
+<figcaption>객체 라벨만 보지 않고 해당 객체가 등장한 트리플을 함께 주어 명명된 개체인지 판단한다.</figcaption>
+</figure><figure>
+<div class="fig-top"><span class="fnum">FIG 7</span><span class="ftitle">트리플 문맥 NED 프롬프트</span></div>
+<div class="imgbox"><img alt="트리플 문맥 NED 프롬프트" decoding="async" loading="lazy" src="/paper-assets/b7b47efa69160391b81341de244892f14b4baad288f4520958bae53c62d95436.png"/></div>
+<figcaption>객체 라벨과 출처 트리플을 기존 후보 설명에 대조해 병합·신규·보류를 고른다.</figcaption>
+</figure><figure>
+<div class="fig-top"><span class="fnum">FIG 8</span><span class="ftitle">새 엔티티 설명 생성 프롬프트</span></div>
+<div class="imgbox"><img alt="새 엔티티 설명 생성 프롬프트" decoding="async" loading="lazy" src="/paper-assets/ae351ba5e0fcefc65e28183fbb3caea6a3e75c94a07ec730ac0c9ea945b16bcf.png"/></div>
+<figcaption>출처 트리플을 이용해 같은 이름의 다른 대상을 구분할 짧은 설명을 만든다.</figcaption>
+</figure><figure>
+<div class="fig-top"><span class="fnum">FIG 9</span><span class="ftitle">설명 문맥 NED 프롬프트</span></div>
+<div class="imgbox"><img alt="설명 문맥 NED 프롬프트" decoding="async" loading="lazy" src="/paper-assets/22aa6a6db3db7da58d25a1d6ef16da4c66759c1da2b7b2319f84dfe7213b3e22.png"/></div>
+<figcaption>생성한 설명을 같은 라벨의 고밀도 동음이의 후보들과 다시 비교한다.</figcaption>
+</figure><figure>
+<div class="fig-top"><span class="fnum">FIG 10</span><span class="ftitle">관계 비중복화 프롬프트</span></div>
+<div class="imgbox"><img alt="관계 비중복화 프롬프트" decoding="async" loading="lazy" src="/paper-assets/4b42135e82776cd8da95fb10151d88106a003ebffc6b092e639526177f2c9a2f.png"/></div>
+<figcaption>관계 라벨과 문맥 트리플을 기존 관계 설명에 대조한다.</figcaption>
+</figure><figure>
+<div class="fig-top"><span class="fnum">FIG 11</span><span class="ftitle">관계 설명 생성 프롬프트</span></div>
+<div class="imgbox"><img alt="관계 설명 생성 프롬프트" decoding="async" loading="lazy" src="/paper-assets/2311e3d49fcd083f0ccc14e89eced1c95df990d0988092111b161f8d9c4278c9.png"/></div>
+<figcaption>술어가 두 엔티티 사이에서 뜻하는 바를 한 문장으로 정의한다.</figcaption>
+</figure><figure>
+<div class="fig-top"><span class="fnum">FIG 12</span><span class="ftitle">클래스 비중복화 프롬프트</span></div>
+<div class="imgbox"><img alt="클래스 비중복화 프롬프트" decoding="async" loading="lazy" src="/paper-assets/e365bfabef2977657c810de5e37b068997014a0006a911ef2a08ca9477122eaa.png"/></div>
+<figcaption>instanceOf 객체를 기존 클래스 후보와 비교해 같은 개념인지 판단한다.</figcaption>
+</figure><figure>
+<div class="fig-top"><span class="fnum">FIG 13</span><span class="ftitle">클래스 설명 생성 프롬프트</span></div>
+<div class="imgbox"><img alt="클래스 설명 생성 프롬프트" decoding="async" loading="lazy" src="/paper-assets/fb9699e871d5a19dcbec62946ffa3bd02ed2485df3063e537ab703d092e767df.png"/></div>
+<figcaption>새 개념 클래스의 뜻을 한 문장으로 생성한다.</figcaption>
+</figure><div class="call arb"><div class="ct">올바른 사용법</div><p>GPTKB 2.0은 LLM이 무엇을 믿는지 분석하고 탐색하는 자원이다. 외부 근거가 없는 트리플을 사실 확인 데이터나 고위험 의사결정의 직접 근거로 쓰면 안 된다.</p></div>
+</section>
+<section class="ch" id="gloss">
+<div class="ch-eyebrow"><span class="cnum">＋</span><span class="clabel">Glossary · 핵심 용어</span></div>
+<h2 class="ch-title">핵심 용어 정리</h2>
+<div class="tldr"><div class="h">한눈에 요약</div><p>논문의 주장을 따라가는 데 필요한 용어만 간결하게 모았다.</p></div>
+<div class="gloss"><div class="gitem"><div class="term">지식베이스<span class="en">Knowledge base</span></div><p>엔티티와 관계를 고유 ID와 구조화된 트리플로 저장한 자원.</p></div><div class="gitem"><div class="term">정규화<span class="en">Canonicalization</span></div><p>여러 표면 이름을 안정된 하나의 ID 체계로 정리하는 과정.</p></div><div class="gitem"><div class="term">동음이의<span class="en">Homonymy</span></div><p>표면 이름은 같지만 실제 대상이 서로 다른 현상.</p></div><div class="gitem"><div class="term">동의어<span class="en">Synonymy</span></div><p>표면 이름은 다르지만 같은 실제 대상을 가리키는 현상.</p></div><div class="gitem"><div class="term">NED<span class="en">Named Entity Disambiguation</span></div><p>문맥을 이용해 새 언급이 기존 엔티티와 같은지 판단하는 단계.</p></div><div class="gitem"><div class="term">보호된 병렬화<span class="en">Guarded parallelization</span></div><p>동시 처리로 중복이 생길 가능성이 있는 객체만 순서를 제한하는 전략.</p></div></div>
+</section>
+<section class="ch" id="take">
+<div class="ch-eyebrow"><span class="cnum">＋</span><span class="clabel">One-page Summary · 한 장 정리</span></div>
+<h2 class="ch-title">이 논문을 한 장으로</h2>
+<div class="tldr"><div class="h">한눈에 요약</div><p>문제, 방법, 증거, 한계를 한 번에 다시 정리한다.</p></div>
+<div class="takeaways"><div class="take"><div class="n">01</div><div class="body">LLM 지식 추출의 핵심 병목을 <b>문자열이 아닌 실체 식별</b>로 본다.</div></div><div class="take"><div class="n">02</div><div class="body">출처 트리플과 생성 설명을 이용한 두 단계 NED를 적용한다.</div></div><div class="take"><div class="n">03</div><div class="body">최종 결과는 엔티티 1,592,185개와 트리플 38,450,135개다.</div></div><div class="take"><div class="n">04</div><div class="body">구축에는 활성 70일, API 4,770만 회, 6,992달러가 들었다.</div></div><div class="take"><div class="n">05</div><div class="body">표본 평가에서 병합·분할·사실성은 대체로 90% 이상이었다.</div></div><div class="take"><div class="n">06</div><div class="body">트리플별 근거·최신성이 없어 <b>사실 KB가 아니라 모델 믿음의 근사치</b>로 읽어야 한다.</div></div></div>
+</section>

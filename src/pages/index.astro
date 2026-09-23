@@ -2,6 +2,7 @@
 import Base from '../layouts/Base.astro'
 import PostRow from '../components/PostRow.astro'
 import { getPosts } from '../lib/posts'
+import { papers, paperTopics } from '../lib/papers'
 
 const posts = await getPosts()
 const categories = [...new Set(posts.map(post => post.data.category))]
@@ -16,6 +17,10 @@ const categories = [...new Set(posts.map(post => post.data.category))]
       <span class="current-focus"><span class="brand-dot" />현재 관심사 · LLM Ops</span>
     </div>
   </section>
+
+  <a class="paper-feature shell" href="/papers/">
+    <div><span class="eyebrow">PAPER NOTES</span><h2>논문을 설계의 질문으로 연결하기 <span aria-hidden="true">↗</span></h2><p>검색·RAG부터 에이전트 메모리와 시스템 운영까지. {papers.length}편의 한국어 해설을 {paperTopics.length}개 주제로 정리했습니다.</p></div>
+  </a>
 
   <section class="article-list shell" aria-label="기술 글 목록">
     <div class="list-tools">
@@ -33,40 +38,6 @@ const categories = [...new Set(posts.map(post => post.data.category))]
 </Base>
 
 <script>
-  const input = document.querySelector<HTMLInputElement>('#post-search')!
-  const rows = [...document.querySelectorAll<HTMLElement>('[data-post]')]
-  const buttons = [...document.querySelectorAll<HTMLButtonElement>('[data-filter]')]
-  const status = document.querySelector<HTMLElement>('#search-status')!
-  const empty = document.querySelector<HTMLElement>('#empty-state')!
-  let category = 'all'
-
-  function filterPosts() {
-    const terms = input.value.trim().toLowerCase().split(/\s+/).filter(Boolean)
-    let count = 0
-    for (const row of rows) {
-      const matches = (category === 'all' || row.dataset.category === category)
-        && terms.every(term => row.dataset.search?.includes(term))
-      row.hidden = !matches
-      if (matches) count++
-    }
-    for (const button of buttons) {
-      const selected = button.dataset.filter === category
-      button.classList.toggle('active', selected)
-      button.setAttribute('aria-pressed', String(selected))
-    }
-    status.textContent = `${count}개의 글`
-    empty.hidden = count > 0
-  }
-
-  input.addEventListener('input', filterPosts)
-  buttons.forEach(button => button.addEventListener('click', () => {
-    category = button.dataset.filter!
-    filterPosts()
-  }))
-  document.querySelector('#reset-search')?.addEventListener('click', () => {
-    category = 'all'
-    input.value = ''
-    filterPosts()
-    input.focus()
-  })
+  import { filterList } from '../scripts/filter-list'
+  filterList('개의 글')
 </script>

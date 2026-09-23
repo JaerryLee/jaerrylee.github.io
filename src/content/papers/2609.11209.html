@@ -1,0 +1,56 @@
+<section class="ch" id="c1">
+<div class="ch-eyebrow"><span class="cnum">01</span><span class="clabel">Background · 배경</span></div>
+<h2 class="ch-title">RAG 압축기를 매번 새로 돌리면 느리다</h2>
+<div class="tldr"><div class="h">한눈에 요약</div><p>RAG는 관련 문서를 찾은 뒤 긴 문맥을 줄여 LLM에 넣는다. 기존 압축기는 질문이 들어올 때마다 문서와 질문을 함께 읽어 중요도를 계산해 수백 ms를 쓴다.</p></div>
+<div class="call ar"><div class="ct">정말 쉽게 한 문장</div><p>예전에 읽어 본 문서라면, 매번 처음부터 읽지 말고 <strong>어느 단어가 중요했는지 메모를 재사용</strong>하는 압축기다.</p></div><div class="call ar"><div class="ct">초등학생도 이해하는 설명</div><p>시험 문제를 풀 때 형광펜 칠한 공책을 다시 보면, 책 전체를 처음부터 읽는 것보다 훨씬 빠르다.</p></div><p class="lead">REVA는 생성 모델의 과거 attention을 문서별 점수표로 저장하고, 다음 질문에서 그 점수로 텍스트를 잘라낸다.</p><p>저자들은 85.2–91.6%의 질문이 적어도 하나의 score-covered 문서를 다시 검색한다는 관찰에서 출발했다.</p><figure>
+<div class="fig-top"><span class="fnum">FIG 1</span><span class="ftitle">반복 문서 접근과 REVA 동기</span></div>
+<div class="imgbox"><img alt="반복 문서 접근과 REVA 동기" decoding="async" loading="lazy" src="/paper-assets/77ffe8d6398f353a6c9955e8acfe778b2ec2a2942f24501f5a6fd4a0a9c7ca6f.png"/></div>
+<figcaption>기존 압축기의 온라인 오버헤드와, 과거 attention을 재사용할 때의 품질·비용 가능성을 비교한다.</figcaption>
+</figure>
+</section>
+<section class="ch" id="c2">
+<div class="ch-eyebrow"><span class="cnum">02</span><span class="clabel">Method · 방법</span></div>
+<h2 class="ch-title">attention을 읽기 쉬운 단어 점수로 바꾼다</h2>
+<div class="tldr"><div class="h">한눈에 요약</div><p>오프라인에서 질문+답변 토큰이 문서 어느 부분을 보았는지 attention을 모은다. 토크나이저 조각을 보호된 word unit으로 합쳐 문서 키별 점수 store에 누적한다.</p></div>
+<div class="call ar"><div class="ct">초등학생도 이해하는 설명</div><p>선생님이 풀이할 때 자주 가리킨 문장에 별표를 해 두었다가, 다음 학생에게 별표 많은 문장을 먼저 보여주는 것이다.</p></div><p class="lead">온라인에서는 검색된 문서마다 저장 점수로 높은 word unit을 예산 안에서 고르고 원래 문서 순서로 다시 이어 붙인다.</p><p>REVA-local은 문서별 최소 quota를 지키고, REVA-global은 남은 예산을 문서 사이에서 재분배한다. 점수가 없는 문서는 prefix truncation으로 fallback한다.</p><figure>
+<div class="fig-top"><span class="fnum">FIG 2</span><span class="ftitle">REVA 오프라인·온라인 구조</span></div>
+<div class="imgbox"><img alt="REVA 오프라인·온라인 구조" decoding="async" loading="lazy" src="/paper-assets/e14ac09cde122076004a004cb0c20387b6c420a64a5b7f1e250681661c7638d5.png"/></div>
+<figcaption>historical attention을 score store로 만들고, 질의 때 budget-specific plain-text view로 물질화한다.</figcaption>
+</figure>
+</section>
+<section class="ch" id="c3">
+<div class="ch-eyebrow"><span class="cnum">03</span><span class="clabel">Results · 결과</span></div>
+<h2 class="ch-title">긴 문서를 줄이면서도 답변 품질은 올라갔다</h2>
+<div class="tldr"><div class="h">한눈에 요약</div><p>부분 coverage 환경에서 REVA-local은 네 데이터셋 모두 truncation보다 F1·EM을 높였다. B=512 전체 비교에서 REVA-local 온라인 오버헤드는 27.5ms로, RECOMP-e 120ms보다 훨씬 낮았다.</p></div>
+<div class="call ar"><div class="ct">초등학생도 이해하는 설명</div><p>형광펜 메모를 이용하면 읽는 시간은 짧아지고, 중요한 답을 놓치는 일도 줄어든다.</p></div><p class="lead">all-seen 실험에서 REVA-global 평균 F1 43.72, EM 32.75는 최고였고, REVA-local은 31ms로 더 싸면서 거의 같은 품질을 냈다.</p><p>이 결과는 “압축률을 높이면 무조건 나빠진다”가 아니라, 과거의 generator attention이 어떤 단어를 남길지 알려주는 재사용 신호가 유용하다는 뜻이다.</p><div class="stat-row"><div class="stat"><div class="v arb">+3.72</div><div class="l">B=512 F1 개선(부분 coverage 평균)</div></div><div class="stat"><div class="v">27.5ms</div><div class="l">REVA-local 온라인 비용</div></div><div class="stat"><div class="v">43.72</div><div class="l">REVA-global all-seen 평균 F1</div></div></div><div class="tbl-wrap"><div class="tbl-cap"><span class="tn">TABLE I</span>부분 score coverage에서 F1·EM</div>
+<div class="tbl-scroll"><table><thead><tr><th>데이터셋</th><th>coverage</th><th>Trunc F1</th><th>REVA F1</th><th>Trunc EM</th><th>REVA EM</th></tr></thead><tbody><tr><td>NQ</td><td>87.9%</td><td>33.68</td><td>38.12</td><td>22.56</td><td>25.23</td></tr><tr><td>TriviaQA</td><td>87.1%</td><td>53.70</td><td>58.18</td><td>42.64</td><td>47.57</td></tr><tr><td>HotpotQA</td><td>91.6%</td><td>27.48</td><td>31.03</td><td>16.99</td><td>20.79</td></tr><tr><td>2Wiki</td><td>85.2%</td><td>21.60</td><td>23.99</td><td>12.87</td><td>14.90</td></tr></tbody></table></div></div><div class="tbl-wrap"><div class="tbl-cap"><span class="tn">TABLE II</span>B=512 전체 비교</div>
+<div class="tbl-scroll"><table><thead><tr><th>방법</th><th>F1</th><th>EM</th><th>ROUGE-L</th><th>컨텍스트 tok</th><th>온라인 ms</th></tr></thead><tbody><tr><td>Trunc-local</td><td>34.11</td><td>24.10</td><td>30.43</td><td>512.0</td><td>17.0</td></tr><tr><td>RECOMP-e</td><td>40.19</td><td>28.49</td><td>36.21</td><td>505.9</td><td>120.0</td></tr><tr><td>REVA-local</td><td>37.83</td><td>26.98</td><td>33.65</td><td>502.3</td><td>27.5</td></tr></tbody></table></div></div><div class="tbl-wrap"><div class="tbl-cap"><span class="tn">TABLE III</span>all-seen 예산 평균</div>
+<div class="tbl-scroll"><table><thead><tr><th>방법</th><th>평균 F1</th><th>평균 EM</th><th>평균 온라인 ms</th></tr></thead><tbody><tr><td>Trunc-local</td><td>38.75</td><td>28.81</td><td>16</td></tr><tr><td>RECOMP-e</td><td>43.66</td><td>32.69</td><td>155</td></tr><tr><td>REVA-local</td><td>43.34</td><td>32.73</td><td>31</td></tr><tr><td>REVA-global</td><td>43.72</td><td>32.75</td><td>49</td></tr></tbody></table></div></div>
+</section>
+<section class="ch" id="c4">
+<div class="ch-eyebrow"><span class="cnum">04</span><span class="clabel">Ablation · 검증</span></div>
+<h2 class="ch-title">단어 단위와 원래 순서가 생각보다 중요하다</h2>
+<div class="tldr"><div class="h">한눈에 요약</div><p>토큰을 그대로 고르는 것보다 word unit으로 묶고, 중요도 내림차순이 아니라 원문 순서로 렌더링할 때 품질이 높았다. Q+A attention이 query-only보다 강한 신호였다.</p></div>
+<div class="call ar"><div class="ct">초등학생도 이해하는 설명</div><p>문장을 낱낱이 찢어 붙이지 말고 단어 묶음을 원래 문장 순서대로 놓아야 읽는 사람이 뜻을 이해한다.</p></div><p class="lead">word-unit 제거 시 Qwen3.5-9B F1은 53.52에서 52.23으로, score-order 렌더링은 50.61로 떨어졌다.</p><p>REVA는 압축 모델을 새로 호출하지 않으므로 온라인 비용이 낮지만, 오프라인 score store가 충분히 채워져야 한다. 문서가 크게 바뀌거나 generator 모델이 바뀌면 점수를 다시 만들어야 한다.</p><div class="tbl-wrap"><div class="tbl-cap"><span class="tn">TABLE IV</span>구성요소 절제</div>
+<div class="tbl-scroll"><table><thead><tr><th>모드</th><th>저장 신호</th><th>F1</th><th>ΔF1</th><th>EM</th><th>온라인 ms</th></tr></thead><tbody><tr><td>Trunc-local</td><td>없음</td><td>38.75</td><td>0.00</td><td>28.81</td><td>15.6</td></tr><tr><td>REVA-local</td><td>Q</td><td>42.29</td><td>+3.53</td><td>31.85</td><td>28.5</td></tr><tr><td>REVA-local</td><td>Q+A</td><td>43.34</td><td>+4.59</td><td>32.73</td><td>31.5</td></tr><tr><td>REVA-global</td><td>Q+A</td><td>43.72</td><td>+4.96</td><td>32.75</td><td>48.7</td></tr></tbody></table></div></div><figure>
+<div class="fig-top"><span class="fnum">FIG 3</span><span class="ftitle">예산별 품질</span></div>
+<div class="imgbox"><img alt="예산별 품질" decoding="async" loading="lazy" src="/paper-assets/d253c979553e44e3d41d5320719e61e272c14306795ea95ca5e50193e3fc5fc5.png"/></div>
+<figcaption>여러 generator·dataset에서 REVA-local/global이 압축 예산에 따라 경쟁력 있는 품질을 유지한다.</figcaption>
+</figure><figure>
+<div class="fig-top"><span class="fnum">FIG 4</span><span class="ftitle">word unit과 렌더링 순서 절제</span></div>
+<div class="imgbox"><img alt="word unit과 렌더링 순서 절제" decoding="async" loading="lazy" src="/paper-assets/800541ed2db9599370b780f1c07012671ce5a71430d4fe157cad4347ffd56eb0.png"/></div>
+<figcaption>word unit으로 묶고 원래 순서를 보존하는 조합이 가장 높은 점수를 보인다.</figcaption>
+</figure><div class="call arb"><div class="ct">검색 경험칙</div><p>REVA는 검색 그래프를 바꾸지 않는다. retriever가 뽑은 문서를 generator에 넣기 전에 과거 attention으로 문맥을 압축하는 ‘후처리 비용 최적화’ 층이다.</p></div>
+</section>
+<section class="ch" id="gloss">
+<div class="ch-eyebrow"><span class="cnum">＋</span><span class="clabel">Glossary · 핵심 용어</span></div>
+<h2 class="ch-title">핵심 용어 정리</h2>
+<div class="tldr"><div class="h">한눈에 요약</div><p>논문의 주장을 따라가는 데 필요한 용어만 간결하게 모았다.</p></div>
+<div class="gloss"><div class="gitem"><div class="term">Attention<span class="en">Attention</span></div><p>Transformer가 현재 토큰을 만들 때 입력의 어느 부분을 얼마나 참고했는지를 나타내는 가중치.</p></div><div class="gitem"><div class="term">Word unit<span class="en">Word unit</span></div><p>토크나이저 조각을 사람이 읽을 수 있는 단어·구 단위로 묶은 단위.</p></div><div class="gitem"><div class="term">Score store<span class="en">Score store</span></div><p>문서 키별로 과거 attention 중요도 합을 저장한 자료구조.</p></div><div class="gitem"><div class="term">Budget-agnostic<span class="en">Budget-agnostic</span></div><p>토큰 예산마다 별도 복사본을 만들지 않고 요청 때 원하는 예산으로 뽑는 성질.</p></div><div class="gitem"><div class="term">REVA-local/global<span class="en">REVA-local/global</span></div><p>문서별 quota를 지키는 방식과 문서 사이에서 남은 예산을 재분배하는 방식.</p></div><div class="gitem"><div class="term">Online overhead<span class="en">Online overhead</span></div><p>질의가 들어온 뒤 압축·문맥 생성에 추가로 걸리는 시간.</p></div></div>
+</section>
+<section class="ch" id="take">
+<div class="ch-eyebrow"><span class="cnum">＋</span><span class="clabel">One-page Summary · 한 장 정리</span></div>
+<h2 class="ch-title">이 논문을 한 장으로</h2>
+<div class="tldr"><div class="h">한눈에 요약</div><p>문제, 방법, 증거, 한계를 한 번에 다시 정리한다.</p></div>
+<div class="takeaways"><div class="take"><div class="n">01</div><div class="body">RAG 문서 압축을 질의별 작업이 아닌 반복 접근 데이터 마이닝으로 바꾼다.</div></div><div class="take"><div class="n">02</div><div class="body">historical Q+A attention을 문서별 word-unit 점수로 누적한다.</div></div><div class="take"><div class="n">03</div><div class="body">점수가 없는 문서는 prefix truncation으로 fallback한다.</div></div><div class="take"><div class="n">04</div><div class="body">부분 coverage 네 데이터셋에서 truncation보다 F1·EM이 모두 올랐다.</div></div><div class="take"><div class="n">05</div><div class="body">REVA-local은 27.5ms, REVA-global은 40.6ms 수준의 온라인 비용이었다.</div></div><div class="take"><div class="n">06</div><div class="body">word unit과 원문 순서 보존이 품질에 유의미했다.</div></div><div class="take"><div class="n">07</div><div class="body">문서·generator가 바뀌면 score store 재구성이 필요하다.</div></div></div>
+</section>
