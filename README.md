@@ -24,7 +24,20 @@ pnpm preview
 ```
 
 `build`는 Astro·TypeScript 검사와 Markdown 메타데이터 검증 뒤 정적 HTML을 생성한다.
-RSS와 사이트맵도 빌드된다. 글은 각각 실제 HTML 경로로 생성되어 새로고침과 직접 접근이 가능하다.
+RSS도 빌드된다. 글은 각각 실제 HTML 경로로 생성되어 새로고침과 직접 접근이 가능하다.
+
+## 검색 노출 설정
+
+블로그와 논문 노트의 모든 HTML에 `noindex, nofollow, noimageindex`를 적용한다.
+사이트맵은 생성하지 않는다. `robots.txt`는 논문 이미지·RSS·공유 이미지 수집을 제한한다.
+HTML은 검색엔진이 `noindex`를 읽을 수 있도록 수집을 허용한다. HTML까지 `Disallow: /`로 막으면
+검색 제외 지시를 읽지 못해 주소가 검색 결과에 남을 수 있다.
+
+이 설정은 검색엔진에 보내는 요청이며 인증이나 접근 제한이 아니다. 주소를 알거나 링크를 받은 방문자는
+계속 접속할 수 있고, 기존 검색 결과는 검색엔진의 재수집 후 반영된다. 공개 GitHub 저장소의 노출 범위는 별개다.
+`/portfolio/`는 별도 프로젝트 사이트이므로 이 블로그의 HTML 검색 제외 설정 대상이 아니다.
+
+- [Google의 noindex 안내](https://developers.google.com/search/docs/crawling-indexing/block-indexing)
 
 ## 논문 노트
 

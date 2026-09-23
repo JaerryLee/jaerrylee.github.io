@@ -37,7 +37,7 @@ const structuredData = {
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>{article ? `${title} · 이정재의 엔지니어링 노트` : title}</title>
     <meta name="description" content={description} />
-    {isNotFound && <meta name="robots" content="noindex" />}
+    <meta name="robots" content="noindex, nofollow, noimageindex" />
     <meta name="theme-color" content="#ffffff" />
     <link rel="canonical" href={canonical} />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />

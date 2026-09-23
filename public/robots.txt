@@ -1,3 +1,5 @@
+# HTML must remain crawlable so search engines can read its noindex directive.
 User-agent: *
-Allow: /
-Sitemap: https://jaerrylee.github.io/sitemap-index.xml
+Disallow: /paper-assets/
+Disallow: /rss.xml
+Disallow: /og.png
