@@ -92,7 +92,21 @@ category는 `LLM Ops`, `Applied AI`, `Backend`, `Agentic AI`, `Research Notes` �
 코드 블록에는 언어를 붙이면 구문 강조가 적용된다. 본문은 작성자가 관리하는 Markdown이며,
 외부 사용자의 HTML 입력을 받는 기능은 없다.
 
-## 현재 원고
+## LLMOps 연구·설계 노트
+
+2026-09-28에 로컬 `llmops/` 자료 5개를 중복 제거하고 원 논문·공식 문서와 대조해 새 글 5편으로 정리했다.
+
+1. [운영·평가·출시](src/content/posts/llmops-operating-loop.md)
+2. [프롬프트·RAG·에이전트](src/content/posts/llmops-rag-agent-design.md)
+3. [학습 데이터와 후학습](src/content/posts/llmops-post-training.md)
+4. [서빙 성능과 최적화](src/content/posts/llm-serving-performance.md)
+5. [PagedAttention 논문 해설](src/content/posts/pagedattention-memory-management.md)
+
+첫 글이 시리즈의 읽기 안내를 겸한다. 기존 관측 구현 글은 연결하되 본문을 반복하지 않는다.
+원본 HTML·내부 사진은 게시하지 않으며 `llmops/`는 로컬 참고 자료로만 유지한다.
+주요 기술 교정과 편집 범위는 [편집 기록](docs/llmops-editorial-review.md)에 정리했다.
+
+## 프로젝트 구현 기록
 
 1. LLM 실행을 따라가는 OpenTelemetry 로깅과 트레이싱
 2. AGP Note: 회의 기록을 팀의 다음 업무로 연결하기

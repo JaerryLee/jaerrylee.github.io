@@ -4,3 +4,6 @@ dist/
 .env
 .env.*
 .DS_Store
+
+# Local research material; publish reviewed Markdown, not source documents.
+/llmops/
