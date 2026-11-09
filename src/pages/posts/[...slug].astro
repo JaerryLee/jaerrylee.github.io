@@ -27,7 +27,7 @@ const related = (await getPosts()).filter(item => item.id !== post.id).slice(0, 
       <div class="article-body">
         <details class="mobile-toc"><summary>이 글의 목차</summary><ol>{toc.map(heading => <li><a href={`#${heading.slug}`}>{heading.text}</a></li>)}</ol></details>
         <div class="prose"><Content /></div>
-        <div class="author-note"><span class="brand-dot" /><p><strong>이정재 · Applied AI Engineer</strong><br />AI 제품을 개발하고, 현재는 LLM Ops와 실행 관측에 집중합니다.</p><a href="https://www.linkedin.com/in/jerrylee1516/" target="_blank" rel="noopener noreferrer" aria-label="이정재 LinkedIn">↗</a></div>
+        <div class="author-note"><span class="brand-dot" /><p><strong>이정재 · AI Backend Engineer</strong><br />AI 서비스 백엔드와 에이전트 플랫폼 개발 경험, LLM Ops와 실행 관측을 기록합니다.</p><a href="https://www.linkedin.com/in/jerrylee1516/" target="_blank" rel="noopener noreferrer" aria-label="이정재 LinkedIn">↗</a></div>
       </div>
       <aside class="desktop-toc"><nav aria-label="이 글의 목차"><span class="eyebrow">ON THIS PAGE</span><ol>{toc.map(heading => <li><a href={`#${heading.slug}`}>{heading.text}</a></li>)}</ol><a class="toc-top" href="#main">맨 위로 ↑</a></nav></aside>
     </div>
